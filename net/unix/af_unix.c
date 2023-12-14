@@ -1728,7 +1728,7 @@ static int unix_stream_connect(struct socket *sock, struct sockaddr *uaddr,
 	if ((test_bit(SOCK_PASSCRED, &sock->flags) ||
 	     test_bit(SOCK_PASSPIDFD, &sock->flags)) &&
 	    !READ_ONCE(u->addr)) {
-		err = unix_autobind(sk);
+		err = unix_autobind(sock);
 		if (err)
 			goto out;
 	}
@@ -2295,7 +2295,7 @@ static int unix_dgram_sendmsg(struct socket *sock, struct msghdr *msg,
 	if ((test_bit(SOCK_PASSCRED, &sock->flags) ||
 	     test_bit(SOCK_PASSPIDFD, &sock->flags)) &&
 	    !READ_ONCE(u->addr)) {
-		err = unix_autobind(sk);
+		err = unix_autobind(sock);
 		if (err)
 			goto out;
 	}
