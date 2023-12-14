@@ -5,7 +5,7 @@
 /* (some smaller parts copied from fs/namei.c        */
 /*  and others)                                      */
 /*                                                   */
-/* Last modified: 21/Jul/2023                        */
+/* Last modified: 14/Dec/2023                        */
 /*************************************************** */
 
 #include <linux/types.h>
@@ -524,7 +524,7 @@ static int rsbac_aci_path_open(struct vfsmount *vfsmount_p, __u32 major, __u32 m
 			     RSBAC_ACI_PATH, major, minor, PTR_ERR(dentry));
 		return -RSBAC_ENOTFOUND;
 	}
-	dir_fd = vfs_mkdir(mnt_user_ns(vfsmount_p), path.dentry->d_inode, dentry, 0);
+	dir_fd = vfs_mkdir(mnt_idmap(vfsmount_p), path.dentry->d_inode, dentry, 0);
 	done_path_create(&path, dentry);
 	if (dir_fd < 0) {
 		close_fd(root_fd);
@@ -1083,33 +1083,15 @@ static int cap_old_fd_conv(void *old_desc, void *old_data, void *new_desc, void 
 	struct rsbac_cap_fd_old_aci_t *old_aci = old_data;
 
 	memcpy(new_desc, old_desc, sizeof(rsbac_old_inode_nr_t));
-	new_aci->min_caps.cap[0] = old_aci->min_caps;
-	new_aci->max_caps.cap[0] = old_aci->max_caps;
-	new_aci->min_caps.cap[1] = (__u32) 0;
-	new_aci->max_caps.cap[1] = (__u32) -1;
+	new_aci->min_caps = old_aci->min_caps.cap[0] | ((__u64) old_aci->min_caps.cap[1]) << 32;
+	new_aci->max_caps = old_aci->max_caps.cap[0] | ((__u64) old_aci->max_caps.cap[1]) << 32;
 	new_aci->cap_ld_env = old_aci->cap_ld_env;
-	return 0;
-}
-
-static int cap_old_old_fd_conv(void *old_desc, void *old_data, void *new_desc, void *new_data)
-{
-	struct rsbac_cap_fd_aci_t *new_aci = new_data;
-	struct rsbac_cap_fd_old_old_aci_t *old_aci = old_data;
-
-	memcpy(new_desc, old_desc, sizeof(rsbac_old_inode_nr_t));
-	new_aci->min_caps.cap[0] = old_aci->min_caps;
-	new_aci->max_caps.cap[0] = old_aci->max_caps;
-	new_aci->min_caps.cap[1] = (__u32) 0;
-	new_aci->max_caps.cap[1] = (__u32) -1;
-	new_aci->cap_ld_env = LD_inherit;
 	return 0;
 }
 
 static rsbac_list_conv_function_t *cap_fd_get_conv(rsbac_version_t old_version)
 {
 	switch (old_version) {
-		case RSBAC_CAP_FD_OLD_OLD_ACI_VERSION:
-			return cap_old_old_fd_conv;
 		case RSBAC_CAP_FD_OLD_ACI_VERSION:
 			return cap_old_fd_conv;
 		default:
@@ -1126,45 +1108,9 @@ static int cap_old_user_conv(void *old_desc,
 
 	memcpy(new_desc, old_desc, sizeof(rsbac_uid_t));
 	new_aci->cap_role = old_aci->cap_role;
-	new_aci->min_caps.cap[0] = old_aci->min_caps;
-	new_aci->max_caps.cap[0] = old_aci->max_caps;
-	new_aci->min_caps.cap[1] = (__u32) 0;
-	new_aci->max_caps.cap[1] = (__u32) -1;
+	new_aci->min_caps = old_aci->min_caps.cap[0] | ((__u64) old_aci->min_caps.cap[1]) << 32;
+	new_aci->max_caps = old_aci->max_caps.cap[0] | ((__u64) old_aci->max_caps.cap[1]) << 32;
 	new_aci->cap_ld_env = old_aci->cap_ld_env;
-	return 0;
-}
-
-static int cap_old_old_user_conv(void *old_desc, void *old_data, void *new_desc, void *new_data)
-{
-	rsbac_uid_t *new_user = new_desc;
-	rsbac_old_uid_t *old_user = old_desc;
-	struct rsbac_cap_user_aci_t *new_aci = new_data;
-	struct rsbac_cap_user_old_old_aci_t *old_aci = old_data;
-
-	*new_user = RSBAC_GEN_UID(0,*old_user);
-	new_aci->cap_role = old_aci->cap_role;
-	new_aci->min_caps.cap[0] = old_aci->min_caps;
-	new_aci->max_caps.cap[0] = old_aci->max_caps;
-	new_aci->min_caps.cap[1] = (__u32) 0;
-	new_aci->max_caps.cap[1] = (__u32) -1;
-	new_aci->cap_ld_env = old_aci->cap_ld_env;
-	return 0;
-}
-
-static int cap_old_old_old_user_conv(void *old_desc, void *old_data, void *new_desc, void *new_data)
-{
-	rsbac_uid_t *new_user = new_desc;
-	rsbac_old_uid_t *old_user = old_desc;
-	struct rsbac_cap_user_aci_t *new_aci = new_data;
-	struct rsbac_cap_user_old_old_aci_t *old_aci = old_data;
-
-	*new_user = RSBAC_GEN_UID(0,*old_user);
-	new_aci->cap_role = old_aci->cap_role;
-	new_aci->min_caps.cap[0] = old_aci->min_caps;
-	new_aci->max_caps.cap[0] = old_aci->max_caps;
-	new_aci->min_caps.cap[1] = (__u32) 0;
-	new_aci->max_caps.cap[1] = (__u32) -1;
-	new_aci->cap_ld_env = LD_allow;
 	return 0;
 }
 
@@ -1173,10 +1119,6 @@ static rsbac_list_conv_function_t *cap_user_get_conv(rsbac_version_t old_version
 	switch (old_version) {
 		case RSBAC_CAP_USER_OLD_ACI_VERSION:
 			return cap_old_user_conv;
-		case RSBAC_CAP_USER_OLD_OLD_ACI_VERSION:
-			return cap_old_old_user_conv;
-		case RSBAC_CAP_USER_OLD_OLD_OLD_ACI_VERSION:
-			return cap_old_old_old_user_conv;
 		default:
 			return NULL;
 	}
@@ -2556,7 +2498,7 @@ long rsbac_read_open(char *name, __u32 major, __u32 minor)
 	return PTR_ERR(f2);
 }
 
-static int rsbac_rename(struct user_namespace * mnt_userns, int dir_fd, const char * name)
+static int rsbac_rename(struct mnt_idmap * rsbac_mnt_idmap, int dir_fd, const char * name)
 {
 	struct dentry * dir_dentry;
 	struct dentry * old_dentry;
@@ -2617,10 +2559,10 @@ static int rsbac_rename(struct user_namespace * mnt_userns, int dir_fd, const ch
 		return -RSBAC_ENOTFOUND;
 	}
 
-	reda.old_mnt_userns = mnt_userns;
+	reda.old_mnt_idmap = rsbac_mnt_idmap;
 	reda.old_dir = dir_dentry->d_inode;
 	reda.old_dentry = old_dentry;
-	reda.new_mnt_userns = mnt_userns;
+	reda.new_mnt_idmap = rsbac_mnt_idmap;
 	reda.new_dir = reda.old_dir;
 	reda.new_dentry = new_dentry;
 	reda.delegated_inode = &delegated_inode;
@@ -2664,7 +2606,7 @@ long rsbac_write_open(char *name, __u32 major, __u32 minor)
 		return -RSBAC_ENOTWRITABLE;
 	}
 
-	file_fd = rsbac_rename(mnt_user_ns(vfsmount_p), dir_fd, name);
+	file_fd = rsbac_rename(mnt_idmap(vfsmount_p), dir_fd, name);
 	if (file_fd < 0) {
 		rsbac_printk(KERN_WARNING "rsbac_write_open(): failed to rename old file %s on device %02u:%02u to backup %sb, error %li\n",
 			name, major, minor, name, file_fd);
@@ -4481,11 +4423,10 @@ jails_proc_show(struct seq_file *m, void *v)
 			    (process_handles.jail,
 			     &pid_array[i], &data)) {
 				seq_printf(m,
-					    "%-5u  %-10u %-7u %-10i%-10u %-10u %-10u %pI4\n",
+					    "%-5u  %-10u %-7u %-10llu %-10u %-10u %pI4\n",
 					    pid_nr(pid_array[i]), data.id,
 					    data.flags,
-					    data.max_caps.cap[1],
-					    data.max_caps.cap[0],
+					    data.max_caps,
 					    data.scd_get,
 					    data.scd_modify,
 					    &data.ip);
@@ -8791,12 +8732,10 @@ static int get_attr_fd(rsbac_list_ta_number_t ta_number,
 							   &aci);
 				switch (attr) {
 				case A_min_caps:
-					value_p->min_caps.cap[0] = aci.min_caps.cap[0];
-					value_p->min_caps.cap[1] = aci.min_caps.cap[1];
+					value_p->min_caps = aci.min_caps;
 					break;
 				case A_max_caps:
-					value_p->max_caps.cap[0] = aci.max_caps.cap[0];
-					value_p->max_caps.cap[1] = aci.max_caps.cap[1];
+					value_p->max_caps = aci.max_caps;
 					break;
 				case A_cap_ld_env:
 					value_p->cap_ld_env = aci.cap_ld_env;
@@ -9495,12 +9434,10 @@ static int get_attr_user(rsbac_list_ta_number_t ta_number,
 				value->system_role = aci.cap_role;
 				break;
 			case A_min_caps:
-				value->min_caps.cap[0] = aci.min_caps.cap[0];
-				value->min_caps.cap[1] = aci.min_caps.cap[1];
+				value->min_caps = aci.min_caps;
 				break;
 			case A_max_caps:
-				value->max_caps.cap[0] = aci.max_caps.cap[0];
-				value->max_caps.cap[1] = aci.max_caps.cap[1];
+				value->max_caps = aci.max_caps;
 				break;
 			case A_cap_ld_env:
 				value->cap_ld_env = aci.cap_ld_env;
@@ -9925,12 +9862,10 @@ static int get_attr_process(rsbac_list_ta_number_t ta_number,
 				break;
 #if defined(CONFIG_RSBAC_CAP_LOG_MISSING) || defined(CONFIG_RSBAC_CAP_LEARN)
 			case A_max_caps_user:
-				value->max_caps_user.cap[0] = aci.max_caps_user.cap[0];
-				value->max_caps_user.cap[1] = aci.max_caps_user.cap[1];
+				value->max_caps_user = aci.max_caps_user;
 				break;
 			case A_max_caps_program:
-				value->max_caps_program.cap[0] = aci.max_caps_program.cap[0];
-				value->max_caps_program.cap[1] = aci.max_caps_program.cap[1];
+				value->max_caps_program = aci.max_caps_program;
 				break;
 #endif
 			case A_cap_ld_env:
@@ -9967,8 +9902,8 @@ static int get_attr_process(rsbac_list_ta_number_t ta_number,
 				value->jail_flags = aci.flags;
 				break;
 			case A_jail_max_caps:
-				value->jail_max_caps.cap[0] = aci.max_caps.cap[0];
-				value->jail_max_caps.cap[1] = aci.max_caps.cap[1];
+				value->jail_max_caps = aci.max_caps;
+				value->jail_max_caps = aci.max_caps;
 				break;
 			case A_jail_scd_get:
 				value->jail_scd_get = aci.scd_get;
@@ -11245,16 +11180,14 @@ static int set_attr_fd_ttl(rsbac_list_ta_number_t ta_number,
 						&aci);
 			switch (attr) {
 			case A_min_caps:
-				if ((aci.min_caps.cap[0] != value_p->min_caps.cap[0]) || (aci.min_caps.cap[1] != value_p->min_caps.cap[1])) {
-					aci.min_caps.cap[0] = value_p->min_caps.cap[0];
-					aci.min_caps.cap[1] = value_p->min_caps.cap[1];
+				if (aci.min_caps != value_p->min_caps) {
+					aci.min_caps = value_p->min_caps;
 					need_set = 1;
 				}
 				break;
 			case A_max_caps:
-				if ((aci.max_caps.cap[0] != value_p->max_caps.cap[0]) || (aci.max_caps.cap[1] != value_p->max_caps.cap[1])) {
-					aci.max_caps.cap[0] = value_p->max_caps.cap[0];
-					aci.max_caps.cap[1] = value_p->max_caps.cap[1];
+				if (aci.max_caps != value_p->max_caps) {
+					aci.max_caps = value_p->max_caps;
 					need_set = 1;
 				}
 				break;
@@ -11899,12 +11832,10 @@ static int set_attr_user_ttl(rsbac_list_ta_number_t ta_number,
 				aci.cap_role = value_p->system_role;
 				break;
 			case A_min_caps:
-				aci.min_caps.cap[0] = value_p->min_caps.cap[0];
-				aci.min_caps.cap[1] = value_p->min_caps.cap[1];
+				aci.min_caps = value_p->min_caps;
 				break;
 			case A_max_caps:
-				aci.max_caps.cap[0] = value_p->max_caps.cap[0];
-				aci.max_caps.cap[1] = value_p->max_caps.cap[1];
+				aci.max_caps = value_p->max_caps;
 				break;
 			case A_cap_ld_env:
 				aci.cap_ld_env = value_p->cap_ld_env;
@@ -12293,12 +12224,10 @@ static int set_attr_process_ttl(rsbac_list_ta_number_t ta_number,
 				break;
 #if defined(CONFIG_RSBAC_CAP_LOG_MISSING) || defined(CONFIG_RSBAC_CAP_LEARN)
 			case A_max_caps_user:
-				aci.max_caps_user.cap[0] = value_p->max_caps_user.cap[0];
-				aci.max_caps_user.cap[1] = value_p->max_caps_user.cap[1];
+				aci.max_caps_user = value_p->max_caps_user;
 				break;
 			case A_max_caps_program:
-				aci.max_caps_program.cap[0] = value_p->max_caps_program.cap[0];
-				aci.max_caps_program.cap[1] = value_p->max_caps_program.cap[1];
+				aci.max_caps_program = value_p->max_caps_program;
 #endif
 				break;
 			case A_cap_ld_env:
@@ -12342,8 +12271,7 @@ static int set_attr_process_ttl(rsbac_list_ta_number_t ta_number,
 				aci.flags = value_p->jail_flags;
 				break;
 			case A_jail_max_caps:
-				aci.max_caps.cap[0] = value_p->jail_max_caps.cap[0];
-				aci.max_caps.cap[1] = value_p->jail_max_caps.cap[1];
+				aci.max_caps = value_p->jail_max_caps;
 				break;
 			case A_jail_scd_get:
 				aci.scd_get = value_p->jail_scd_get;
