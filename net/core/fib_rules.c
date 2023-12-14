@@ -29,6 +29,8 @@
 #define INDIRECT_CALL_MT(f, f2, f1, ...) f(__VA_ARGS__)
 #endif
 
+#include <rsbac/hooks.h>
+
 static const struct fib_kuid_range fib_kuid_range_unset = {
 	KUIDT_INIT(0),
 	KUIDT_INIT(~0),
@@ -524,6 +526,10 @@ static int fib_nl2rule(struct sk_buff *skb, struct nlmsghdr *nlh,
 	struct fib_rule_hdr *frh = nlmsg_data(nlh);
 	struct fib_rule *nlrule = NULL;
 	int err = -EINVAL;
+#ifdef CONFIG_RSBAC_NET
+	union rsbac_target_id_t rsbac_target_id;
+	union rsbac_attribute_value_t rsbac_attribute_value;
+#endif
 
 	if (frh->src_len)
 		if (!tb[FRA_SRC] ||
@@ -540,6 +546,22 @@ static int fib_nl2rule(struct sk_buff *skb, struct nlmsghdr *nlh,
 			NL_SET_ERR_MSG(extack, "Invalid dst address");
 			goto errout;
 	}
+
+#ifdef CONFIG_RSBAC_NET
+	rsbac_pr_debug(aef, "fib_nl_newrule(): calling ADF\n");
+	rsbac_target_id.scd = ST_network;
+	rsbac_attribute_value.dummy = 0;
+	if (!rsbac_adf_request(R_MODIFY_SYSTEM_DATA,
+				task_pid(current),
+				T_SCD,
+				rsbac_target_id,
+				A_none,
+				rsbac_attribute_value))
+	{
+		err = -EPERM;
+		goto errout;
+	}
+#endif
 
 	nlrule = kzalloc(ops->rule_size, GFP_KERNEL_ACCOUNT);
 	if (!nlrule) {
@@ -890,6 +912,11 @@ int fib_nl_delrule(struct sk_buff *skb, struct nlmsghdr *nlh,
 	int err = -EINVAL;
 	bool user_priority = false;
 
+#ifdef CONFIG_RSBAC_NET
+	union rsbac_target_id_t rsbac_target_id;
+	union rsbac_attribute_value_t rsbac_attribute_value;
+#endif
+
 	if (nlh->nlmsg_len < nlmsg_msg_size(sizeof(*frh))) {
 		NL_SET_ERR_MSG(extack, "Invalid msg length");
 		goto errout;
@@ -918,6 +945,22 @@ int fib_nl_delrule(struct sk_buff *skb, struct nlmsghdr *nlh,
 		err = -ENOENT;
 		goto errout;
 	}
+
+#ifdef CONFIG_RSBAC_NET
+	rsbac_pr_debug(aef, "fib_nl_delrule(): calling ADF\n");
+	rsbac_target_id.scd = ST_network;
+	rsbac_attribute_value.dummy = 0;
+	if (!rsbac_adf_request(R_MODIFY_SYSTEM_DATA,
+				task_pid(current),
+				T_SCD,
+				rsbac_target_id,
+				A_none,
+				rsbac_attribute_value))
+	{
+		err = -EPERM;
+		goto errout;
+	}
+#endif
 
 	if (rule->flags & FIB_RULE_PERMANENT) {
 		err = -EPERM;
@@ -1011,6 +1054,25 @@ static int fib_nl_fill_rule(struct sk_buff *skb, struct fib_rule *rule,
 {
 	struct nlmsghdr *nlh;
 	struct fib_rule_hdr *frh;
+#ifdef CONFIG_RSBAC_NET
+	union rsbac_target_id_t rsbac_target_id;
+	union rsbac_attribute_value_t rsbac_attribute_value;
+#endif
+
+#ifdef CONFIG_RSBAC_NET
+	rsbac_pr_debug(aef, "fib_nl_fill_rule(): calling ADF\n");
+	rsbac_target_id.scd = ST_network;
+	rsbac_attribute_value.dummy = 0;
+	if (!rsbac_adf_request(R_GET_STATUS_DATA,
+				task_pid(current),
+				T_SCD,
+				rsbac_target_id,
+				A_none,
+				rsbac_attribute_value))
+	{
+		return -EPERM;
+	}
+#endif
 
 	nlh = nlmsg_put(skb, pid, seq, type, sizeof(*frh), flags);
 	if (nlh == NULL)
