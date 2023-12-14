@@ -200,7 +200,9 @@ error:
  */
 struct cred *prepare_creds(void)
 {
+#ifndef CONFIG_RSBAC
 	struct task_struct *task = current;
+#endif
 	const struct cred *old;
 	struct cred *new;
 
@@ -210,7 +212,11 @@ struct cred *prepare_creds(void)
 
 	kdebug("prepare_creds() alloc %p", new);
 
+#ifdef CONFIG_RSBAC
+	old = current_cred();
+#else
 	old = task->cred;
+#endif
 	memcpy(new, old, sizeof(struct cred));
 
 	new->non_rcu = 0;
