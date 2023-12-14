@@ -18637,6 +18637,13 @@ L:	linux-remoteproc@vger.kernel.org
 S:	Maintained
 F:	drivers/tty/rpmsg_tty.c
 
+RSBAC
+M:	Amon Ott <ao@rsbac.org>
+L:	rsbac@rsbac.org
+W:	https://www.rsbac.org
+T:	git git://git.rsbac.org/linux-4.19.y.git
+S:	Maintained
+
 RTL2830 MEDIA DRIVER
 M:	Antti Palosaari <crope@iki.fi>
 L:	linux-media@vger.kernel.org
