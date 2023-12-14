@@ -1,10 +1,10 @@
 /*********************************** */
 /* Rule Set Based Access Control     */
-/* Author and (c)1999-2021:          */
+/* Author and (c)1999-2023:          */
 /*   Amon Ott <ao@rsbac.org>         */
 /* API: Data types for attributes    */
 /*      and standard module calls    */
-/* Last modified: 07/Dec/2021        */
+/* Last modified: 14/Dec/2023        */
 /*********************************** */
 
 #ifndef __RSBAC_TYPES_H
@@ -52,8 +52,10 @@ typedef __u32 rsbac_old_gid_t;       /* Same as group in Linux kernel */
 typedef __u32 rsbac_gid_num_t;       /* Same as user in Linux kernel */
 typedef __u32 rsbac_um_set_t;
 typedef __u32 rsbac_time_t;          /* Same as time_t in Linux kernel */
-typedef kernel_cap_t rsbac_cap_vector_t;    /* Same as kernel_cap_t in Linux kernel */
-typedef __u32 rsbac_cap_old_vector_t;    /* Same as kernel_cap_t in Linux kernel */
+typedef __u64 rsbac_cap_vector_t;    /* Should be same as kernel_cap_t in Linux kernel */
+typedef struct rsbac_cap_old_vector_struct_t {
+        __u32 cap[2];
+} rsbac_cap_old_vector_t;
 #if defined(CONFIG_IA32_EMULATION) || defined(CONFIG_X86_X32)
 typedef __u64 __attribute__((aligned(4))) rsbac_uid_ia32_t;           /* High 32 Bit virtual set, low uid */
 typedef __u64 __attribute__((aligned(4))) rsbac_gid_ia32_t;           /* High 32 Bit virtual set, low gid */
@@ -422,8 +424,8 @@ typedef rsbac_enum_t rsbac_cap_process_hiding_int_t;
 enum rsbac_cap_ld_env_t { LD_deny, LD_allow, LD_keep, LD_inherit };
 typedef rsbac_enum_t rsbac_cap_ld_env_int_t;
 
-#define RSBAC_CAP_DEFAULT_MIN (__u32) 0
-#define RSBAC_CAP_DEFAULT_MAX (__u32) -1
+#define RSBAC_CAP_DEFAULT_MIN (rsbac_cap_vector_t) 0
+#define RSBAC_CAP_DEFAULT_MAX (rsbac_cap_vector_t) -1
 
 #include <linux/capability.h>
 #define RSBAC_CAP_NONE (CAP_CHECKPOINT_RESTORE + 1)
