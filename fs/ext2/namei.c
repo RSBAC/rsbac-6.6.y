@@ -381,7 +381,6 @@ static int ext2_rename (struct mnt_idmap * idmap,
 		if (err)
 			goto out_dir;
 		inode_set_ctime_current(new_inode);
-
 		if (dir_de)
 			drop_nlink(new_inode);
 		inode_dec_link_count(new_inode);
