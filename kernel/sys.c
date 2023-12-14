@@ -1041,6 +1041,7 @@ long __sys_setresuid(uid_t ruid, uid_t euid, uid_t suid)
 
 	old = current_cred();
 
+/* Disable this shortcut with RSBAC, we need the request and the notification */
 #ifndef CONFIG_RSBAC
 	/* check for no-op */
 	if ((ruid == (uid_t) -1 || uid_eq(kruid, old->uid)) &&
@@ -1244,6 +1245,7 @@ long __sys_setresgid(gid_t rgid, gid_t egid, gid_t sgid)
 
 	old = current_cred();
 
+/* Disable this shortcut with RSBAC, we need the request and the notification */
 #ifndef CONFIG_RSBAC
 	/* check for no-op */
 	if ((rgid == (gid_t) -1 || gid_eq(krgid, old->gid)) &&
