@@ -18,5 +18,6 @@
 #define __NR_umount __NR_umount2
 
 #include <asm/unistd_64.h>
+#define __NR_rsbac                      1308
 
 #endif /* _UAPI_ASM_IA64_UNISTD_H */

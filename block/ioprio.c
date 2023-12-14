@@ -28,12 +28,33 @@
 #include <linux/capability.h>
 #include <linux/syscalls.h>
 #include <linux/security.h>
+#include <rsbac/hooks.h>
 #include <linux/pid_namespace.h>
 
 int ioprio_check_cap(int ioprio)
 {
 	int class = IOPRIO_PRIO_CLASS(ioprio);
 	int level = IOPRIO_PRIO_LEVEL(ioprio);
+
+#ifdef CONFIG_RSBAC
+	union rsbac_target_id_t rsbac_target_id;
+	union rsbac_attribute_value_t rsbac_attribute_value;
+#endif
+
+#ifdef CONFIG_RSBAC
+	rsbac_pr_debug(aef, "calling ADF\n");
+	rsbac_target_id.scd = ST_priority;
+	rsbac_attribute_value.priority = ioprio;
+
+	if (!rsbac_adf_request(R_MODIFY_SYSTEM_DATA,
+				task_pid(current),
+				T_SCD,
+				rsbac_target_id,
+				A_priority,
+				rsbac_attribute_value)) {
+		return -EPERM;
+	}
+#endif
 
 	switch (class) {
 		case IOPRIO_CLASS_RT:
@@ -168,6 +189,27 @@ EXPORT_SYMBOL_GPL(__get_task_ioprio);
 static int get_task_ioprio(struct task_struct *p)
 {
 	int ret;
+
+#ifdef CONFIG_RSBAC
+        union rsbac_target_id_t rsbac_target_id;
+        union rsbac_attribute_value_t rsbac_attribute_value;
+#endif
+
+#ifdef CONFIG_RSBAC
+        rsbac_pr_debug(aef, "calling ADF\n");
+        rsbac_target_id.scd = ST_priority;
+        rsbac_attribute_value.dummy = 0;
+
+        if (!rsbac_adf_request(R_GET_STATUS_DATA,
+                                task_pid(current),
+                                T_SCD,
+                                rsbac_target_id,
+                                A_none,
+                                rsbac_attribute_value)) {
+                ret = -EPERM;
+                goto out;
+        }
+#endif
 
 	ret = security_task_getioprio(p);
 	if (ret)
