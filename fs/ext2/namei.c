@@ -37,6 +37,8 @@
 #include "xattr.h"
 #include "acl.h"
 
+#include <rsbac/hooks.h>
+
 static inline int ext2_add_nondir(struct dentry *dentry, struct inode *inode)
 {
 	int err = ext2_add_link(dentry, inode);
@@ -291,6 +293,11 @@ static int ext2_unlink(struct inode *dir, struct dentry *dentry)
 	if (err)
 		goto out;
 
+#ifdef CONFIG_RSBAC_SECDEL
+	if (inode->i_nlink == 1)
+		rsbac_sec_del(dentry, TRUE);
+#endif
+
 	inode_set_ctime_to_ts(inode, inode_get_ctime(dir));
 	inode_dec_link_count(inode);
 	err = 0;
@@ -363,11 +370,18 @@ static int ext2_rename (struct mnt_idmap * idmap,
 			err = PTR_ERR(new_de);
 			goto out_dir;
 		}
+
+#ifdef CONFIG_RSBAC_SECDEL
+		if (new_inode->i_nlink == 1)
+			rsbac_sec_del(new_dentry, TRUE);
+#endif
+
 		err = ext2_set_link(new_dir, new_de, new_page, old_inode, true);
 		ext2_put_page(new_page, new_de);
 		if (err)
 			goto out_dir;
 		inode_set_ctime_current(new_inode);
+
 		if (dir_de)
 			drop_nlink(new_inode);
 		inode_dec_link_count(new_inode);

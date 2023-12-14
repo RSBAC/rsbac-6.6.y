@@ -49,6 +49,8 @@
 #include "internal.h"
 #include "swap.h"
 
+#include <rsbac/hooks.h>
+
 static bool swap_count_continued(struct swap_info_struct *, pgoff_t,
 				 unsigned char);
 static void free_swap_count_continuations(struct swap_info_struct *);
@@ -2408,8 +2410,28 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
 	int err, found = 0;
 	unsigned int old_block_size;
 
+#ifdef CONFIG_RSBAC
+	enum  rsbac_target_t rsbac_target;
+	union rsbac_target_id_t rsbac_target_id;
+	union rsbac_attribute_value_t rsbac_attribute_value;
+#endif
+
 	if (!capable(CAP_SYS_ADMIN))
 		return -EPERM;
+
+#ifdef CONFIG_RSBAC
+	rsbac_pr_debug(aef, "calling ADF\n");
+	rsbac_target_id.scd = ST_swap;
+	rsbac_attribute_value.dummy = 0;
+	if (!rsbac_adf_request(R_MODIFY_SYSTEM_DATA,
+				task_pid(current),
+				T_SCD,
+				rsbac_target_id,
+				A_none,
+				rsbac_attribute_value)) {
+		return -EPERM;
+}
+#endif
 
 	BUG_ON(!current->mm);
 
@@ -2421,6 +2443,35 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
 	err = PTR_ERR(victim);
 	if (IS_ERR(victim))
 		goto out;
+
+#ifdef CONFIG_RSBAC
+	rsbac_pr_debug(aef, "calling ADF for DEV / FILE\n");
+	if (S_ISBLK(victim->f_path.dentry->d_inode->i_mode)) {
+		rsbac_target = T_DEV;
+		rsbac_target_id.dev.type = D_block;
+		rsbac_target_id.dev.major = RSBAC_MAJOR(victim->f_path.dentry->d_inode->i_rdev);
+		rsbac_target_id.dev.minor = RSBAC_MINOR(victim->f_path.dentry->d_inode->i_rdev);
+	} else
+		if (S_ISREG(victim->f_path.dentry->d_inode->i_mode)) {
+			rsbac_target = T_FILE;
+			rsbac_target_id.file.device = victim->f_path.dentry->d_sb->s_dev;
+			rsbac_target_id.file.inode  = victim->f_path.dentry->d_inode->i_ino;
+			rsbac_target_id.file.dentry_p = victim->f_path.dentry;
+		} else {
+			rsbac_target = T_NONE;
+			rsbac_target_id.dummy = 0;
+		}
+	rsbac_attribute_value.dummy = 0;
+	if ((rsbac_target != T_NONE) && !rsbac_adf_request(R_REMOVE_FROM_KERNEL,
+				task_pid(current),
+				rsbac_target,
+				rsbac_target_id,
+				A_none,
+				rsbac_attribute_value)) {
+		err = -EPERM;
+		goto out_dput;
+	}
+#endif
 
 	mapping = victim->f_mapping;
 	spin_lock(&swap_lock);
@@ -3005,6 +3056,12 @@ SYSCALL_DEFINE2(swapon, const char __user *, specialfile, int, swap_flags)
 	struct inode *inode = NULL;
 	bool inced_nr_rotate_swap = false;
 
+#ifdef CONFIG_RSBAC
+	enum  rsbac_target_t          rsbac_target;
+	union rsbac_target_id_t       rsbac_target_id;
+	union rsbac_attribute_value_t rsbac_attribute_value;
+#endif
+
 	if (swap_flags & ~SWAP_FLAGS_VALID)
 		return -EINVAL;
 
@@ -3013,6 +3070,19 @@ SYSCALL_DEFINE2(swapon, const char __user *, specialfile, int, swap_flags)
 
 	if (!swap_avail_heads)
 		return -ENOMEM;
+
+#ifdef CONFIG_RSBAC
+	rsbac_pr_debug(aef, "calling ADF\n");
+	rsbac_target_id.scd = ST_swap;
+	rsbac_attribute_value.dummy = 0;
+	if (!rsbac_adf_request(R_MODIFY_SYSTEM_DATA,
+				task_pid(current),
+				T_SCD,
+				rsbac_target_id,
+				A_none,
+				rsbac_attribute_value))
+		return -EPERM;
+#endif
 
 	p = alloc_swap_info();
 	if (IS_ERR(p))
@@ -3037,6 +3107,37 @@ SYSCALL_DEFINE2(swapon, const char __user *, specialfile, int, swap_flags)
 	mapping = swap_file->f_mapping;
 	dentry = swap_file->f_path.dentry;
 	inode = mapping->host;
+
+/* RSBAC */
+#ifdef CONFIG_RSBAC
+	rsbac_pr_debug(aef, "calling ADF for DEV / FILE\n");
+	if(S_ISBLK(inode->i_mode)) {
+		rsbac_target = T_DEV;
+		rsbac_target_id.dev.type = D_block;
+		rsbac_target_id.dev.major = RSBAC_MAJOR(inode->i_rdev);
+		rsbac_target_id.dev.minor = RSBAC_MINOR(inode->i_rdev);
+	} else if(S_ISREG(inode->i_mode)) {
+		rsbac_target = T_FILE;
+		rsbac_target_id.file.device = swap_file->f_path.dentry->d_sb->s_dev;
+		rsbac_target_id.file.inode  = inode->i_ino;
+		rsbac_target_id.file.dentry_p = swap_file->f_path.dentry;
+	} else {
+		rsbac_target = T_NONE;
+		rsbac_target_id.dummy = 0;
+	}
+	rsbac_attribute_value.dummy = 0;
+	if(   (rsbac_target != T_NONE)
+	   && !rsbac_adf_request(R_ADD_TO_KERNEL,
+				task_pid(current),
+				rsbac_target,
+				rsbac_target_id,
+				A_none,
+				rsbac_attribute_value)
+	) {
+		error = -EPERM;
+		goto bad_swap;
+	}
+#endif
 
 	error = claim_swapfile(p, inode);
 	if (unlikely(error))
