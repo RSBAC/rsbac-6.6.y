@@ -11,6 +11,8 @@
 #include <net/dsa_stubs.h>
 #include <net/wext.h>
 
+#include <rsbac/hooks.h>
+
 #include "dev.h"
 
 /*
@@ -660,6 +662,11 @@ int dev_ioctl(struct net *net, unsigned int cmd, struct ifreq *ifr,
 	int ret;
 	char *colon;
 
+#ifdef CONFIG_RSBAC_NET_DEV
+	union rsbac_target_id_t rsbac_target_id;
+	union rsbac_attribute_value_t rsbac_attribute_value;
+#endif
+
 	if (need_copyout)
 		*need_copyout = true;
 	if (cmd == SIOCGIFNAME)
@@ -667,9 +674,19 @@ int dev_ioctl(struct net *net, unsigned int cmd, struct ifreq *ifr,
 
 	ifr->ifr_name[IFNAMSIZ-1] = 0;
 
+#ifdef CONFIG_RSBAC_NET_DEV_VIRT
+	strncpy(rsbac_target_id.netdev, ifr->ifr_name, RSBAC_IFNAMSIZ);
+	rsbac_target_id.netdev[RSBAC_IFNAMSIZ] = 0;
+#endif
+
 	colon = strchr(ifr->ifr_name, ':');
 	if (colon)
 		*colon = 0;
+
+#if defined(CONFIG_RSBAC_NET_DEV) && !defined(CONFIG_RSBAC_NET_DEV_VIRT)
+	strncpy(rsbac_target_id.netdev, ifr->ifr_name, RSBAC_IFNAMSIZ);
+	rsbac_target_id.netdev[RSBAC_IFNAMSIZ] = 0;
+#endif
 
 	/*
 	 *	See which interface the caller is talking about.
@@ -695,6 +712,20 @@ int dev_ioctl(struct net *net, unsigned int cmd, struct ifreq *ifr,
 	case SIOCGIFMAP:
 	case SIOCGIFINDEX:
 	case SIOCGIFTXQLEN:
+
+#ifdef CONFIG_RSBAC_NET_DEV
+		rsbac_pr_debug(aef, "calling ADF\n");
+		rsbac_attribute_value.dummy = 0;
+		if (!rsbac_adf_request(R_GET_STATUS_DATA,
+					task_pid(current),
+					T_NETDEV,
+					rsbac_target_id,
+					A_none,
+					rsbac_attribute_value)) {
+			return -EPERM;
+		}
+#endif
+
 		dev_load(net, ifr->ifr_name);
 		rcu_read_lock();
 		ret = dev_ifsioc_locked(net, ifr, cmd);
@@ -762,6 +793,20 @@ int dev_ioctl(struct net *net, unsigned int cmd, struct ifreq *ifr,
 	case SIOCSHWTSTAMP:
 		if (!ns_capable(net->user_ns, CAP_NET_ADMIN))
 			return -EPERM;
+
+#ifdef CONFIG_RSBAC_NET_DEV
+		rsbac_pr_debug(aef, "calling ADF\n");
+		rsbac_attribute_value.dummy = 0;
+		if (!rsbac_adf_request(R_MODIFY_SYSTEM_DATA,
+					task_pid(current),
+					T_NETDEV,
+					rsbac_target_id,
+					A_none,
+					rsbac_attribute_value)) {
+			return -EPERM;
+		}
+#endif
+
 		fallthrough;
 	case SIOCBONDSLAVEINFOQUERY:
 	case SIOCBONDINFOQUERY:
@@ -790,6 +835,20 @@ int dev_ioctl(struct net *net, unsigned int cmd, struct ifreq *ifr,
 		    cmd == SIOCGHWTSTAMP ||
 		    (cmd >= SIOCDEVPRIVATE &&
 		     cmd <= SIOCDEVPRIVATE + 15)) {
+
+#ifdef CONFIG_RSBAC_NET_DEV
+			rsbac_pr_debug(aef, "calling ADF\n");
+			rsbac_attribute_value.dummy = 0;
+			if (!rsbac_adf_request(R_MODIFY_SYSTEM_DATA,
+						task_pid(current),
+						T_NETDEV,
+						rsbac_target_id,
+						A_none,
+						rsbac_attribute_value)) {
+				return -EPERM;
+			}
+#endif
+
 			dev_load(net, ifr->ifr_name);
 			rtnl_lock();
 			ret = dev_ifsioc(net, ifr, data, cmd);
