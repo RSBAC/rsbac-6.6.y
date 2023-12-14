@@ -6,7 +6,7 @@
 /*                                                   */
 /* Author and (c) 1999-2023: Amon Ott <ao@rsbac.org> */
 /*                                                   */
-/* Last modified: 01/Nov/2023                        */
+/* Last modified: 14/Dec/2023                        */
 /*************************************************** */
 
 #include <linux/string.h>
@@ -139,8 +139,7 @@ int rsbac_jail_sys_jail(rsbac_version_t version,
 			return(-RSBAC_EREADFAILED);
 		}
 
-		max_caps.cap[0] &= i_attr_val1.jail_max_caps.cap[0];
-		max_caps.cap[1] &= i_attr_val1.jail_max_caps.cap[1];
+		max_caps &= i_attr_val1.jail_max_caps;
 	} else {
 		rsbac_pr_debug(aef_jail, "called without parent jail\n");
 	}
@@ -167,7 +166,7 @@ retry:
 		if (err)
 			return err;
 
-		err = inode_permission(mnt_user_ns(kernel_path.mnt), kernel_path.dentry->d_inode, MAY_EXEC | MAY_CHDIR);
+		err = inode_permission(mnt_idmap(kernel_path.mnt), kernel_path.dentry->d_inode, MAY_EXEC | MAY_CHDIR);
 		if (err) {
 			goto dput_and_out;
 		}
@@ -285,8 +284,8 @@ restart:
 	}
 
 	/* Set jail_max_caps for this process */
-	i_attr_val1.jail_max_caps.cap[0] = max_caps.cap[0];
-	i_attr_val1.jail_max_caps.cap[1] = max_caps.cap[1];
+	i_attr_val1.jail_max_caps = max_caps;
+	i_attr_val1.jail_max_caps = max_caps;
 	if (rsbac_set_attr(SW_JAIL,
 				T_PROCESS,
 				i_tid,

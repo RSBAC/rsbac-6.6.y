@@ -214,7 +214,7 @@ static const struct sysrq_key_op sysrq_mountro_op = {
 };
 
 #ifdef CONFIG_RSBAC_SOFTMODE_SYSRQ
-static void sysrq_handle_rsbac_softmode(int key) {
+static void sysrq_handle_rsbac_softmode(u8 key) {
 	if (rsbac_softmode) {
 		rsbac_printk(KERN_WARNING "Soft mode disabled via SysRq!\n");
 		rsbac_softmode = 0;

@@ -1,8 +1,8 @@
 /************************************* */
 /* Rule Set Based Access Control       */
-/* Author and (c) 1999-2021: Amon Ott  */
+/* Author and (c) 1999-2023: Amon Ott  */
 /* Helper functions for all parts      */
-/* Last modified:  04/Oct/2021         */
+/* Last modified:  14/Dec/2023         */
 /************************************* */
 
 #ifndef __RSBAC_HELPER_H
@@ -20,9 +20,6 @@ char * ulongtostr(char[], u_long);
 
 /* convert u_long_long to binary string representation for MAC module */
 char * u64tostrmac(char[], __u64);
-
-char * u32tostrcap(char * str, __u32 i);
-__u32 strtou32cap(char * str, __u32 * i_p);
 
 int rsbac_get_vset_num(char * sourcename, rsbac_um_set_t * vset_p);
 

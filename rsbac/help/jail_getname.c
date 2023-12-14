@@ -1,9 +1,9 @@
 /*********************************** */
 /* Rule Set Based Access Control     */
-/* Author and (c) 1999-2021:         */
+/* Author and (c) 1999-2023:         */
 /*   Amon Ott <ao@rsbac.org>         */
 /* Getname functions for JAIL module */
-/* Last modified: 04/Oct/2021        */
+/* Last modified: 14/Dec/2023        */
 /*********************************** */
 
 #include <rsbac/getname.h>
@@ -37,7 +37,7 @@ void rsbac_jail_log_missing_cap(int cap)
       }
     else
       {
-        if(!((i_attr_val1.jail_max_caps.cap[0] & (1 << cap)) || (i_attr_val1.jail_max_caps.cap[1] & (1 << cap))))
+        if(!(i_attr_val1.jail_max_caps & (1 << cap)))
           {
             tmp = rsbac_kmalloc(RSBAC_MAXNAMELEN);
             if(tmp)
