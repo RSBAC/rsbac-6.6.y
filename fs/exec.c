@@ -76,6 +76,8 @@
 
 #include <trace/events/sched.h>
 
+#include <rsbac/hooks.h>
+
 static int bprm_creds_from_file(struct linux_binprm *bprm);
 
 int suid_dumpable = 0;
@@ -133,6 +135,11 @@ SYSCALL_DEFINE1(uselib, const char __user *, library)
 		.lookup_flags = LOOKUP_FOLLOW,
 	};
 
+#ifdef CONFIG_RSBAC
+	union rsbac_target_id_t rsbac_target_id;
+	union rsbac_attribute_value_t rsbac_attribute_value;
+#endif
+
 	if (IS_ERR(tmp))
 		goto out;
 
@@ -149,6 +156,26 @@ SYSCALL_DEFINE1(uselib, const char __user *, library)
 	if (WARN_ON_ONCE(!S_ISREG(file_inode(file)->i_mode)) ||
 	    path_noexec(&file->f_path))
 		goto exit;
+
+#ifdef CONFIG_RSBAC
+	rsbac_pr_debug(aef, "calling ADF\n");
+	rsbac_target_id.file.device = file->f_path.dentry->d_inode->i_sb->s_dev;
+	rsbac_target_id.file.inode  = file->f_path.dentry->d_inode->i_ino;
+	rsbac_target_id.file.dentry_p = file->f_path.dentry;
+	rsbac_attribute_value.dummy = 0;
+	if (!rsbac_adf_request(R_MAP_EXEC,
+				task_pid(current),
+				T_FILE,
+				rsbac_target_id,
+				A_none,
+				rsbac_attribute_value))
+	{
+		rsbac_pr_debug(aef, "request not granted, my PID: %i\n",
+			       task_pid(current));
+		error = -EPERM;
+		goto exit;
+	}
+#endif
 
 	error = -ENOEXEC;
 
@@ -167,6 +194,28 @@ SYSCALL_DEFINE1(uselib, const char __user *, library)
 	}
 	read_unlock(&binfmt_lock);
 exit:
+
+	/* RSBAC: notify ADF of mapped segment */
+#ifdef CONFIG_RSBAC
+	if (!error) {
+		union rsbac_target_id_t rsbac_new_target_id;
+
+		rsbac_pr_debug(aef, "calling ADF_set_attr\n");
+		rsbac_new_target_id.dummy = 0;
+		if (unlikely(rsbac_adf_set_attr(R_MAP_EXEC,
+					task_pid(current),
+					T_FILE,
+					rsbac_target_id,
+					T_NONE,
+					rsbac_new_target_id,
+					A_none,
+					rsbac_attribute_value))) {
+			rsbac_printk(KERN_WARNING
+					"sys_uselib(): rsbac_adf_set_attr() returned error\n");
+		}
+	}
+#endif
+
 	fput(file);
 out:
 	return error;
@@ -1851,6 +1900,12 @@ static int bprm_execve(struct linux_binprm *bprm,
 	struct file *file;
 	int retval;
 
+#ifdef CONFIG_RSBAC
+	union rsbac_target_id_t rsbac_target_id;
+	union rsbac_target_id_t rsbac_new_target_id;
+	union rsbac_attribute_value_t rsbac_attribute_value;
+#endif
+
 	retval = prepare_bprm_creds(bprm);
 	if (retval)
 		return retval;
@@ -1889,9 +1944,47 @@ static int bprm_execve(struct linux_binprm *bprm,
 	if (retval)
 		goto out;
 
+#ifdef CONFIG_RSBAC
+	rsbac_pr_debug(aef, "[sys_execve()]: calling ADF\n");
+	rsbac_target_id.file.device = file->f_path.dentry->d_sb->s_dev;
+	rsbac_target_id.file.inode  = file->f_path.dentry->d_inode->i_ino;
+	rsbac_target_id.file.dentry_p = file->f_path.dentry;
+	rsbac_attribute_value.dummy = 0;
+	if (!rsbac_adf_request(R_EXECUTE,
+				task_pid(current),
+				T_FILE,
+				rsbac_target_id,
+				A_none,
+				rsbac_attribute_value)) {
+		rsbac_pr_debug(aef, "[sys_execve()]: request not granted, my PID: %i\n",
+				task_pid(current));
+		retval = -EPERM;
+		goto out;
+	}
+#endif
+
 	retval = exec_binprm(bprm);
 	if (retval < 0)
 		goto out;
+
+/* RSBAC: notify ADF of changed program in this process
+ * Most structures are already filled
+ */
+#ifdef CONFIG_RSBAC
+	rsbac_pr_debug(aef, "[sys_execve()]: calling ADF_set_attr\n");
+	rsbac_new_target_id.dummy = 0;
+	if (unlikely(rsbac_adf_set_attr(R_EXECUTE,
+					task_pid(current),
+					T_FILE,
+					rsbac_target_id,
+					T_NONE,
+					rsbac_new_target_id,
+					A_none,
+					rsbac_attribute_value))) {
+		rsbac_printk(KERN_WARNING
+			"do_execve() [sys_execve]: rsbac_adf_set_attr() returned error\n");
+	}
+#endif
 
 	sched_mm_cid_after_execve(current);
 	/* execve succeeded */
