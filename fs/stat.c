@@ -23,6 +23,11 @@
 #include <linux/uaccess.h>
 #include <asm/unistd.h>
 
+#ifdef CONFIG_RSBAC
+#include <net/sock.h>
+#include <rsbac/hooks.h>
+#endif
+
 #include "internal.h"
 #include "mount.h"
 
@@ -49,6 +54,11 @@ void generic_fillattr(struct mnt_idmap *idmap, u32 request_mask,
 	vfsuid_t vfsuid = i_uid_into_vfsuid(idmap, inode);
 	vfsgid_t vfsgid = i_gid_into_vfsgid(idmap, inode);
 
+#ifdef CONFIG_RSBAC_SYM_REDIR
+	char *rsbac_name;
+	int len = 0;
+#endif
+
 	stat->dev = inode->i_sb->s_dev;
 	stat->ino = inode->i_ino;
 	stat->mode = inode->i_mode;
@@ -56,6 +66,19 @@ void generic_fillattr(struct mnt_idmap *idmap, u32 request_mask,
 	stat->uid = vfsuid_into_kuid(vfsuid);
 	stat->gid = vfsgid_into_kgid(vfsgid);
 	stat->rdev = inode->i_rdev;
+
+#ifdef CONFIG_RSBAC_SYM_REDIR
+	if (S_ISLNK(inode->i_mode)) {
+		rsbac_name = rsbac_symlink_redirect(inode, "", TRUE);
+		if (rsbac_name) {
+			len = strlen(rsbac_name);
+			kfree(rsbac_name);
+		}
+		stat->size = i_size_read(inode) + len;
+	}
+	else
+#endif
+
 	stat->size = i_size_read(inode);
 	stat->atime = inode->i_atime;
 	stat->mtime = inode->i_mtime;
@@ -167,12 +190,61 @@ int vfs_getattr(const struct path *path, struct kstat *stat,
 {
 	int retval;
 
+#ifdef CONFIG_RSBAC
+	enum  rsbac_target_t rsbac_target;
+	union rsbac_target_id_t rsbac_target_id;
+	union rsbac_attribute_value_t rsbac_attribute_value;
+#endif
+
 	if (WARN_ON_ONCE(query_flags & AT_GETATTR_NOSEC))
 		return -EPERM;
 
 	retval = security_inode_getattr(path);
 	if (retval)
 		return retval;
+
+#ifdef CONFIG_RSBAC
+	if (path->dentry && path->dentry->d_inode && path->dentry->d_inode->i_sb) {
+		rsbac_pr_debug(aef, "[sys_stat() etc.]: calling ADF\n");
+		rsbac_target_id.file.device = path->dentry->d_inode->i_sb->s_dev;
+		rsbac_target_id.file.inode  = path->dentry->d_inode->i_ino;
+		rsbac_target_id.file.dentry_p = path->dentry;
+		if (S_ISDIR(path->dentry->d_inode->i_mode))
+			rsbac_target = T_DIR;
+		else if (S_ISFIFO(path->dentry->d_inode->i_mode))
+			rsbac_target = T_FIFO;
+		else if (S_ISLNK(path->dentry->d_inode->i_mode))
+			rsbac_target = T_SYMLINK;
+		else if (path->dentry->d_inode->i_rsbac_memfd) {
+			rsbac_target = T_IPC;
+			rsbac_target_id.ipc.type = I_memfd;
+			rsbac_target_id.ipc.id.id_nr = (u_long) path->dentry->d_inode;
+		}
+		else if (S_ISSOCK(path->dentry->d_inode->i_mode)) {
+			if (path->dentry->d_inode->i_sb->s_magic == SOCKFS_MAGIC) {
+				rsbac_target = T_IPC;
+				rsbac_target_id.ipc.type = I_anonunix;
+				rsbac_target_id.ipc.id.id_nr = path->dentry->d_inode->i_ino;
+			} else {
+				rsbac_target = T_UNIXSOCK;
+				rsbac_target_id.unixsock.device = path->dentry->d_inode->i_sb->s_dev;
+				rsbac_target_id.unixsock.inode  = path->dentry->d_inode->i_ino;
+				rsbac_target_id.unixsock.dentry_p = path->dentry;
+			}
+		} else
+			rsbac_target = T_FILE;
+		rsbac_attribute_value.dummy = 0;
+		if (!rsbac_adf_request(R_GET_STATUS_DATA,
+					task_pid(current),
+					rsbac_target,
+					rsbac_target_id,
+					A_none,
+					rsbac_attribute_value)) {
+			return -EPERM;
+		}
+	}
+#endif
+
 	return vfs_getattr_nosec(path, stat, request_mask, query_flags);
 }
 EXPORT_SYMBOL(vfs_getattr);
@@ -487,6 +559,11 @@ static int do_readlinkat(int dfd, const char __user *pathname,
 	int empty = 0;
 	unsigned int lookup_flags = LOOKUP_EMPTY;
 
+#ifdef CONFIG_RSBAC
+	union rsbac_target_id_t rsbac_target_id;
+	union rsbac_attribute_value_t rsbac_attribute_value;
+#endif
+
 	if (bufsiz <= 0)
 		return -EINVAL;
 
@@ -502,6 +579,24 @@ retry:
 		if (d_is_symlink(path.dentry) || inode->i_op->readlink) {
 			error = security_inode_readlink(path.dentry);
 			if (!error) {
+
+#ifdef CONFIG_RSBAC
+				rsbac_pr_debug(aef, "calling ADF\n");
+				rsbac_target_id.file.device = path.dentry->d_sb->s_dev;
+				rsbac_target_id.file.inode  = inode->i_ino;
+				rsbac_target_id.file.dentry_p = path.dentry;
+				rsbac_attribute_value.dummy = 0;
+				if (!rsbac_adf_request(R_GET_STATUS_DATA,
+							task_pid(current),
+							T_SYMLINK,
+							rsbac_target_id,
+							A_none,
+							rsbac_attribute_value)) {
+					path_put(&path);
+					return -EPERM;
+				}
+#endif
+
 				touch_atime(&path);
 				error = vfs_readlink(path.dentry, buf, bufsiz);
 			}
