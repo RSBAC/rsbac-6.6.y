@@ -1,9 +1,9 @@
 /********************************** */
 /* Rule Set Based Access Control    */
-/* Author and (c) 1999-2021:        */
+/* Author and (c) 1999-2023:        */
 /*   Amon Ott <ao@rsbac.org>        */
 /* Getname functions for CAP module */
-/* Last modified: 04/Oct/2021       */
+/* Last modified: 14/Dec/2023       */
 /********************************** */
 
 #include <rsbac/getname.h>
@@ -59,167 +59,83 @@ void rsbac_cap_log_missing_cap(int cap)
       }
     else
       {
-        if(cap < 32)
+        if(!(i_attr_val1.max_caps_user & (1 << cap)))
           {
-            if(!(i_attr_val1.max_caps_user.cap[0] & (1 << cap)))
-              {
 #if defined(CONFIG_RSBAC_CAP_LEARN)
-                if (rsbac_cap_learn)
+            if (rsbac_cap_learn)
+              {
+                tmp = rsbac_kmalloc(RSBAC_MAXNAMELEN);
+                if(tmp)
                   {
-                    tmp = rsbac_kmalloc(RSBAC_MAXNAMELEN);
-                    if(tmp)
-                      {
-                        get_cap_name(tmp, cap);
-                        rsbac_printk(KERN_INFO
-                             "capable(): pid %u(%s), uid %u: add missing user max_cap %s to transaction %u!\n",
-                             current->pid, current->comm,
-                             __kuid_val(current_uid()),
-                             tmp,
-                             cap_learn_ta);
-                         rsbac_kfree(tmp);
-                      }
-                    i_attr_val1.max_caps_user.cap[0] |= (1 << cap);
-		    if (rsbac_ta_set_attr(cap_learn_ta,
-		                        SW_CAP,
-					T_PROCESS,
-					i_tid,
-					A_max_caps_user,
-					i_attr_val1))
-                      {
-			rsbac_pr_set_error (A_max_caps_user);
-                      }
-                    i_tid.user = __kuid_val(current_uid());
-                    if (rsbac_ta_get_attr(cap_learn_ta,
-                                       SW_CAP,
-                                       T_USER,
-                                       i_tid,
-                                       A_max_caps,
-                                       &i_attr_val1,
-                                       FALSE))
-                      {
-                        rsbac_pr_get_error(A_max_caps);
-                      }
-                    else
-                      {
-                        struct cred *override_cred;
-
-                        i_attr_val1.max_caps.cap[0] |= (1 << cap);
- 		        if (rsbac_ta_set_attr(cap_learn_ta,
- 		                        SW_CAP,
-					T_USER,
-					i_tid,
-					A_max_caps,
-					i_attr_val1))
-                          {
-			    rsbac_pr_set_error (A_max_caps);
-                          }
-                        /* set effective cap for process */
-			  override_cred = prepare_creds();
-			  if (override_cred)
-			    {
-			      override_cred->cap_effective.cap[0] |= (1 << cap);
-			      commit_creds(override_cred);
-                            }
-                      }
+                    get_cap_name(tmp, cap);
+                    rsbac_printk(KERN_INFO
+                         "capable(): pid %u(%s), uid %u: add missing user max_cap %s to transaction %u!\n",
+                         current->pid, current->comm,
+                         __kuid_val(current_uid()),
+                         tmp,
+                         cap_learn_ta);
+                    rsbac_kfree(tmp);
+                  }
+                i_attr_val1.max_caps_user |= (1 << cap);
+                if (rsbac_ta_set_attr(cap_learn_ta,
+		                      SW_CAP,
+                                      T_PROCESS,
+                                      i_tid,
+				      A_max_caps_user,
+				      i_attr_val1))
+                  {
+                    rsbac_pr_set_error (A_max_caps_user);
+                  }
+                i_tid.user = __kuid_val(current_uid());
+                if (rsbac_ta_get_attr(cap_learn_ta,
+                                      SW_CAP,
+                                      T_USER,
+                                      i_tid,
+                                      A_max_caps,
+                                      &i_attr_val1,
+                                      FALSE))
+                  {
+                    rsbac_pr_get_error(A_max_caps);
                   }
                 else
-#endif
-                  if(rsbac_cap_log_missing)
-                    {
-                      tmp = rsbac_kmalloc(RSBAC_MAXNAMELEN);
-                      if(tmp)
-                        {
-                          get_cap_name(tmp, cap);
-                          rsbac_printk(KERN_DEBUG
-                             "capable(): pid %u(%s), uid %u: missing user max_cap %s!\n",
-                             current->pid, current->comm,
-                             __kuid_val(current_uid()),
-                             tmp);
-                          rsbac_kfree(tmp);
-                        }
-                    }
-              }
-          }
-        else
-          {
-            if(!(i_attr_val1.max_caps_user.cap[1] & (1 << (cap - 32))))
-              {
-#if defined(CONFIG_RSBAC_CAP_LEARN)
-                if (rsbac_cap_learn)
                   {
-                    tmp = rsbac_kmalloc(RSBAC_MAXNAMELEN);
-                    if(tmp)
-                      {
-                        get_cap_name(tmp, cap);
-                        rsbac_printk(KERN_INFO
-                             "capable(): pid %u(%s), uid %u: add missing user max_cap %s to transaction %u!\n",
-                             current->pid, current->comm,
-                             __kuid_val(current_uid()),
-                             tmp,
-                             cap_learn_ta);
-                         rsbac_kfree(tmp);
-                      }
-                    i_attr_val1.max_caps_user.cap[1] |= (1 << (cap - 32));
-		    if (rsbac_ta_set_attr(cap_learn_ta,
-		                        SW_CAP,
-					T_PROCESS,
-					i_tid,
-					A_max_caps_user,
-					i_attr_val1)) {
-			rsbac_ds_set_error ("rsbac_adf_set_attr_cap()",
-					 A_max_caps_user);
-                    }
-                    i_tid.user = __kuid_val(current_uid());
-                    if (rsbac_ta_get_attr(cap_learn_ta,
-                                       SW_CAP,
-                                       T_USER,
-                                       i_tid,
-                                       A_max_caps,
-                                       &i_attr_val1,
-                                       FALSE))
-                      {
-                        rsbac_pr_get_error(A_max_caps);
-                      }
-                    else
-                      {
-			struct cred *override_cred;
+                    struct cred *override_cred;
 
-                        i_attr_val1.max_caps.cap[1] |= (1 << (cap - 32));
- 		        if (rsbac_ta_set_attr(cap_learn_ta,
- 		                        SW_CAP,
-					T_USER,
-					i_tid,
-					A_max_caps,
-					i_attr_val1))
-                          {
-			    rsbac_pr_set_error (A_max_caps);
-                          }
-                        /* set effective cap for process */
-			  override_cred = prepare_creds();
-			  if (override_cred)
-			    {
-			      override_cred->cap_effective.cap[1] |= (1 << (cap - 32));
-			      commit_creds(override_cred);
-                            }
+                    i_attr_val1.max_caps |= (1 << cap);
+ 		    if (rsbac_ta_set_attr(cap_learn_ta,
+ 		                          SW_CAP,
+                                          T_USER,
+                                          i_tid,
+                                          A_max_caps,
+                                          i_attr_val1))
+                      {
+                        rsbac_pr_set_error (A_max_caps);
+                      }
+                    /* set effective cap for process */
+                    override_cred = prepare_creds();
+                    if (override_cred)
+                      {
+                        override_cred->cap_effective.val |= (1 << cap);
+                        commit_creds(override_cred);
                       }
                   }
-                else
-#endif
-                  if(rsbac_cap_log_missing)
-                    {
-                      tmp = rsbac_kmalloc(RSBAC_MAXNAMELEN);
-                      if(tmp)
-                        {
-                          get_cap_name(tmp, cap);
-                          rsbac_printk(KERN_DEBUG
-                             "capable(): pid %u(%s), uid %u: missing user max_cap %s!\n",
-                             current->pid, current->comm,
-                             __kuid_val(current_uid()),
-                             tmp);
-                          rsbac_kfree(tmp);
-                        }
-                    }
               }
+            else
+#endif
+              if(rsbac_cap_log_missing)
+                {
+                  tmp = rsbac_kmalloc(RSBAC_MAXNAMELEN);
+                  if(tmp)
+                    {
+                      get_cap_name(tmp, cap);
+                      rsbac_printk(KERN_DEBUG
+                         "capable(): pid %u(%s), uid %u: missing user max_cap %s!\n",
+                         current->pid, current->comm,
+                         __kuid_val(current_uid()),
+                         tmp);
+                      rsbac_kfree(tmp);
+                    }
+                }
           }
       }
 
@@ -236,209 +152,104 @@ void rsbac_cap_log_missing_cap(int cap)
       }
     else
       {
-        if(cap < 32)
+        if(!(i_attr_val1.max_caps_program & (1 << cap)))
           {
-            if(!(i_attr_val1.max_caps_program.cap[0] & (1 << cap)))
-              {
 #if defined(CONFIG_RSBAC_CAP_LEARN)
-                if (rsbac_cap_learn)
-                  {
-                    struct file *file_p;
+            if (rsbac_cap_learn)
+              {
+                struct file *file_p;
 
-                    i_attr_val1.max_caps_program.cap[0] |= (1 << cap);
-		    if (rsbac_ta_set_attr(cap_learn_ta,
-		                        SW_CAP,
-					T_PROCESS,
-					i_tid,
-					A_max_caps_program,
-					i_attr_val1)) {
-			rsbac_pr_set_error (A_max_caps_program);
-                    }
-                    file_p = get_task_exe_file(current);
-                    if (file_p) {
-                      if (file_p->f_path.dentry && file_p->f_path.dentry->d_inode) {
-                        i_tid.file.device = file_p->f_path.dentry->d_sb->s_dev;
-                        i_tid.file.inode = file_p->f_path.dentry->d_inode->i_ino;
-                        i_tid.file.dentry_p = file_p->f_path.dentry;
-                        tmp = rsbac_kmalloc(RSBAC_MAXNAMELEN);
-                        if(tmp)
-                          {
-			    char * target_id_name;
+                i_attr_val1.max_caps_program |= (1 << cap);
+                if (rsbac_ta_set_attr(cap_learn_ta,
+		                      SW_CAP,
+                                      T_PROCESS,
+				      i_tid,
+				      A_max_caps_program,
+				      i_attr_val1)) {
+		  rsbac_pr_set_error (A_max_caps_program);
+                }
+                file_p = get_task_exe_file(current);
+                if (file_p) {
+                  if (file_p->f_path.dentry && file_p->f_path.dentry->d_inode) {
+                    i_tid.file.device = file_p->f_path.dentry->d_sb->s_dev;
+                    i_tid.file.inode = file_p->f_path.dentry->d_inode->i_ino;
+                    i_tid.file.dentry_p = file_p->f_path.dentry;
+                    tmp = rsbac_kmalloc(RSBAC_MAXNAMELEN);
+                    if(tmp)
+                      {
+                        char * target_id_name;
 
 #ifdef CONFIG_RSBAC_LOG_FULL_PATH
-			    target_id_name = rsbac_kmalloc_unlocked(CONFIG_RSBAC_MAX_PATH_LEN + RSBAC_MAXNAMELEN);
+                        target_id_name = rsbac_kmalloc_unlocked(CONFIG_RSBAC_MAX_PATH_LEN + RSBAC_MAXNAMELEN);
 #else
-			    target_id_name = rsbac_kmalloc_unlocked(2 * RSBAC_MAXNAMELEN);
+                        target_id_name = rsbac_kmalloc_unlocked(2 * RSBAC_MAXNAMELEN);
 #endif
-                            if(target_id_name)
-                              {
-                                get_cap_name(tmp, cap);
-                                rsbac_printk(KERN_INFO
+                        if(target_id_name)
+                          {
+                            get_cap_name(tmp, cap);
+                            rsbac_printk(KERN_INFO
                                      "capable(): pid %u(%s), uid %u: add missing program max_cap %s to FILE %s to transaction %u!\n",
                                      current->pid, current->comm,
                                      __kuid_val(current_uid()),
                                      tmp,
                                      get_target_name(NULL, T_FILE, target_id_name, i_tid),
                                      cap_learn_ta);
-                                rsbac_kfree(target_id_name);
-                              }
-                            rsbac_kfree(tmp);
+                            rsbac_kfree(target_id_name);
                           }
-                        if (rsbac_ta_get_attr(cap_learn_ta,
-                                           SW_CAP,
-                                           T_FILE,
-                                           i_tid,
-                                           A_max_caps,
-                                           &i_attr_val1,
-                                           FALSE))
-                          {
-                            rsbac_pr_get_error(A_max_caps);
-                          }
-                        else
-                          {
-			    struct cred *override_cred;
-
-                            i_attr_val1.max_caps.cap[0] |= (1 << cap);
- 		            if (rsbac_ta_set_attr(cap_learn_ta,
- 		                        SW_CAP,
-					T_FILE,
-					i_tid,
-					A_max_caps,
-					i_attr_val1))
-                              {
-			        rsbac_pr_set_error (A_max_caps);
-                              }
-                            /* set effective cap for process */
-			    override_cred = prepare_creds();
-			    if (override_cred)
-			      {
-			        override_cred->cap_effective.cap[0] |= (1 << cap);
-			        commit_creds(override_cred);
-                              }
-                          }
+                        rsbac_kfree(tmp);
                       }
-                      fput(file_p);
-                    }
-                  }
-                else
-#endif
-                  if(rsbac_cap_log_missing)
-                    {
-                      tmp = rsbac_kmalloc(RSBAC_MAXNAMELEN);
-                      if(tmp)
-                        {
-                          get_cap_name(tmp, cap);
-                          rsbac_printk(KERN_DEBUG
-                             "capable(): pid %u(%s), uid %u: missing program max_cap %s!\n",
-                             current->pid, current->comm,
-                             __kuid_val(current_uid()),
-                             tmp);
-                          rsbac_kfree(tmp);
-                        }
-                    }
-              }
-          }
-        else
-          {
-            if(!(i_attr_val1.max_caps_program.cap[1] & (1 << (cap - 32))))
-              {
-#if defined(CONFIG_RSBAC_CAP_LEARN)
-                if (rsbac_cap_learn)
-                  {
-                    struct file *file_p;
+                    if (rsbac_ta_get_attr(cap_learn_ta,
+                                          SW_CAP,
+                                          T_FILE,
+                                          i_tid,
+                                          A_max_caps,
+                                          &i_attr_val1,
+                                          FALSE))
+                      {
+                        rsbac_pr_get_error(A_max_caps);
+                      }
+                    else
+                      {
+                        struct cred *override_cred;
 
-                    i_attr_val1.max_caps_program.cap[1] |= (1 << (cap - 32));
-		    if (rsbac_ta_set_attr(cap_learn_ta,
-		                        SW_CAP,
-					T_PROCESS,
-					i_tid,
-					A_max_caps_program,
-					i_attr_val1)) {
-			rsbac_pr_set_error (A_max_caps_program);
-                    }
-                    file_p = get_task_exe_file(current);
-                    if (file_p) {
-                      if (file_p->f_path.dentry && file_p->f_path.dentry->d_inode) {
-                        i_tid.file.device = file_p->f_path.dentry->d_sb->s_dev;
-                        i_tid.file.inode = file_p->f_path.dentry->d_inode->i_ino;
-                        i_tid.file.dentry_p = file_p->f_path.dentry;
-                        tmp = rsbac_kmalloc(RSBAC_MAXNAMELEN);
-                        if(tmp)
-                          {
-			    char * target_id_name;
-
-#ifdef CONFIG_RSBAC_LOG_FULL_PATH
-			    target_id_name = rsbac_kmalloc_unlocked(CONFIG_RSBAC_MAX_PATH_LEN + RSBAC_MAXNAMELEN);
-#else
-			    target_id_name = rsbac_kmalloc_unlocked(2 * RSBAC_MAXNAMELEN);
-#endif
-                            if(target_id_name)
-                              {
-                                get_cap_name(tmp, cap);
-                                rsbac_printk(KERN_INFO
-                                     "capable(): pid %u(%s), uid %u: add missing program max_cap %s to FILE %s to transaction %u!\n",
-                                     current->pid, current->comm,
-                                     __kuid_val(current_uid()),
-                                     tmp,
-                                     get_target_name(NULL, T_FILE, target_id_name, i_tid),
-                                     cap_learn_ta);
-                                rsbac_kfree(target_id_name);
-                              }
-                            rsbac_kfree(tmp);
-                          }
-                        if (rsbac_ta_get_attr(cap_learn_ta,
-                                           SW_CAP,
-                                           T_FILE,
-                                           i_tid,
-                                           A_max_caps,
-                                           &i_attr_val1,
-                                           FALSE))
-                          {
-                            rsbac_pr_get_error(A_max_caps);
-                          }
-                        else
-                          {
-			    struct cred *override_cred;
-
-                            i_attr_val1.max_caps.cap[1] |= (1 << (cap - 32));
- 		            if (rsbac_ta_set_attr(cap_learn_ta,
+                        i_attr_val1.max_caps |= (1 << cap);
+ 		        if (rsbac_ta_set_attr(cap_learn_ta,
  		                        SW_CAP,
 					T_FILE,
 					i_tid,
 					A_max_caps,
 					i_attr_val1))
-                              {
-			        rsbac_pr_set_error (A_max_caps);
-                              }
+                          {
+                            rsbac_pr_set_error (A_max_caps);
+                          }
                         /* set effective cap for process */
-				override_cred = prepare_creds();
-				if (override_cred)
-				    {
-				      override_cred->cap_effective.cap[1] |= (1 << (cap - 32));
-				      commit_creds(override_cred);
-                                    }
+                        override_cred = prepare_creds();
+                        if (override_cred)
+                          {
+                            override_cred->cap_effective.val |= (1 << cap);
+			    commit_creds(override_cred);
                           }
                       }
-                      fput(file_p);
-                    }
                   }
-                else
-#endif
-                  if(rsbac_cap_log_missing)
-                    {
-                      tmp = rsbac_kmalloc(RSBAC_MAXNAMELEN);
-                      if(tmp)
-                        {
-                          get_cap_name(tmp, cap);
-                          rsbac_printk(KERN_DEBUG
-                             "capable(): pid %u(%s), uid %u: missing program max_cap %s!\n",
-                             current->pid, current->comm,
-                             __kuid_val(current_uid()),
-                             tmp);
-                          rsbac_kfree(tmp);
-                        }
-                    }
+                  fput(file_p);
+                }
               }
+            else
+#endif
+              if(rsbac_cap_log_missing)
+                {
+                  tmp = rsbac_kmalloc(RSBAC_MAXNAMELEN);
+                  if(tmp)
+                    {
+                      get_cap_name(tmp, cap);
+                      rsbac_printk(KERN_DEBUG
+                         "capable(): pid %u(%s), uid %u: missing program max_cap %s!\n",
+                         current->pid, current->comm,
+                         __kuid_val(current_uid()),
+                         tmp);
+                      rsbac_kfree(tmp);
+                    }
+                }
           }
       }
   }
