@@ -31,7 +31,6 @@
 #endif
 
 #include <rsbac/hooks.h>
-#include <linux/namei.h>
 
 #include <asm/unaligned.h>
 
