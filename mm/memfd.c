@@ -21,6 +21,10 @@
 #include <linux/pid_namespace.h>
 #include <uapi/linux/memfd.h>
 
+#ifdef CONFIG_RSBAC
+#include <rsbac/hooks.h>
+#endif
+
 /*
  * We need a tag: a new tag would expand every xa_node by 8 bytes,
  * so reuse a tag which we firmly believe is never set or cleared on tmpfs
@@ -301,6 +305,12 @@ SYSCALL_DEFINE2(memfd_create,
 	char *name;
 	long len;
 
+#ifdef CONFIG_RSBAC
+	union rsbac_target_id_t rsbac_target_id;
+	union rsbac_target_id_t rsbac_new_target_id;
+	union rsbac_attribute_value_t rsbac_attribute_value;
+#endif
+
 	if (!(flags & MFD_HUGETLB)) {
 		if (flags & ~(unsigned int)MFD_ALL_FLAGS)
 			return -EINVAL;
@@ -365,6 +375,24 @@ SYSCALL_DEFINE2(memfd_create,
 		error = PTR_ERR(file);
 		goto err_fd;
 	}
+
+#ifdef CONFIG_RSBAC
+	rsbac_pr_debug(aef, "memfd_create(): calling ADF\n");
+	rsbac_target_id.ipc.type = I_memfd;
+	rsbac_target_id.ipc.id.id_nr = (u_long) file->f_inode;
+	rsbac_attribute_value.memfd_name = name;
+	if (!rsbac_adf_request(R_CREATE,
+				task_pid(current),
+				T_IPC,
+				rsbac_target_id,
+				A_memfd_name,
+				rsbac_attribute_value)) {
+		error = -EPERM;
+		fput(file);
+		goto err_fd;
+	}
+#endif
+
 	file->f_mode |= FMODE_LSEEK | FMODE_PREAD | FMODE_PWRITE;
 	file->f_flags |= O_LARGEFILE;
 
@@ -383,6 +411,25 @@ SYSCALL_DEFINE2(memfd_create,
 		if (file_seals)
 			*file_seals &= ~F_SEAL_SEAL;
 	}
+
+#ifdef CONFIG_RSBAC
+	file->f_path.dentry->d_inode->i_rsbac_memfd = 1;
+	rsbac_target_id.ipc.type = I_memfd;
+	rsbac_target_id.ipc.id.id_nr = (u_long) file->f_inode;
+	rsbac_new_target_id.dummy = 0;
+	rsbac_pr_debug(memfd, "rsbac_adf_set_attr() for memfd %lu\n", rsbac_target_id.ipc.id.id_nr);
+	if (unlikely(rsbac_adf_set_attr(R_CREATE,
+				task_pid(current),
+				T_IPC,
+				rsbac_target_id,
+				T_NONE,
+				rsbac_new_target_id,
+				A_memfd_name,
+				rsbac_attribute_value))) {
+		rsbac_printk(KERN_WARNING
+				"memfd_create(): rsbac_adf_set_attr() returned error");
+	}
+#endif
 
 	fd_install(fd, file);
 	kfree(name);
