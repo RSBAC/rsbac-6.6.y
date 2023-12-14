@@ -6,7 +6,7 @@
 /*                                                    */
 /* Author and (c) 1999-2023: Amon Ott <ao@rsbac.org>  */
 /*                                                    */
-/* Last modified: 31/Mar/2023                         */
+/* Last modified: 14/Dec/2023                         */
 /**************************************************** */
 
 #include <linux/string.h>
@@ -1055,19 +1055,13 @@ int rsbac_adf_set_attr_jail(enum rsbac_adf_request_t request,
 					override_cred = prepare_creds();
 					if (!override_cred)
 						return -ENOMEM;
-					if (   ((override_cred->cap_permitted.cap[0] & i_attr_val1.jail_max_caps.cap[0]) != override_cred->cap_permitted.cap[0])
-					    || ((override_cred->cap_effective.cap[0] & i_attr_val1.jail_max_caps.cap[0]) != override_cred->cap_effective.cap[0])
-					    || ((override_cred->cap_inheritable.cap[0] & i_attr_val1.jail_max_caps.cap[0]) != override_cred->cap_inheritable.cap[0])
-					    || ((override_cred->cap_permitted.cap[1] & i_attr_val1.jail_max_caps.cap[1]) != override_cred->cap_permitted.cap[1])
-					    || ((override_cred->cap_effective.cap[1] & i_attr_val1.jail_max_caps.cap[1]) != override_cred->cap_effective.cap[1])
-					    || ((override_cred->cap_inheritable.cap[1] & i_attr_val1.jail_max_caps.cap[1]) != override_cred->cap_inheritable.cap[1])
+					if (   ((override_cred->cap_permitted.val & i_attr_val1.jail_max_caps) != override_cred->cap_permitted.val)
+					    || ((override_cred->cap_effective.val & i_attr_val1.jail_max_caps) != override_cred->cap_effective.val)
+					    || ((override_cred->cap_inheritable.val & i_attr_val1.jail_max_caps) != override_cred->cap_inheritable.val)
 					   ) {
-						override_cred->cap_permitted.cap[0] &= i_attr_val1.jail_max_caps.cap[0];
-						override_cred->cap_effective.cap[0] &= i_attr_val1.jail_max_caps.cap[0];
-						override_cred->cap_inheritable.cap[0] &= i_attr_val1.jail_max_caps.cap[0];
-						override_cred->cap_permitted.cap[1] &= i_attr_val1.jail_max_caps.cap[1];
-						override_cred->cap_effective.cap[1] &= i_attr_val1.jail_max_caps.cap[1];
-						override_cred->cap_inheritable.cap[1] &= i_attr_val1.jail_max_caps.cap[1];
+						override_cred->cap_permitted.val &= i_attr_val1.jail_max_caps;
+						override_cred->cap_effective.val &= i_attr_val1.jail_max_caps;
+						override_cred->cap_inheritable.val &= i_attr_val1.jail_max_caps;
 						commit_creds(override_cred);
 					} else {
 						abort_creds(override_cred);
@@ -1245,19 +1239,13 @@ int rsbac_adf_set_attr_jail(enum rsbac_adf_request_t request,
 					override_cred = prepare_creds();
 					if (!override_cred)
 						return -ENOMEM;
-					if (   ((override_cred->cap_permitted.cap[0] & i_attr_val1.jail_max_caps.cap[0]) != override_cred->cap_permitted.cap[0])
-					    || ((override_cred->cap_effective.cap[0] & i_attr_val1.jail_max_caps.cap[0]) != override_cred->cap_effective.cap[0])
-					    || ((override_cred->cap_inheritable.cap[0] & i_attr_val1.jail_max_caps.cap[0]) != override_cred->cap_inheritable.cap[0])
-					    || ((override_cred->cap_permitted.cap[1] & i_attr_val1.jail_max_caps.cap[1]) != override_cred->cap_permitted.cap[1])
-					    || ((override_cred->cap_effective.cap[1] & i_attr_val1.jail_max_caps.cap[1]) != override_cred->cap_effective.cap[1])
-					    || ((override_cred->cap_inheritable.cap[1] & i_attr_val1.jail_max_caps.cap[1]) != override_cred->cap_inheritable.cap[1])
+					if (   ((override_cred->cap_permitted.val & i_attr_val1.jail_max_caps) != override_cred->cap_permitted.val)
+					    || ((override_cred->cap_effective.val & i_attr_val1.jail_max_caps) != override_cred->cap_effective.val)
+					    || ((override_cred->cap_inheritable.val & i_attr_val1.jail_max_caps) != override_cred->cap_inheritable.val)
 					   ) {
-						override_cred->cap_permitted.cap[0] &= i_attr_val1.jail_max_caps.cap[0];
-						override_cred->cap_effective.cap[0] &= i_attr_val1.jail_max_caps.cap[0];
-						override_cred->cap_inheritable.cap[0] &= i_attr_val1.jail_max_caps.cap[0];
-						override_cred->cap_permitted.cap[1] &= i_attr_val1.jail_max_caps.cap[1];
-						override_cred->cap_effective.cap[1] &= i_attr_val1.jail_max_caps.cap[1];
-						override_cred->cap_inheritable.cap[1] &= i_attr_val1.jail_max_caps.cap[1];
+						override_cred->cap_permitted.val &= i_attr_val1.jail_max_caps;
+						override_cred->cap_effective.val &= i_attr_val1.jail_max_caps;
+						override_cred->cap_inheritable.val &= i_attr_val1.jail_max_caps;
 						commit_creds(override_cred);
 					} else {
 						abort_creds(override_cred);

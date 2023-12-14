@@ -1,8 +1,8 @@
 /**************************************/
 /* Rule Set Based Access Control      */
-/* Author and (c) 1999-2021: Amon Ott */
+/* Author and (c) 1999-2023: Amon Ott */
 /* Data structures                    */
-/* Last modified: 09/Nov/2021         */
+/* Last modified: 14/Dec/2023         */
 /**************************************/
 
 #ifndef __RSBAC_DATA_STRUC_H
@@ -326,9 +326,8 @@ struct rsbac_auth_fd_old_aci_t {
 #endif
 
 #if defined(CONFIG_RSBAC_CAP)
-#define RSBAC_CAP_FD_ACI_VERSION 3
-#define RSBAC_CAP_FD_OLD_ACI_VERSION 2
-#define RSBAC_CAP_FD_OLD_OLD_ACI_VERSION 1
+#define RSBAC_CAP_FD_ACI_VERSION 4
+#define RSBAC_CAP_FD_OLD_ACI_VERSION 3
 #define RSBAC_CAP_FD_ACI_KEY 1001
 struct rsbac_cap_fd_aci_t {
 	rsbac_cap_vector_t min_caps;	/* Program forced minimum Linux capabilities */
@@ -342,17 +341,10 @@ struct rsbac_cap_fd_old_aci_t {
         rsbac_cap_ld_env_int_t cap_ld_env;
 };
 
-struct rsbac_cap_fd_old_old_aci_t {
-	rsbac_cap_old_vector_t min_caps;
-	rsbac_cap_old_vector_t max_caps;
-};
-
 #define DEFAULT_CAP_FD_ACI \
     { \
-      .min_caps.cap[0] = RSBAC_CAP_DEFAULT_MIN, \
-      .max_caps.cap[0] = RSBAC_CAP_DEFAULT_MAX, \
-      .min_caps.cap[1] = RSBAC_CAP_DEFAULT_MIN, \
-      .max_caps.cap[1] = RSBAC_CAP_DEFAULT_MAX, \
+      .min_caps = RSBAC_CAP_DEFAULT_MIN, \
+      .max_caps = RSBAC_CAP_DEFAULT_MAX, \
       .cap_ld_env = LD_keep, \
     }
 #endif
@@ -776,10 +768,8 @@ struct rsbac_rc_user_aci_t {
 #endif				/* AUTH */
 
 #if defined(CONFIG_RSBAC_CAP)
-#define RSBAC_CAP_USER_ACI_VERSION 4
-#define RSBAC_CAP_USER_OLD_ACI_VERSION 3
-#define RSBAC_CAP_USER_OLD_OLD_ACI_VERSION 2
-#define RSBAC_CAP_USER_OLD_OLD_OLD_ACI_VERSION 1
+#define RSBAC_CAP_USER_ACI_VERSION 5
+#define RSBAC_CAP_USER_OLD_ACI_VERSION 4
 #define RSBAC_CAP_USER_ACI_KEY 1001
 struct rsbac_cap_user_aci_t {
 	rsbac_system_role_int_t cap_role;	/* System role for CAP administration */
@@ -795,53 +785,32 @@ struct rsbac_cap_user_old_aci_t {
 	rsbac_cap_ld_env_int_t cap_ld_env;
 };
 
-struct rsbac_cap_user_old_old_aci_t {
-	rsbac_system_role_int_t cap_role;	/* System role for CAP administration */
-	rsbac_cap_old_vector_t min_caps;	        /* User forced minimum Linux capabilities */
-	rsbac_cap_old_vector_t max_caps;	        /* User max Linux capabilities */
-        rsbac_cap_ld_env_int_t cap_ld_env;
-};
-
-struct rsbac_cap_user_old_old_old_aci_t {
-	rsbac_system_role_int_t cap_role;       /* System role for CAP administration */
-	rsbac_cap_old_vector_t min_caps;        /* User forced minimum Linux capabilities */
-	rsbac_cap_old_vector_t max_caps;        /* User max Linux capabilities */
-};
-
 #define DEFAULT_CAP_U_ACI \
     { \
       .cap_role = SR_user, \
-      .min_caps.cap[0] = RSBAC_CAP_DEFAULT_MIN, \
-      .max_caps.cap[0] = RSBAC_CAP_DEFAULT_MAX, \
-      .min_caps.cap[1] = RSBAC_CAP_DEFAULT_MIN, \
-      .max_caps.cap[1] = RSBAC_CAP_DEFAULT_MAX, \
+      .min_caps = RSBAC_CAP_DEFAULT_MIN, \
+      .max_caps = RSBAC_CAP_DEFAULT_MAX, \
       .cap_ld_env = LD_keep, \
     }
 #define DEFAULT_CAP_U_SYSADM_ACI \
     { \
       .cap_role = SR_administrator, \
-      .min_caps.cap[0] = RSBAC_CAP_DEFAULT_MIN, \
-      .max_caps.cap[0] = RSBAC_CAP_DEFAULT_MAX, \
-      .min_caps.cap[1] = RSBAC_CAP_DEFAULT_MIN, \
-      .max_caps.cap[1] = RSBAC_CAP_DEFAULT_MAX, \
+      .min_caps = RSBAC_CAP_DEFAULT_MIN, \
+      .max_caps = RSBAC_CAP_DEFAULT_MAX, \
       .cap_ld_env = LD_keep, \
     }
 #define DEFAULT_CAP_U_SECOFF_ACI \
     { \
       .cap_role = SR_security_officer, \
-      .min_caps.cap[0] = RSBAC_CAP_DEFAULT_MIN, \
-      .max_caps.cap[0] = RSBAC_CAP_DEFAULT_MAX, \
-      .min_caps.cap[1] = RSBAC_CAP_DEFAULT_MIN, \
-      .max_caps.cap[1] = RSBAC_CAP_DEFAULT_MAX, \
+      .min_caps = RSBAC_CAP_DEFAULT_MIN, \
+      .max_caps = RSBAC_CAP_DEFAULT_MAX, \
       .cap_ld_env = LD_keep, \
     }
 #define DEFAULT_CAP_U_AUDITOR_ACI \
     { \
       .cap_role = SR_auditor, \
-      .min_caps.cap[0] = RSBAC_CAP_DEFAULT_MIN, \
-      .max_caps.cap[0] = RSBAC_CAP_DEFAULT_MAX, \
-      .min_caps.cap[1] = RSBAC_CAP_DEFAULT_MIN, \
-      .max_caps.cap[1] = RSBAC_CAP_DEFAULT_MAX, \
+      .min_caps = RSBAC_CAP_DEFAULT_MIN, \
+      .max_caps = RSBAC_CAP_DEFAULT_MAX, \
       .cap_ld_env = LD_keep, \
     }
 #endif
@@ -1120,10 +1089,8 @@ struct rsbac_cap_process_aci_t {
 #define DEFAULT_CAP_P_ACI \
     { \
       .cap_process_hiding = PH_off, \
-      .max_caps_user.cap[0] = RSBAC_CAP_DEFAULT_MAX, \
-      .max_caps_user.cap[1] = RSBAC_CAP_DEFAULT_MAX, \
-      .max_caps_program.cap[0] = RSBAC_CAP_DEFAULT_MAX, \
-      .max_caps_program.cap[1] = RSBAC_CAP_DEFAULT_MAX, \
+      .max_caps_user = RSBAC_CAP_DEFAULT_MAX, \
+      .max_caps_program = RSBAC_CAP_DEFAULT_MAX, \
       .cap_ld_env = LD_allow, \
     }
 #else
@@ -1153,8 +1120,7 @@ struct rsbac_jail_process_aci_t {
       .parent = 0, \
       .ip = 0, \
       .flags = 0, \
-      .max_caps.cap[0] = -1, \
-      .max_caps.cap[1] = -1, \
+      .max_caps = -1, \
       .scd_get = 0, \
       .scd_modify = 0, \
     }

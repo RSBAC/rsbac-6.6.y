@@ -5,7 +5,7 @@
 /*                                                   */
 /* Author and (c) 1999-2023: Amon Ott <ao@rsbac.org> */
 /*                                                   */
-/* Last modified: 16/Feb/2023                        */
+/* Last modified: 14/Dec/2023                        */
 /*************************************************** */
 
 #include <linux/string.h>
@@ -3539,7 +3539,7 @@ int rsbac_write_exec_allowed(struct vm_area_struct *vma, unsigned int prot)
 #endif
             ) {
 #endif
-            vma->vm_flags &= ~VM_MAYWRITE;
+            vm_flags_clear(vma, VM_MAYWRITE);
 #ifdef CONFIG_RSBAC_SOFTMODE
           }
 #endif
