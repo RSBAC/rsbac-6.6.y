@@ -25,6 +25,12 @@
 #include <linux/uaccess.h>
 #include <asm/unistd.h>
 
+#ifdef CONFIG_RSBAC_RW
+#include <net/sock.h>
+#include <net/af_unix.h>
+#endif
+#include <rsbac/hooks.h>
+
 const struct file_operations generic_ro_fops = {
 	.llseek		= generic_file_llseek,
 	.read_iter	= generic_file_read_iter,
@@ -451,6 +457,10 @@ ssize_t vfs_read(struct file *file, char __user *buf, size_t count, loff_t *pos)
 {
 	ssize_t ret;
 
+#ifdef CONFIG_RSBAC_RW
+	struct rsbac_rw_req rsbac_rw_req_obj;
+#endif
+
 	if (!(file->f_mode & FMODE_READ))
 		return -EBADF;
 	if (!(file->f_mode & FMODE_CAN_READ))
@@ -461,6 +471,14 @@ ssize_t vfs_read(struct file *file, char __user *buf, size_t count, loff_t *pos)
 	ret = rw_verify_area(READ, file, pos, count);
 	if (ret)
 		return ret;
+
+#ifdef CONFIG_RSBAC_RW
+	rsbac_rw_req_obj.rsbac_target = T_NONE;
+	rsbac_rw_req_obj.rsbac_request = R_READ;
+	if (!rsbac_handle_rw_req(file, &rsbac_rw_req_obj))
+		return -EPERM;
+#endif
+
 	if (count > MAX_RW_COUNT)
 		count =  MAX_RW_COUNT;
 
@@ -471,6 +489,11 @@ ssize_t vfs_read(struct file *file, char __user *buf, size_t count, loff_t *pos)
 	else
 		ret = -EINVAL;
 	if (ret > 0) {
+
+#ifdef CONFIG_RSBAC_RW
+		rsbac_handle_rw_up(&rsbac_rw_req_obj);
+#endif
+
 		fsnotify_access(file);
 		add_rchar(current, ret);
 	}
@@ -565,6 +588,10 @@ ssize_t vfs_write(struct file *file, const char __user *buf, size_t count, loff_
 {
 	ssize_t ret;
 
+#ifdef CONFIG_RSBAC_RW
+	struct rsbac_rw_req rsbac_rw_req_obj;
+#endif
+
 	if (!(file->f_mode & FMODE_WRITE))
 		return -EBADF;
 	if (!(file->f_mode & FMODE_CAN_WRITE))
@@ -575,6 +602,14 @@ ssize_t vfs_write(struct file *file, const char __user *buf, size_t count, loff_
 	ret = rw_verify_area(WRITE, file, pos, count);
 	if (ret)
 		return ret;
+
+#ifdef CONFIG_RSBAC_RW
+	rsbac_rw_req_obj.rsbac_target = T_NONE;
+	rsbac_rw_req_obj.rsbac_request = R_WRITE;
+	if (!rsbac_handle_rw_req(file, &rsbac_rw_req_obj))
+		return -EPERM;
+#endif
+
 	if (count > MAX_RW_COUNT)
 		count =  MAX_RW_COUNT;
 	file_start_write(file);
@@ -585,6 +620,11 @@ ssize_t vfs_write(struct file *file, const char __user *buf, size_t count, loff_
 	else
 		ret = -EINVAL;
 	if (ret > 0) {
+
+#ifdef CONFIG_RSBAC_RW
+			rsbac_handle_rw_up(&rsbac_rw_req_obj);
+#endif
+
 		fsnotify_modify(file);
 		add_wchar(current, ret);
 	}
@@ -723,6 +763,23 @@ static ssize_t do_iter_readv_writev(struct file *filp, struct iov_iter *iter,
 	struct kiocb kiocb;
 	ssize_t ret;
 
+#ifdef CONFIG_RSBAC_RW
+	struct rsbac_rw_req rsbac_rw_req_obj;
+	rsbac_rw_req_obj.rsbac_target = T_NONE;
+#endif
+
+#ifdef CONFIG_RSBAC_RW
+	if (type == READ)
+		rsbac_rw_req_obj.rsbac_request = R_READ;
+	else
+/* if type wouldn't be WRITE here it's going to be funny ;)
+   kernel itself does NOT check on it. */
+		rsbac_rw_req_obj.rsbac_request = R_WRITE;
+        if(!rsbac_handle_rw_req(filp, &rsbac_rw_req_obj)) {
+		return -EPERM;
+	}
+#endif
+
 	init_sync_kiocb(&kiocb, filp);
 	ret = kiocb_set_rw_flags(&kiocb, flags);
 	if (ret)
@@ -736,6 +793,12 @@ static ssize_t do_iter_readv_writev(struct file *filp, struct iov_iter *iter,
 	BUG_ON(ret == -EIOCBQUEUED);
 	if (ppos)
 		*ppos = kiocb.ki_pos;
+
+#ifdef CONFIG_RSBAC_RW
+	if (ret > 0)
+		rsbac_handle_rw_up(&rsbac_rw_req_obj);
+#endif
+
 	return ret;
 }
 
@@ -1188,6 +1251,15 @@ static ssize_t do_sendfile(int out_fd, int in_fd, loff_t *ppos,
 	ssize_t retval;
 	int fl;
 
+#ifdef CONFIG_RSBAC_RW
+	struct rsbac_rw_req rsbac_rw_req_obj1;
+	struct rsbac_rw_req rsbac_rw_req_obj2;
+	struct socket * sock1;
+	struct socket * sock2;
+	rsbac_rw_req_obj1.rsbac_target = T_NONE;
+	rsbac_rw_req_obj2.rsbac_target = T_NONE;
+#endif
+
 	/*
 	 * Get input file, and verify that it is ok..
 	 */
@@ -1211,6 +1283,29 @@ static ssize_t do_sendfile(int out_fd, int in_fd, loff_t *ppos,
 	if (count > MAX_RW_COUNT)
 		count =  MAX_RW_COUNT;
 
+#ifdef CONFIG_RSBAC_RW
+/* i could have done it in few lines of code, but that's way it is MUCH faster and sendfile is mostly beeing used with network sockets */
+	if (S_ISSOCK(in.file->f_path.dentry->d_inode->i_mode)) {
+		sock1 = SOCKET_I(in.file->f_path.dentry->d_inode);
+		if ((sock1->ops) && (sock1->ops->family != AF_UNIX)) {
+			rsbac_rw_req_obj1.rsbac_target = T_NETOBJ;
+                        rsbac_rw_req_obj1.rsbac_target_id.netobj.sock_p = sock1;
+                        rsbac_rw_req_obj1.rsbac_target_id.netobj.local_addr = NULL;
+                        rsbac_rw_req_obj1.rsbac_target_id.netobj.local_len = 0;
+                        rsbac_rw_req_obj1.rsbac_target_id.netobj.remote_addr = NULL;
+                        rsbac_rw_req_obj1.rsbac_target_id.netobj.remote_len = 0;
+                        rsbac_rw_req_obj1.rsbac_attribute = A_sock_type;
+                        rsbac_rw_req_obj1.rsbac_attribute_value.sock_type = sock1->type;
+                }
+	}
+	rsbac_rw_req_obj1.rsbac_request = R_READ;
+	if(!rsbac_handle_rw_req(in.file, &rsbac_rw_req_obj1))
+	{
+		retval = -EPERM;
+		goto fput_in;
+	}
+#endif
+
 	/*
 	 * Get output file, and verify that it is ok..
 	 */
@@ -1223,6 +1318,28 @@ static ssize_t do_sendfile(int out_fd, int in_fd, loff_t *ppos,
 	in_inode = file_inode(in.file);
 	out_inode = file_inode(out.file);
 	out_pos = out.file->f_pos;
+
+#ifdef CONFIG_RSBAC_RW
+	if (S_ISSOCK(out.file->f_path.dentry->d_inode->i_mode)) {
+		sock2 = SOCKET_I(out.file->f_path.dentry->d_inode);
+		if ((sock2->ops) && (sock2->ops->family != AF_UNIX)) {
+                        rsbac_rw_req_obj2.rsbac_target = T_NETOBJ;
+                        rsbac_rw_req_obj2.rsbac_target_id.netobj.sock_p = sock2;
+                        rsbac_rw_req_obj2.rsbac_target_id.netobj.local_addr = NULL;
+                        rsbac_rw_req_obj2.rsbac_target_id.netobj.local_len = 0;
+                        rsbac_rw_req_obj2.rsbac_target_id.netobj.remote_addr = NULL;
+                        rsbac_rw_req_obj2.rsbac_target_id.netobj.remote_len = 0;
+                        rsbac_rw_req_obj2.rsbac_attribute = A_sock_type;
+                        rsbac_rw_req_obj2.rsbac_attribute_value.sock_type = sock2->type;
+                }
+	}
+	rsbac_rw_req_obj2.rsbac_request = R_WRITE;
+	if(!rsbac_handle_rw_req(out.file, &rsbac_rw_req_obj2))
+	{
+		retval = -EPERM;
+		goto fput_out;
+	}
+#endif
 
 	if (!max)
 		max = min(in_inode->i_sb->s_maxbytes, out_inode->i_sb->s_maxbytes);
@@ -1277,6 +1394,11 @@ static ssize_t do_sendfile(int out_fd, int in_fd, loff_t *ppos,
 	inc_syscw(current);
 	if (pos > max)
 		retval = -EOVERFLOW;
+
+#ifdef CONFIG_RSBAC_RW
+	rsbac_handle_rw_up(&rsbac_rw_req_obj1);
+	rsbac_handle_rw_up(&rsbac_rw_req_obj2);
+#endif
 
 fput_out:
 	fdput(out);

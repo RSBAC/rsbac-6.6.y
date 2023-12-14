@@ -720,6 +720,10 @@ struct vm_area_struct {
 	struct vma_numab_state *numab_state;	/* NUMA Balancing state */
 #endif
 	struct vm_userfaultfd_ctx vm_userfaultfd_ctx;
+
+#ifdef CONFIG_RSBAC_MPROTECT
+	__u8 rsbac_mprotect_once;
+#endif
 } __randomize_layout;
 
 #ifdef CONFIG_SCHED_MM_CID
