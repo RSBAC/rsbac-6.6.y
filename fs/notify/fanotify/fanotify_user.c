@@ -21,6 +21,8 @@
 #include <linux/statfs.h>
 #include <linux/exportfs.h>
 
+#include <rsbac/hooks.h>
+
 #include <asm/ioctls.h>
 
 #include "../../mount.h"
@@ -1685,6 +1687,12 @@ static int do_fanotify_mark(int fanotify_fd, unsigned int flags, __u64 mask,
 	u32 umask = 0;
 	int ret;
 
+#ifdef CONFIG_RSBAC
+	enum  rsbac_target_t rsbac_target;
+	union rsbac_target_id_t rsbac_target_id;
+	union rsbac_attribute_value_t rsbac_attribute_value;
+#endif
+
 	pr_debug("%s: fanotify_fd=%d flags=%x dfd=%d pathname=%p mask=%llx\n",
 		 __func__, fanotify_fd, flags, dfd, pathname, mask);
 
@@ -1868,15 +1876,74 @@ static int do_fanotify_mark(int fanotify_fd, unsigned int flags, __u64 mask,
 	/* create/update an inode mark */
 	switch (mark_cmd) {
 	case FAN_MARK_ADD:
-		if (mark_type == FAN_MARK_MOUNT)
+		if (mark_type == FAN_MARK_MOUNT) {
+#ifdef CONFIG_RSBAC
+			rsbac_pr_debug(aef, "calling ADF\n");
+			rsbac_target_id.dev.type = D_block;
+			rsbac_target_id.dev.major = RSBAC_MAJOR(mnt->mnt_sb->s_dev);
+			rsbac_target_id.dev.minor = RSBAC_MINOR(mnt->mnt_sb->s_dev);
+			rsbac_attribute_value.dummy = 0;
+			if (!rsbac_adf_request(R_TRACE,
+						task_pid(current),
+						T_DEV,
+						rsbac_target_id,
+						A_none,
+						rsbac_attribute_value)) {
+				ret = -EPERM;
+			} else
+#endif
+
 			ret = fanotify_add_vfsmount_mark(group, mnt, mask,
 							 flags, fsid);
-		else if (mark_type == FAN_MARK_FILESYSTEM)
+		} else if (mark_type == FAN_MARK_FILESYSTEM) {
+#ifdef CONFIG_RSBAC
+			rsbac_pr_debug(aef, "calling ADF\n");
+			rsbac_target_id.dev.type = D_block;
+			rsbac_target_id.dev.major = RSBAC_MAJOR(mnt->mnt_sb->s_dev);
+			rsbac_target_id.dev.minor = RSBAC_MINOR(mnt->mnt_sb->s_dev);
+			rsbac_attribute_value.dummy = 0;
+			if (!rsbac_adf_request(R_TRACE,
+						task_pid(current),
+						T_DEV,
+						rsbac_target_id,
+						A_none,
+						rsbac_attribute_value)) {
+				ret = -EPERM;
+			} else
+#endif
+
 			ret = fanotify_add_sb_mark(group, mnt->mnt_sb, mask,
 						   flags, fsid);
-		else
+		} else {
+
+#ifdef CONFIG_RSBAC
+			rsbac_pr_debug(aef, "calling ADF\n");
+			rsbac_target = T_FILE;
+			if (S_ISDIR(inode->i_mode))
+				rsbac_target = T_DIR;
+			else if (S_ISFIFO(inode->i_mode))
+				rsbac_target = T_FIFO;
+			else if (S_ISLNK(inode->i_mode))
+				rsbac_target = T_SYMLINK;
+			else if (S_ISSOCK(inode->i_mode))
+				rsbac_target = T_UNIXSOCK;
+			rsbac_target_id.file.device = path.dentry->d_sb->s_dev;
+			rsbac_target_id.file.inode  = inode->i_ino;
+			rsbac_target_id.file.dentry_p = path.dentry;
+			rsbac_attribute_value.dummy = 0;
+			if (!rsbac_adf_request(R_TRACE,
+						task_pid(current),
+						rsbac_target,
+						rsbac_target_id,
+						A_none,
+						rsbac_attribute_value)) {
+				ret = -EPERM;
+			} else
+#endif
+
 			ret = fanotify_add_inode_mark(group, inode, mask,
 						      flags, fsid);
+		}
 		break;
 	case FAN_MARK_REMOVE:
 		if (mark_type == FAN_MARK_MOUNT)
