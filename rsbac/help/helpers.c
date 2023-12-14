@@ -1,9 +1,9 @@
 /************************************* */
 /* Rule Set Based Access Control       */
-/* Author and (c) 1999-2019:           */
+/* Author and (c) 1999-2023:           */
 /*   Amon Ott <ao@rsbac.org>           */
 /* Helper functions for all parts      */
-/* Last modified: 04/Jan/2019          */
+/* Last modified: 14/Dec/2023          */
 /************************************* */
 
 #include <rsbac/types.h>
@@ -201,125 +201,6 @@ char * u64tostracl(char * str, __u64 i)
     str[ACLR_NONE] = 0;
     return (str);
   };
-
-char * u32tostrcap(char * str, __u32 i)
-  {
-    int    j = 0;
-    __u32  k;
-
-    if(!str)
-      return(NULL);
-
-    k = 1;
-    for(j = RSBAC_CAP_NONE - 1;j >= 0;j--)
-      {
-        if (i & k)
-          str[j] = '1';
-        else
-          str[j] = '0';
-        k<<=1;
-      };
-
-    str[RSBAC_CAP_NONE] = 0;
-    return (str);
-  };
-int kcaptostrcap(char * str, rsbac_cap_vector_t i)
-  {
-    int    j = 0;
-    int off;
-    __u32  k;
-
-    if(!str)
-      return(-1);
-
-    k = 1;
-    for(j = RSBAC_CAP_NONE - 1;j >= 32;j--)
-      {
-        if (i.cap[1] & k)
-          str[j-32] = '1';
-        else
-          str[j-32] = '0';
-        k<<=1;
-      };
-    k = 1;
-    off = RSBAC_CAP_NONE-32;
-    for(j = 31+off;j >= off;j--)
-      {
-        if (i.cap[0] & k)
-          str[j] = '1';
-        else
-          str[j] = '0';
-        k<<=1;
-      };
-
-    str[RSBAC_CAP_NONE] = 0;
-
-    return 0;
-  };
-
-int strcaptokcap(char * str, rsbac_cap_vector_t * i)
-  {
-    int    j;
-    int    off;
-    __u32  k = 1;
-    
-    if(!str)
-      return -1;
-    if (strlen(str) < RSBAC_CAP_NONE)
-      return -1;
-
-    for(j = RSBAC_CAP_NONE-1; j >= 32; j--)
-      {
-        if(str[j-32] != '0')
-          {
-            i->cap[1] |= k;
-          }
-        k <<= 1;
-      }
-    k = 1;
-    off = RSBAC_CAP_NONE-32;
-	for(j =31+off ;j >= off; j--) {
-		if(str[j] != '0') {
-			i->cap[0] |= k;
-		}
-		k <<= 1;
-	}
-/*    for(j=RSBAC_CAP_NONE;j<32;j++)
-      {
-        res |= k;
-        k <<= 1;
-      }*/
-/*    *i_p = res;*/
-
-    return 0;
-  }
-__u32 strtou32cap(char * str, __u32 * i_p)
-  {
-    int    j;
-    __u32  k = 1, res=0;
-    
-    if(!str)
-      return(0);
-
-    if (strlen(str) < RSBAC_CAP_NONE)
-      return(-1);
-    for(j=RSBAC_CAP_NONE-1;j>=0;j--)
-      {
-        if(str[j] != '0')
-          {
-            res |= k;
-          }
-        k <<= 1;
-      }
-    for(j=RSBAC_CAP_NONE;j<32;j++)
-      {
-        res |= k;
-        k <<= 1;
-      }
-    *i_p = res;
-    return(res);
-  };
-
 
 #ifdef CONFIG_RSBAC_UM_VIRTUAL
 rsbac_um_set_t rsbac_get_vset(void)
