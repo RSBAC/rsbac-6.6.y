@@ -25,15 +25,6 @@ void rsbac_jail_log_missing_cap(int cap)
     union rsbac_target_id_t       i_tid;
     union rsbac_attribute_value_t i_attr_val1;
 
-    if (unlikely(!cap_valid(cap))) {
-      rsbac_printk(KERN_INFO
-                   "rsbac_jail_log_missing_cap(): pid %u(%s), uid %u: invalid cap value %u!\n",
-                   current->pid, current->comm,
-                   __kuid_val(current_uid()),
-                   cap);
-      return;
-    }
-
     i_tid.process = task_pid(current);
     if (rsbac_get_attr(SW_JAIL,
                        T_PROCESS,
