@@ -3,7 +3,7 @@
 /* Author and (c) 1999-2023:        */
 /*   Amon Ott <ao@rsbac.org>        */
 /* Getname functions for CAP module */
-/* Last modified: 14/Dec/2023       */
+/* Last modified: 18/Dec/2023       */
 /********************************** */
 
 #include <rsbac/getname.h>
@@ -37,6 +37,18 @@ void rsbac_cap_log_missing_cap(int cap)
     char * tmp;
     union rsbac_target_id_t       i_tid;
     union rsbac_attribute_value_t i_attr_val1;
+    rsbac_cap_vector_t            i_cap_vector;
+
+    if (unlikely(!cap_valid(cap))) {
+      rsbac_printk(KERN_INFO
+                   "rsbac_cap_log_missing_cap(): pid %u(%s), uid %u: invalid cap value %u!\n",
+                   current->pid, current->comm,
+                   __kuid_val(current_uid()),
+                   cap);
+      return;
+    }
+
+    i_cap_vector = BIT_ULL(cap);
 
 #ifdef CONFIG_RSBAC_CAP_LEARN_TA
     if (!rsbac_list_ta_exist(cap_learn_ta))
@@ -59,7 +71,7 @@ void rsbac_cap_log_missing_cap(int cap)
       }
     else
       {
-        if(!(i_attr_val1.max_caps_user & (1 << cap)))
+        if(!(i_attr_val1.max_caps_user & i_cap_vector))
           {
 #if defined(CONFIG_RSBAC_CAP_LEARN)
             if (rsbac_cap_learn)
@@ -76,7 +88,7 @@ void rsbac_cap_log_missing_cap(int cap)
                          cap_learn_ta);
                     rsbac_kfree(tmp);
                   }
-                i_attr_val1.max_caps_user |= (1 << cap);
+                i_attr_val1.max_caps_user |= i_cap_vector;
                 if (rsbac_ta_set_attr(cap_learn_ta,
 		                      SW_CAP,
                                       T_PROCESS,
@@ -101,7 +113,7 @@ void rsbac_cap_log_missing_cap(int cap)
                   {
                     struct cred *override_cred;
 
-                    i_attr_val1.max_caps |= (1 << cap);
+                    i_attr_val1.max_caps |= i_cap_vector;
  		    if (rsbac_ta_set_attr(cap_learn_ta,
  		                          SW_CAP,
                                           T_USER,
@@ -115,7 +127,9 @@ void rsbac_cap_log_missing_cap(int cap)
                     override_cred = prepare_creds();
                     if (override_cred)
                       {
-                        override_cred->cap_effective.val |= (1 << cap);
+                        cap_raise(override_cred->cap_permitted, cap);
+                        cap_raise(override_cred->cap_effective, cap);
+                        cap_raise(override_cred->cap_inheritable, cap);
                         commit_creds(override_cred);
                       }
                   }
@@ -152,14 +166,14 @@ void rsbac_cap_log_missing_cap(int cap)
       }
     else
       {
-        if(!(i_attr_val1.max_caps_program & (1 << cap)))
+        if(!(i_attr_val1.max_caps_program & i_cap_vector))
           {
 #if defined(CONFIG_RSBAC_CAP_LEARN)
             if (rsbac_cap_learn)
               {
                 struct file *file_p;
 
-                i_attr_val1.max_caps_program |= (1 << cap);
+                i_attr_val1.max_caps_program |= i_cap_vector;
                 if (rsbac_ta_set_attr(cap_learn_ta,
 		                      SW_CAP,
                                       T_PROCESS,
@@ -212,7 +226,7 @@ void rsbac_cap_log_missing_cap(int cap)
                       {
                         struct cred *override_cred;
 
-                        i_attr_val1.max_caps |= (1 << cap);
+                        i_attr_val1.max_caps |= i_cap_vector;
  		        if (rsbac_ta_set_attr(cap_learn_ta,
  		                        SW_CAP,
 					T_FILE,
@@ -226,7 +240,9 @@ void rsbac_cap_log_missing_cap(int cap)
                         override_cred = prepare_creds();
                         if (override_cred)
                           {
-                            override_cred->cap_effective.val |= (1 << cap);
+                            cap_raise(override_cred->cap_permitted, cap);
+                            cap_raise(override_cred->cap_effective, cap);
+                            cap_raise(override_cred->cap_inheritable, cap);
 			    commit_creds(override_cred);
                           }
                       }
