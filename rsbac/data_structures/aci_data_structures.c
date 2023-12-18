@@ -5,7 +5,7 @@
 /* (some smaller parts copied from fs/namei.c        */
 /*  and others)                                      */
 /*                                                   */
-/* Last modified: 14/Dec/2023                        */
+/* Last modified: 18/Dec/2023                        */
 /*************************************************** */
 
 #include <linux/types.h>
@@ -151,9 +151,9 @@ EXPORT_SYMBOL(rsbac_root_dev_major);
 EXPORT_SYMBOL(rsbac_root_dev_minor);
 #endif
 
-static struct rsbac_device_list_head_t * device_head_p[(1 << CONFIG_RSBAC_DEVICE_LIST_HASH_BITS)];
-static spinlock_t device_list_locks[(1 << CONFIG_RSBAC_DEVICE_LIST_HASH_BITS)];
-static struct srcu_struct device_list_srcu[(1 << CONFIG_RSBAC_DEVICE_LIST_HASH_BITS)];
+static struct rsbac_device_list_head_t * device_head_p[BIT(CONFIG_RSBAC_DEVICE_LIST_HASH_BITS)];
+static spinlock_t device_list_locks[BIT(CONFIG_RSBAC_DEVICE_LIST_HASH_BITS)];
+static struct srcu_struct device_list_srcu[BIT(CONFIG_RSBAC_DEVICE_LIST_HASH_BITS)];
 static struct lock_class_key device_list_lock_class;
 
 #ifdef CONFIG_RSBAC_XSTATS
@@ -307,7 +307,7 @@ static u_int udf_checked_nr_fd_hash_bits = RSBAC_LIST_MIN_MAX_HASH_BITS;
 
 static inline u_int device_hash(__u32 minor)
 {
-  return minor & ((1 << CONFIG_RSBAC_DEVICE_LIST_HASH_BITS) - 1);
+  return minor & (BIT(CONFIG_RSBAC_DEVICE_LIST_HASH_BITS) - 1);
 }
 
 /* These help functions do NOT handle data consistency protection by */
@@ -2831,14 +2831,14 @@ devices_proc_show(struct seq_file *m, void *v)
 	if (!rsbac_initialized)
 		return -ENOSYS;
 
-	for (i = 0; i < (1 << CONFIG_RSBAC_DEVICE_LIST_HASH_BITS); i++)
+	for (i = 0; i < BIT(CONFIG_RSBAC_DEVICE_LIST_HASH_BITS); i++)
 		count += device_head_p[i]->count;
-	seq_printf(m, "%u RSBAC Devices\n---------------\nHash size is %u, item size is %lu\n",
-		       count, (1 << CONFIG_RSBAC_DEVICE_LIST_HASH_BITS), sizeof(*device_p));
+	seq_printf(m, "%u RSBAC Devices\n---------------\nHash size is %lu, item size is %lu\n",
+		       count, BIT(CONFIG_RSBAC_DEVICE_LIST_HASH_BITS), sizeof(*device_p));
 #if defined(CONFIG_RSBAC_AUTO_WRITE)
 	seq_printf(m, "write_blocked is %u\n", write_blocked);
 #endif
-	for (i = 0; i < (1 << CONFIG_RSBAC_DEVICE_LIST_HASH_BITS); i++) {
+	for (i = 0; i < BIT(CONFIG_RSBAC_DEVICE_LIST_HASH_BITS); i++) {
 		srcu_idx = srcu_read_lock(&device_list_srcu[i]);
 		head_p = srcu_dereference(device_head_p[i], &device_list_srcu[i]);
 		for (device_p = srcu_dereference(head_p->head, &device_list_srcu[i]); device_p;
@@ -3031,7 +3031,7 @@ stats_proc_show(struct seq_file *m, void *v)
 	seq_printf(m, "\n");
 
 	tmp_count = 0;
-	for (i = 0; i < (1 << CONFIG_RSBAC_DEVICE_LIST_HASH_BITS); i++) {
+	for (i = 0; i < BIT(CONFIG_RSBAC_DEVICE_LIST_HASH_BITS); i++) {
 		srcu_idx = srcu_read_lock(&device_list_srcu[i]);
 		head_p = srcu_dereference(device_head_p[i], &device_list_srcu[i]);
 		device_p = srcu_dereference(head_p->head, &device_list_srcu[i]);
@@ -3843,7 +3843,7 @@ xstats_proc_show(struct seq_file *m, void *v)
 
 #ifdef CONFIG_RSBAC_FD_CACHE
 	seq_printf(m, "\nFD Caches:\n");
-	for (i = 0; i < (1 << CONFIG_RSBAC_DEVICE_LIST_HASH_BITS); i++) {
+	for (i = 0; i < BIT(CONFIG_RSBAC_DEVICE_LIST_HASH_BITS); i++) {
 		srcu_idx = srcu_read_lock(&device_list_srcu[i]);
 		head_p = srcu_dereference(device_head_p[i], &device_list_srcu[i]);
 		device_p = srcu_dereference(head_p->head, &device_list_srcu[i]);
@@ -4079,67 +4079,67 @@ versions_proc_show(struct seq_file *m, void *v)
 		      "RSBAC version settings (%s)\n----------------------\n",
 		      RSBAC_VERSION);
 	seq_printf(m,
-		    "Device list head size is %u, hash size is %u\n",
+		    "Device list head size is %u, hash size is %lu\n",
 		    (int) sizeof(struct rsbac_device_list_item_t),
-		    (1 << CONFIG_RSBAC_DEVICE_LIST_HASH_BITS));
+		    BIT(CONFIG_RSBAC_DEVICE_LIST_HASH_BITS));
 	seq_printf(m,
-		    "FD lists:\nGEN  aci version is %u, aci entry size is %zd, %u lists per device\n",
+		    "FD lists:\nGEN  aci version is %u, aci entry size is %zd, %lu lists per device\n",
 		    RSBAC_GEN_FD_ACI_VERSION,
 		    sizeof(struct rsbac_gen_fd_aci_t),
-		    1 << gen_nr_fd_hash_bits);
+		    BIT(gen_nr_fd_hash_bits));
 #if defined(CONFIG_RSBAC_MAC)
 	seq_printf(m,
-		    "MAC  aci version is %u, aci entry size is %zd, %u lists per device\n",
+		    "MAC  aci version is %u, aci entry size is %zd, %lu lists per device\n",
 		    RSBAC_MAC_FD_ACI_VERSION,
 		    sizeof(struct rsbac_mac_fd_aci_t),
-		    1 << mac_nr_fd_hash_bits);
+		    BIT(mac_nr_fd_hash_bits));
 #endif
 #if defined(CONFIG_RSBAC_FF)
 	seq_printf(m,
-		    "FF   aci version is %u, aci entry size is %zd, %u lists per device\n",
+		    "FF   aci version is %u, aci entry size is %zd, %lu lists per device\n",
 		    RSBAC_FF_FD_ACI_VERSION, sizeof(rsbac_ff_flags_t),
-		    1 << ff_nr_fd_hash_bits);
+		    BIT(ff_nr_fd_hash_bits));
 #endif
 #if defined(CONFIG_RSBAC_RC)
 	seq_printf(m,
-		    "RC   aci version is %u, aci entry size is %zd, %u lists per device\n",
+		    "RC   aci version is %u, aci entry size is %zd, %lu lists per device\n",
 		    RSBAC_RC_FD_ACI_VERSION,
 		    sizeof(struct rsbac_rc_fd_aci_t),
-		    1 << rc_nr_fd_hash_bits);
+		    BIT(rc_nr_fd_hash_bits));
 #endif
 #if defined(CONFIG_RSBAC_AUTH)
 	seq_printf(m,
-		    "AUTH aci version is %u, aci entry size is %zd, %u lists per device\n",
+		    "AUTH aci version is %u, aci entry size is %zd, %lu lists per device\n",
 		    RSBAC_AUTH_FD_ACI_VERSION,
 		    sizeof(struct rsbac_auth_fd_aci_t),
-		    1 << auth_nr_fd_hash_bits);
+		    BIT(auth_nr_fd_hash_bits));
 #endif
 #if defined(CONFIG_RSBAC_CAP)
 	seq_printf(m,
-		    "CAP  aci version is %u, aci entry size is %zd, %u lists per device\n",
+		    "CAP  aci version is %u, aci entry size is %zd, %lu lists per device\n",
 		    RSBAC_CAP_FD_ACI_VERSION,
 		    sizeof(struct rsbac_cap_fd_aci_t),
-		    1 << cap_nr_fd_hash_bits);
+		    BIT(cap_nr_fd_hash_bits));
 #endif
 #if defined(CONFIG_RSBAC_RES)
 	seq_printf(m,
-		    "RES  aci version is %u, aci entry size is %zd, %u lists per device\n",
+		    "RES  aci version is %u, aci entry size is %zd, %lu lists per device\n",
 		    RSBAC_RES_FD_ACI_VERSION,
 		    sizeof(struct rsbac_res_fd_aci_t),
-		    1 << res_nr_fd_hash_bits);
+		    BIT(res_nr_fd_hash_bits));
 #endif
 #if defined(CONFIG_RSBAC_UDF)
 	seq_printf(m,
-		    "UDF  aci version is %u, aci entry size is %zd, %u lists per device\n",
+		    "UDF  aci version is %u, aci entry size is %zd, %lu lists per device\n",
 		    RSBAC_UDF_FD_ACI_VERSION,
 		    sizeof(struct rsbac_udf_fd_aci_t),
-		    1 << udf_nr_fd_hash_bits);
+		    BIT(udf_nr_fd_hash_bits));
 #if defined(CONFIG_RSBAC_UDF_CACHE)
 	seq_printf(m,
-		    "UDFC aci version is %u, aci entry size is %zd, %u lists per device\n",
+		    "UDFC aci version is %u, aci entry size is %zd, %lu lists per device\n",
 		    RSBAC_UDF_CHECKED_FD_ACI_VERSION,
 		    sizeof(rsbac_udf_checked_t),
-		    1 << udf_checked_nr_fd_hash_bits);
+		    BIT(udf_checked_nr_fd_hash_bits));
 #endif
 #endif
 	seq_printf(m,
@@ -4220,23 +4220,23 @@ versions_proc_show(struct seq_file *m, void *v)
 		    sizeof(rsbac_system_role_int_t));
 #endif
 	seq_printf(m,
-		    "\nPROCESS lists:\nGEN  aci version is %i, aci entry size is %zd, default number of lists is %u\n",
+		    "\nPROCESS lists:\nGEN  aci version is %i, aci entry size is %zd, default number of lists is %lu\n",
 		    RSBAC_GEN_PROCESS_ACI_VERSION,
 		    sizeof(rsbac_request_vector_t),
-		    1 << RSBAC_P_LIST_HASH_BITS);
+		    BIT(RSBAC_P_LIST_HASH_BITS));
 #if defined(CONFIG_RSBAC_MAC)
 	seq_printf(m,
-		    "MAC  aci version is %u, aci entry size is %zd, default number of lists is %u\n",
+		    "MAC  aci version is %u, aci entry size is %zd, default number of lists is %lu\n",
 		    RSBAC_MAC_PROCESS_ACI_VERSION,
 		    sizeof(struct rsbac_mac_process_aci_t),
-		    1 << RSBAC_P_LIST_HASH_BITS);
+		    BIT(RSBAC_P_LIST_HASH_BITS));
 #endif
 #if defined(CONFIG_RSBAC_RC)
 	seq_printf(m,
-		    "RC   aci version is %u, aci entry size is %zd, default number of lists is %u\n",
+		    "RC   aci version is %u, aci entry size is %zd, default number of lists is %lu\n",
 		    RSBAC_RC_PROCESS_ACI_VERSION,
 		    sizeof(struct rsbac_rc_process_aci_t),
-		    1 << RSBAC_P_LIST_HASH_BITS);
+		    BIT(RSBAC_P_LIST_HASH_BITS));
 #endif
 #if defined(CONFIG_RSBAC_AUTH)
 	seq_printf(m,
@@ -4252,10 +4252,10 @@ versions_proc_show(struct seq_file *m, void *v)
 #endif
 #if defined(CONFIG_RSBAC_JAIL)
 	seq_printf(m,
-		    "JAIL aci version is %u, aci entry size is %zd, number of lists is %u\n",
+		    "JAIL aci version is %u, aci entry size is %zd, number of lists is %lu\n",
 		    RSBAC_JAIL_PROCESS_ACI_VERSION,
 		    sizeof(struct rsbac_jail_process_aci_t),
-		    1 << RSBAC_P_LIST_HASH_BITS);
+		    BIT(RSBAC_P_LIST_HASH_BITS));
 #endif
 
 #if defined(CONFIG_RSBAC_NET_DEV)
@@ -6289,7 +6289,7 @@ static int __init rsbac_do_init(void)
    || defined(CONFIG_RSBAC_INIT_THREAD) || defined(CONFIG_RSBAC_NO_WRITE)
 	lockdep_set_class(&rsbac_mount_lock, &rsbac_mount_lock_class);
 #endif
-	for (i = 0; i < (1 << CONFIG_RSBAC_DEVICE_LIST_HASH_BITS); i++) {
+	for (i = 0; i < BIT(CONFIG_RSBAC_DEVICE_LIST_HASH_BITS); i++) {
 		device_head_p[i] = rsbac_kmalloc_clear_unlocked(sizeof(*device_head_p[i]));
 		if (!device_head_p[i]) {
 			rsbac_printk(KERN_WARNING
@@ -7649,7 +7649,7 @@ int rsbac_stats(void)
 		rsbac_printk(KERN_WARNING "rsbac_stats(): RSBAC not initialized\n");
 		return -RSBAC_ENOTINITIALIZED;
 	}
-	for (i = 0; i < (1 << CONFIG_RSBAC_DEVICE_LIST_HASH_BITS); i++) {
+	for (i = 0; i < BIT(CONFIG_RSBAC_DEVICE_LIST_HASH_BITS); i++) {
 		srcu_idx = srcu_read_lock(&device_list_srcu[i]);
 		head_p = srcu_dereference(device_head_p[i], &device_list_srcu[i]);
 		device_p = srcu_dereference(head_p->head, &device_list_srcu[i]);
@@ -10447,7 +10447,7 @@ int rsbac_fd_cache_invalidate_all(void)
 
 	rsbac_pr_debug(fdcache, "Invalidating fd cache completely\n");
 
-	for (i = 0; i < (1 << CONFIG_RSBAC_DEVICE_LIST_HASH_BITS); i++) {
+	for (i = 0; i < BIT(CONFIG_RSBAC_DEVICE_LIST_HASH_BITS); i++) {
 		srcu_idx = srcu_read_lock(&device_list_srcu[i]);
 		head_p = srcu_dereference(device_head_p[i], &device_list_srcu[i]);
 		device_p = srcu_dereference(head_p->head, &device_list_srcu[i]);
@@ -11362,7 +11362,7 @@ static int set_attr_fd_ttl(rsbac_list_ta_number_t ta_number,
 
 		rsbac_pr_debug(fdcache, "Invalidating fd cache for module %u on all devices\n",
 				module);
-		for (i = 0; i < (1 << CONFIG_RSBAC_DEVICE_LIST_HASH_BITS); i++) {
+		for (i = 0; i < BIT(CONFIG_RSBAC_DEVICE_LIST_HASH_BITS); i++) {
 			srcu_idx = srcu_read_lock(&device_list_srcu[i]);
 			head_p = srcu_dereference(device_head_p[i], &device_list_srcu[i]);
 			device_p = srcu_dereference(head_p->head, &device_list_srcu[i]);
@@ -14198,7 +14198,7 @@ int rsbac_udf_flush_cache(void)
 	u_int i;
 	int srcu_idx;
 
-	for (i = 0; i < (1 << CONFIG_RSBAC_DEVICE_LIST_HASH_BITS); i++) {
+	for (i = 0; i < BIT(CONFIG_RSBAC_DEVICE_LIST_HASH_BITS); i++) {
 		srcu_idx = srcu_read_lock(&device_list_srcu[i]);
 		head_p = srcu_dereference(device_head_p[i], &device_list_srcu[i]);
 		device_p = srcu_dereference(head_p->head, &device_list_srcu[i]);
