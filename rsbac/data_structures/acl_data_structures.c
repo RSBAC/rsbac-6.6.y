@@ -1,9 +1,9 @@
 /*************************************************** */
 /* Rule Set Based Access Control                     */
 /* Implementation of ACL data structures             */
-/* Author and (c) 1999-2021: Amon Ott <ao@rsbac.org> */
+/* Author and (c) 1999-2023: Amon Ott <ao@rsbac.org> */
 /*                                                   */
-/* Last modified: 27/Sep/2021                        */
+/* Last modified: 18/Nov/2023                        */
 /*************************************************** */
 
 #include <linux/types.h>
@@ -7073,7 +7073,7 @@ int rsbac_acl_get_single_right(enum rsbac_target_t target,
 		rsbac_printk(KERN_WARNING "rsbac_acl_get_single_right(): called from interrupt!\n");
 	}
 #endif
-	i_rvec = (rsbac_acl_rights_vector_t) 1 << right;
+	i_rvec = BIT_ULL(right);
 
 	desc.subj_type = subj_type;
 	desc.subj_id = subj_id;
