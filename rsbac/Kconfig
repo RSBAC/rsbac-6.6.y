@@ -282,7 +282,7 @@ config RSBAC_DEVICE_LIST_HASH_BITS
 	default 3
 	help
 	  Define the number of bits for device lists. The number of lists
-	  is 2^number. Default is 3, values should be 1-10.
+	  is 2^number. Default is 3, values should be 1-10, max. is 31.
 	  Increase number for faster FD item lookups, if you often have
 	  many active mounts. More device lists take some more kernel
 	  memory.
