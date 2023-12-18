@@ -5,7 +5,7 @@
 /*                                                   */
 /* Author and (c) 1999-2023: Amon Ott <ao@rsbac.org> */
 /*                                                   */
-/* Last modified: 14/Dec/2023                        */
+/* Last modified: 18/Dec/2023                        */
 /*************************************************** */
 
 #include <linux/string.h>
@@ -493,7 +493,7 @@ enum rsbac_adf_req_ret_t
         default:
           break;
       }
-      
+
 /**********************************************************/
 /* calling all decision modules, building a common result */
 
@@ -795,7 +795,7 @@ if(ignore_module != SW_REG)
           }
         else
           {
-            if(((rsbac_request_vector_t) 1 << request) & i_attr_val.log_user_based)
+            if(BIT_ULL(request) & i_attr_val.log_user_based)
               do_log = TRUE;
           }
       }
@@ -817,7 +817,7 @@ if(ignore_module != SW_REG)
           }
         else
           {
-            if(((rsbac_request_vector_t) 1 << request) & i_attr_val.log_program_based) 
+            if(BIT_ULL(request) & i_attr_val.log_program_based)
               do_log = TRUE;
           }
       }
@@ -1364,7 +1364,7 @@ log:
         get_result_name(res_name, result);
         if (current)
           {
-            strncpy(command,current->comm,16);          
+            strncpy(command,current->comm,16);
             command[16] = (char) 0;
           }
 
@@ -1385,7 +1385,7 @@ log:
 #endif
           {
             char * owner_name;
-                    
+
             owner_name = rsbac_kmalloc(32);
 #ifdef CONFIG_RSBAC_UM_VIRTUAL
             if (RSBAC_UID_SET(owner))
@@ -2305,7 +2305,7 @@ general_work:
       }
     else
       {
-        if(((rsbac_request_vector_t) 1 << request) & i_attr_val.log_user_based) 
+        if(BIT_ULL(request) & i_attr_val.log_user_based)
           do_log = TRUE;
       }
 #endif /* CONFIG_RSBAC_IND_USER_LOG */
@@ -2326,7 +2326,7 @@ general_work:
           }
         else
           {
-            if(((rsbac_request_vector_t) 1 << request) & i_attr_val.log_program_based) 
+            if(BIT_ULL(request) & i_attr_val.log_program_based)
               do_log = TRUE;
           }
       }
@@ -2737,7 +2737,7 @@ static int do_rsbac_sec_trunc(struct dentry * dentry_p,
 
 	if(may_sync && (dentry_p->d_inode->i_size > 0))
           err = generic_file_fsync(&file, 0, dentry_p->d_inode->i_size - 1, 1);
-          
+
         rsbac_kfree(buffer);
       }
     /* Ready. */
