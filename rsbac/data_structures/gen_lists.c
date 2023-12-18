@@ -1,9 +1,9 @@
 /************************************* */
 /* Rule Set Based Access Control       */
-/* Author and (c) 1999-2021:           */
+/* Author and (c) 1999-2023:           */
 /*   Amon Ott <ao@rsbac.org>           */
 /* Generic lists for all parts         */
-/* Last modified: 03/Dec/2021          */
+/* Last modified: 18/Dec/2023          */
 /************************************* */
 
 #include <linux/sched.h>
@@ -1015,7 +1015,7 @@ static inline struct rsbac_list_item_t *lookup_item_data_compare(
 {
 	struct rsbac_list_item_t *curr;
 	int i;
-	const u_int nr_hashes = 1 << hash_bits;
+	const u_int nr_hashes = BIT(hash_bits);
 
 	for(i=0; i<nr_hashes; i++) {
 		curr = rcu_dereference(hashed[i].head);
@@ -1043,7 +1043,7 @@ static inline struct rsbac_list_item_t *lookup_item_data_memcmp(
 {
 	struct rsbac_list_item_t *curr;
 	int i;
-	const u_int nr_hashes = 1 << hash_bits;
+	const u_int nr_hashes = BIT(hash_bits);
 
 	for(i=0; i<nr_hashes; i++) {
 		curr = rcu_dereference(hashed[i].head);
@@ -1092,7 +1092,7 @@ static inline struct rsbac_list_item_t *ta_lookup_item_data_compare(
 {
 	struct rsbac_list_item_t *curr;
 	int i;
-	const u_int nr_hashes = 1 << hash_bits;
+	const u_int nr_hashes = BIT(hash_bits);
 
 	for(i=0; i<nr_hashes; i++) {
 		if (!hashed[i].ta_copied || hashed[i].ta_copied != ta_number)
@@ -1124,7 +1124,7 @@ static inline struct rsbac_list_item_t *ta_lookup_item_data_memcmp(
 {
 	struct rsbac_list_item_t *curr;
 	int i;
-	const u_int nr_hashes = 1 << hash_bits;
+	const u_int nr_hashes = BIT(hash_bits);
 
 	for(i=0; i<nr_hashes; i++) {
 		if (!hashed[i].ta_copied || hashed[i].ta_copied != ta_number)
@@ -1180,7 +1180,7 @@ static inline struct rsbac_list_item_t *lookup_item_data_compare_selector(
 {
 	struct rsbac_list_item_t *curr;
 	int i;
-	const u_int nr_hashes = 1 << hash_bits;
+	const u_int nr_hashes = BIT(hash_bits);
 
 	for(i=0; i<nr_hashes; i++) {
 		curr = rcu_dereference(hashed[i].head);
@@ -1211,7 +1211,7 @@ static inline struct rsbac_list_item_t *lookup_item_data_memcmp_selector(
 {
 	struct rsbac_list_item_t *curr;
 	int i;
-	const u_int nr_hashes = 1 << hash_bits;
+	const u_int nr_hashes = BIT(hash_bits);
 
 	for(i=0; i<nr_hashes; i++) {
 		curr = rcu_dereference(hashed[i].head);
@@ -1273,7 +1273,7 @@ static inline struct rsbac_list_item_t *ta_lookup_item_data_compare_selector(
 {
 	struct rsbac_list_item_t *curr;
 	int i;
-	const u_int nr_hashes = 1 << hash_bits;
+	const u_int nr_hashes = BIT(hash_bits);
 
 	for(i=0; i<nr_hashes; i++) {
 		if (!hashed[i].ta_copied || hashed[i].ta_copied != ta_number)
@@ -1308,7 +1308,7 @@ static inline struct rsbac_list_item_t *ta_lookup_item_data_memcmp_selector(
 {
 	struct rsbac_list_item_t *curr;
 	int i;
-	const u_int nr_hashes = 1 << hash_bits;
+	const u_int nr_hashes = BIT(hash_bits);
 
 	for(i=0; i<nr_hashes; i++) {
 		if (!hashed[i].ta_copied || hashed[i].ta_copied != ta_number)
@@ -2080,7 +2080,7 @@ static inline struct rsbac_list_lol_item_t *lookup_lol_item_data_compare(
 {
 	struct rsbac_list_lol_item_t *curr;
 	int i;
-	const u_int nr_hashes = 1 << hash_bits;
+	const u_int nr_hashes = BIT(hash_bits);
 
 	for(i=0; i<nr_hashes; i++) {
 		curr = rcu_dereference(hashed[i].head);
@@ -2108,7 +2108,7 @@ static inline struct rsbac_list_lol_item_t *lookup_lol_item_data_memcmp(
 {
 	struct rsbac_list_lol_item_t *curr;
 	int i;
-	const u_int nr_hashes = 1 << hash_bits;
+	const u_int nr_hashes = BIT(hash_bits);
 
 	for(i=0; i<nr_hashes; i++) {
 		curr = rcu_dereference(hashed[i].head);
@@ -2157,7 +2157,7 @@ static inline struct rsbac_list_lol_item_t *ta_lookup_lol_item_data_compare(
 {
 	struct rsbac_list_lol_item_t *curr;
 	int i;
-	const u_int nr_hashes = 1 << hash_bits;
+	const u_int nr_hashes = BIT(hash_bits);
 
 	for(i=0; i<nr_hashes; i++) {
 		if (!hashed[i].ta_copied || hashed[i].ta_copied != ta_number)
@@ -2189,7 +2189,7 @@ static inline struct rsbac_list_lol_item_t *ta_lookup_lol_item_data_memcmp(
 {
 	struct rsbac_list_lol_item_t *curr;
 	int i;
-	const u_int nr_hashes = 1 << hash_bits;
+	const u_int nr_hashes = BIT(hash_bits);
 
 	for(i=0; i<nr_hashes; i++) {
 		if (!hashed[i].ta_copied || hashed[i].ta_copied != ta_number)
@@ -2250,7 +2250,7 @@ static inline struct rsbac_list_lol_item_t *lookup_lol_item_data_compare_selecto
 {
 	struct rsbac_list_lol_item_t *curr;
 	int i;
-	const u_int nr_hashes = 1 << hash_bits;
+	const u_int nr_hashes = BIT(hash_bits);
 
 	for(i=0; i<nr_hashes; i++) {
 		curr = rcu_dereference(hashed[i].head);
@@ -2281,7 +2281,7 @@ static inline struct rsbac_list_lol_item_t *lookup_lol_item_data_memcmp_selector
 {
 	struct rsbac_list_lol_item_t *curr;
 	int i;
-	const u_int nr_hashes = 1 << hash_bits;
+	const u_int nr_hashes = BIT(hash_bits);
 
 	if (unlikely(!list || !data))
 		return NULL;
@@ -2339,7 +2339,7 @@ static inline struct rsbac_list_lol_item_t *ta_lookup_lol_item_data_compare_sele
 {
 	struct rsbac_list_lol_item_t *curr;
 	int i;
-	const u_int nr_hashes = 1 << hash_bits;
+	const u_int nr_hashes = BIT(hash_bits);
 
 	for(i=0; i<nr_hashes; i++) {
 		if (!hashed[i].ta_copied || hashed[i].ta_copied != ta_number)
@@ -2374,7 +2374,7 @@ static inline struct rsbac_list_lol_item_t *ta_lookup_lol_item_data_memcmp_selec
 {
 	struct rsbac_list_lol_item_t *curr;
 	int i;
-	const u_int nr_hashes = 1 << hash_bits;
+	const u_int nr_hashes = BIT(hash_bits);
 
 	for(i=0; i<nr_hashes; i++) {
 		if (!hashed[i].ta_copied || hashed[i].ta_copied != ta_number)
@@ -3598,7 +3598,7 @@ static inline struct rsbac_list_reg_item_t *create_reg(
 		char * old_name_base)
 {
 	struct rsbac_list_reg_item_t *new_item_p = NULL;
-	const u_int nr_hashes = 1 << hash_bits;
+	const u_int nr_hashes = BIT(hash_bits);
 	int i;
 
 	if (!(new_item_p = rsbac_smalloc_clear_unlocked(reg_item_slab)))
@@ -3724,7 +3724,7 @@ static inline struct rsbac_list_lol_reg_item_t *create_lol_reg(
 		char * old_name_base)
 {
 	struct rsbac_list_lol_reg_item_t *new_item_p = NULL;
-	const u_int nr_hashes = 1 << hash_bits;
+	const u_int nr_hashes = BIT(hash_bits);
 	int i;
 
 	if (!(new_item_p = rsbac_smalloc_clear_unlocked(lol_reg_item_slab)))
@@ -4286,7 +4286,7 @@ static void clear_reg(struct rsbac_list_reg_item_t *reg_item_p)
 		int i;
 	        struct rsbac_list_item_t *item_p;
 	        struct rsbac_list_item_t *new_item_p;
-		const u_int nr_hashes = 1 << reg_item_p->hash_bits;
+		const u_int nr_hashes = BIT(reg_item_p->hash_bits);
 
 		/* now we can remove the item from memory */
 		synchronize_rcu();
@@ -4362,7 +4362,7 @@ static void clear_lol_reg(struct rsbac_list_lol_reg_item_t *reg_item_p)
 	        struct rsbac_list_lol_item_t *new_lol_item_p;
 	        struct rsbac_list_item_t * lol_subitem_p;
 	        struct rsbac_list_item_t * new_lol_subitem_p;
-		const u_int nr_hashes = 1 << reg_item_p->hash_bits;
+		const u_int nr_hashes = BIT(reg_item_p->hash_bits);
 
 		/* now we can remove the item from memory */
 		synchronize_rcu();
@@ -5264,7 +5264,7 @@ static int fill_buffer(struct rsbac_list_reg_item_t *list,
 	rsbac_version_t list_version = RSBAC_LIST_DISK_VERSION;
 	rsbac_time_t timestamp = RSBAC_CURRENT_TIME;
 	int i;
-	const u_int nr_hashes = 1 << list->hash_bits;
+	const u_int nr_hashes = BIT(list->hash_bits);
 
 	write_item_p = rsbac_kmalloc(sizeof(*write_item_p));
 	if (unlikely(!write_item_p)) {
@@ -5446,7 +5446,7 @@ static int fill_lol_buffer(struct rsbac_list_lol_reg_item_t *list,
 	rsbac_version_t list_version = RSBAC_LIST_DISK_VERSION;
 	rsbac_time_t timestamp = RSBAC_CURRENT_TIME;
 	int i;
-	const u_int nr_hashes = 1 << list->hash_bits;
+	const u_int nr_hashes = BIT(list->hash_bits);
 
 	write_item_p = rsbac_kmalloc_unlocked(sizeof(*write_item_p));
 	if (unlikely(!write_item_p)) {
@@ -5735,7 +5735,7 @@ lists_proc_show(struct seq_file *m, void *v)
 		item_p = srcu_dereference(reg_head.head, &reg_list_srcu);
 		while (item_p) {
 			rcu_read_lock();
-			nr_hashes = 1 << item_p->hash_bits;
+			nr_hashes = BIT(item_p->hash_bits);
 			hashed = rcu_dereference(item_p->hashed);
 			for (i=0; i<nr_hashes; i++) {
 				if (hashed[i].ta_copied) {
@@ -5763,7 +5763,7 @@ lists_proc_show(struct seq_file *m, void *v)
 		lol_item_p = srcu_dereference(lol_reg_head.head, &lol_reg_list_srcu);
 		while (lol_item_p) {
 			rcu_read_lock();
-			nr_hashes = 1 << lol_item_p->hash_bits;
+			nr_hashes = BIT(lol_item_p->hash_bits);
 			lol_hashed = rcu_dereference(lol_item_p->hashed);
 			for (i=0; i<nr_hashes; i++) {
 				if (lol_hashed[i].ta_copied) {
@@ -5798,7 +5798,7 @@ lists_proc_show(struct seq_file *m, void *v)
 	item_p = srcu_dereference(reg_head.head, &reg_list_srcu);
 	while (item_p) {
 		rcu_read_lock();
-		nr_hashes = 1 << item_p->hash_bits;
+		nr_hashes = BIT(item_p->hash_bits);
 		hashed = rcu_dereference(item_p->hashed);
 		tmp_count = 0;
 		for (i=0; i<nr_hashes; i++)
@@ -5830,7 +5830,7 @@ lists_proc_show(struct seq_file *m, void *v)
 	lol_item_p = srcu_dereference(lol_reg_head.head, &lol_reg_list_srcu);
 	while (lol_item_p) {
 		rcu_read_lock();
-		nr_hashes = 1 << lol_item_p->hash_bits;
+		nr_hashes = BIT(lol_item_p->hash_bits);
 		lol_hashed = rcu_dereference(lol_item_p->hashed);
 		tmp_count = 0;
 		for (i=0; i<nr_hashes; i++)
@@ -5942,7 +5942,7 @@ lists_counts_proc_show(struct seq_file *m, void *v)
 			    item_p->hash_bits);
 #endif
 		rcu_read_lock();
-		nr_hashes = 1 << item_p->hash_bits;
+		nr_hashes = BIT(item_p->hash_bits);
 		hashed = rcu_dereference(item_p->hashed);
 		for (i=0; i<nr_hashes; i++) {
 			seq_printf(m,
@@ -6000,7 +6000,7 @@ lists_counts_proc_show(struct seq_file *m, void *v)
 			    lol_item_p->hash_bits);
 #endif
 		rcu_read_lock();
-		nr_hashes = 1 << lol_item_p->hash_bits;
+		nr_hashes = BIT(lol_item_p->hash_bits);
 		lol_hashed = rcu_dereference(lol_item_p->hashed);
 		for (i=0; i<nr_hashes; i++) {
 			subcount = 0;
@@ -6106,7 +6106,7 @@ static int backup_proc_show(struct seq_file *m, void *data)
 	seq_write(m, &list->info, sizeof(list->info));
 
 	rcu_read_lock();
-	nr_hashes = 1 << list->hash_bits;
+	nr_hashes = BIT(list->hash_bits);
 	hashed = rcu_dereference(list->hashed);
 	/* copy list */
 	for (i=0; i<nr_hashes; i++) {
@@ -6167,7 +6167,7 @@ static int lol_backup_proc_show(struct seq_file *m, void *data)
 	seq_write(m, &list->info, sizeof(list->info));
 
 	rcu_read_lock();
-	nr_hashes = 1 << list->hash_bits;
+	nr_hashes = BIT(list->hash_bits);
 	hashed = rcu_dereference(list->hashed);
 	/* copy list */
 	for (i=0; i<nr_hashes; i++) {
@@ -6537,7 +6537,7 @@ int rsbac_check_lists(const int correct)
 restart:
 		if(list->hash_function)
 			read_lock(&list->hash_lock);
-		nr_hashes = 1 << list->hash_bits;
+		nr_hashes = BIT(list->hash_bits);
 		rcu_head_pp = rsbac_kmalloc_clear(nr_hashes * sizeof(*rcu_head_pp));
 		if (unlikely(!rcu_head_pp)) {
 			if(list->hash_function)
@@ -6635,7 +6635,7 @@ restart:
 lol_restart:
 		if(lol_list->hash_function)
 			read_lock(&lol_list->hash_lock);
-		nr_hashes = 1 << lol_list->hash_bits;
+		nr_hashes = BIT(lol_list->hash_bits);
 		rcu_head_lol_pp = rsbac_kmalloc_clear(nr_hashes * sizeof(*rcu_head_lol_pp));
 		if (unlikely(!rcu_head_lol_pp)) {
 			if(lol_list->hash_function)
@@ -6821,7 +6821,7 @@ int rsbac_list_check(rsbac_list_handle_t handle, const int correct)
 restart:
 	if(list->hash_function)
 		read_lock(&list->hash_lock);
-	nr_hashes = 1 << list->hash_bits;
+	nr_hashes = BIT(list->hash_bits);
 	rcu_head_pp = rsbac_kmalloc_clear(nr_hashes * sizeof(*rcu_head_pp));
 	if (unlikely(!rcu_head_pp)) {
 		if(list->hash_function)
@@ -6926,7 +6926,7 @@ int rsbac_list_lol_check(rsbac_list_handle_t handle, const int correct)
 restart:
 	if(lol_list->hash_function)
 		read_lock(&lol_list->hash_lock);
-	nr_hashes = 1 << lol_list->hash_bits;
+	nr_hashes = BIT(lol_list->hash_bits);
 	rcu_head_lol_pp = rsbac_kmalloc_clear(nr_hashes * sizeof(*rcu_head_lol_pp));
 	if (unlikely(!rcu_head_lol_pp)) {
 		if(lol_list->hash_function)
@@ -7928,7 +7928,7 @@ static int do_commit(rsbac_list_ta_number_t ta_number)
 	while (list) {
 		if(list->hash_function)
 			read_lock(&list->hash_lock);
-		nr_hashes = 1 << list->hash_bits;
+		nr_hashes = BIT(list->hash_bits);
 		for (i=0; i<nr_hashes; i++) {
 			spin_lock(&list->hashed[i].lock);
 			if (list->hashed[i].ta_copied == ta_number) {
@@ -7956,7 +7956,7 @@ static int do_commit(rsbac_list_ta_number_t ta_number)
 	while (lol_list) {
 		if(lol_list->hash_function)
 			read_lock(&lol_list->hash_lock);
-		nr_hashes = 1 << lol_list->hash_bits;
+		nr_hashes = BIT(lol_list->hash_bits);
 		for (i=0; i<nr_hashes; i++) {
 			spin_lock(&lol_list->hashed[i].lock);
 			if (lol_list->hashed[i].ta_copied == ta_number) {
@@ -8065,7 +8065,7 @@ static int do_forget(rsbac_list_ta_number_t ta_number)
 	while (list) {
 		if(list->hash_function)
 			read_lock(&list->hash_lock);
-		nr_hashes = 1 << list->hash_bits;
+		nr_hashes = BIT(list->hash_bits);
 		for (i=0; i<nr_hashes; i++) {
 			spin_lock(&list->hashed[i].lock);
 			if (list->hashed[i].ta_copied == ta_number) {
@@ -8084,7 +8084,7 @@ static int do_forget(rsbac_list_ta_number_t ta_number)
 	while (lol_list) {
 		if(lol_list->hash_function)
 			read_lock(&lol_list->hash_lock);
-		nr_hashes = 1 << lol_list->hash_bits;
+		nr_hashes = BIT(lol_list->hash_bits);
 		for (i=0; i<nr_hashes; i++) {
 			spin_lock(&lol_list->hashed[i].lock);
 			if (lol_list->hashed[i].ta_copied == ta_number) {
@@ -8894,7 +8894,7 @@ int rsbac_ta_list_remove_all(rsbac_list_ta_number_t ta_number,
 
 	if(list->hash_function)
 		read_lock(&list->hash_lock);
-	nr_hashes = 1 << list->hash_bits;
+	nr_hashes = BIT(list->hash_bits);
 #ifdef CONFIG_RSBAC_LIST_TRANS
 	if (!ta_number)
 #endif
@@ -9311,7 +9311,7 @@ int rsbac_ta_list_lol_subremove_from_all(rsbac_list_ta_number_t ta_number,
 */
 	if(list->hash_function)
 		read_lock(&list->hash_lock);
-	nr_hashes = 1 << list->hash_bits;
+	nr_hashes = BIT(list->hash_bits);
 	rcu_head_pp = rsbac_kmalloc_clear(nr_hashes * sizeof(*rcu_head_pp));
 	if (unlikely(!rcu_head_pp)) {
 		if(list->hash_function)
@@ -9614,7 +9614,7 @@ int rsbac_ta_list_lol_remove_all(rsbac_list_ta_number_t ta_number,
 */
 	if(list->hash_function)
 		read_lock(&list->hash_lock);
-	nr_hashes = 1 << list->hash_bits;
+	nr_hashes = BIT(list->hash_bits);
 #ifdef CONFIG_RSBAC_LIST_TRANS
 	if (!ta_number)
 #endif
@@ -10081,7 +10081,7 @@ int rsbac_ta_list_get_max_desc(rsbac_list_ta_number_t ta_number,
 /*
 	rsbac_pr_debug(lists, "list %s.\n", list->name);
 */
-	nr_hashes = 1 << list->hash_bits;
+	nr_hashes = BIT(list->hash_bits);
 	hashed = rcu_dereference(list->hashed);
 	for (i=0; i<nr_hashes; i++) {
 #ifdef CONFIG_RSBAC_LIST_TRANS
@@ -10153,7 +10153,7 @@ int rsbac_ta_list_get_next_desc(rsbac_list_ta_number_t ta_number,
 /*
 	rsbac_pr_debug(lists, "list %s.\n", list->name);
 */
-	nr_hashes = 1 << list->hash_bits;
+	nr_hashes = BIT(list->hash_bits);
 	hashed = rcu_dereference(list->hashed);
 	if (old_desc) {
 		if(list->hash_function)
@@ -10243,7 +10243,7 @@ int rsbac_ta_list_get_next_desc_selector(
 /*
 	rsbac_pr_debug(lists, "list %s.\n", list->name);
 */
-	nr_hashes = 1 << list->hash_bits;
+	nr_hashes = BIT(list->hash_bits);
 	hashed = rcu_dereference(list->hashed);
 	if (old_desc) {
 		if(list->hash_function)
@@ -10331,7 +10331,7 @@ int rsbac_ta_list_lol_get_next_desc(rsbac_list_ta_number_t ta_number,
 /*
 	rsbac_pr_debug(lists, "list %s.\n", list->name);
 */
-	nr_hashes = 1 << list->hash_bits;
+	nr_hashes = BIT(list->hash_bits);
 	hashed = rcu_dereference(list->hashed);
 	if (old_desc) {
 		if(list->hash_function)
@@ -10420,7 +10420,7 @@ int rsbac_ta_list_lol_get_next_desc_selector(
 /*
 	rsbac_pr_debug(lists, "list %s.\n", list->name);
 */
-	nr_hashes = 1 << list->hash_bits;
+	nr_hashes = BIT(list->hash_bits);
 	hashed = rcu_dereference(list->hashed);
 	if (old_desc) {
 		if(list->hash_function)
@@ -11114,7 +11114,7 @@ long rsbac_ta_list_lol_all_subcount(rsbac_list_ta_number_t ta_number,
 /*
 	rsbac_pr_debug(lists, "list %s.\n", list->name);
 */
-	nr_hashes = 1 << list->hash_bits;
+	nr_hashes = BIT(list->hash_bits);
 	hashed = rcu_dereference(list->hashed);
 	for (i=0; i<nr_hashes; i++) {
 #ifdef CONFIG_RSBAC_LIST_TRANS
@@ -11164,7 +11164,7 @@ long rsbac_ta_list_lol_count(rsbac_list_ta_number_t ta_number,
 	rsbac_pr_debug(lists, "list %s.\n", list->name);
 */
 	rcu_read_lock();
-	nr_hashes = 1 << list->hash_bits;
+	nr_hashes = BIT(list->hash_bits);
 	hashed = rcu_dereference(list->hashed);
 	for (i=0; i<nr_hashes; i++) {
 #ifdef CONFIG_RSBAC_LIST_TRANS
@@ -11207,7 +11207,7 @@ long rsbac_ta_list_count(rsbac_list_ta_number_t ta_number,
 #endif
 
 	rcu_read_lock();
-	nr_hashes = 1 << list->hash_bits;
+	nr_hashes = BIT(list->hash_bits);
 	hashed = rcu_dereference(list->hashed);
 	for (i=0; i<nr_hashes; i++) {
 #ifdef CONFIG_RSBAC_LIST_TRANS
@@ -11267,7 +11267,7 @@ long rsbac_ta_list_get_all_desc(rsbac_list_ta_number_t ta_number,
 /*
 	rsbac_pr_debug(lists, "list %s.\n", list->name);
 */
-	nr_hashes = 1 << list->hash_bits;
+	nr_hashes = BIT(list->hash_bits);
 	hashed = rcu_dereference(list->hashed);
 	for (i=0; i<nr_hashes; i++) {
 #ifdef CONFIG_RSBAC_LIST_TRANS
@@ -11363,7 +11363,7 @@ long rsbac_ta_list_get_all_desc_selector (
 /*
 	rsbac_pr_debug(lists, "list %s.\n", list->name);
 */
-	nr_hashes = 1 << list->hash_bits;
+	nr_hashes = BIT(list->hash_bits);
 	hashed = rcu_dereference(list->hashed);
 	for (i=0; i<nr_hashes; i++) {
 #ifdef CONFIG_RSBAC_LIST_TRANS
@@ -11560,7 +11560,7 @@ long rsbac_ta_list_lol_get_all_desc(rsbac_list_ta_number_t ta_number,
 /*
 	rsbac_pr_debug(lists, "list %s.\n", list->name);
 */
-	nr_hashes = 1 << list->hash_bits;
+	nr_hashes = BIT(list->hash_bits);
 	hashed = rcu_dereference(list->hashed);
 	for (i=0; i<nr_hashes; i++) {
 #ifdef CONFIG_RSBAC_LIST_TRANS
@@ -11659,7 +11659,7 @@ long rsbac_ta_list_lol_get_all_desc_selector (
 /*
 	rsbac_pr_debug(lists, "list %s.\n", list->name);
 */
-	nr_hashes = 1 << list->hash_bits;
+	nr_hashes = BIT(list->hash_bits);
 	hashed = rcu_dereference(list->hashed);
 	for (i=0; i<nr_hashes; i++) {
 #ifdef CONFIG_RSBAC_LIST_TRANS
@@ -11766,7 +11766,7 @@ long rsbac_ta_list_get_all_data(rsbac_list_ta_number_t ta_number,
 		rcu_read_unlock();
 		return -RSBAC_EINVALIDREQUEST;
 	}
-	nr_hashes = 1 << list->hash_bits;
+	nr_hashes = BIT(list->hash_bits);
 	hashed = rcu_dereference(list->hashed);
 	for (i=0; i<nr_hashes; i++) {
 #ifdef CONFIG_RSBAC_LIST_TRANS
@@ -11958,7 +11958,7 @@ long rsbac_ta_list_lol_get_all_data(rsbac_list_ta_number_t ta_number,
 		rcu_read_unlock();
 		return -RSBAC_EINVALIDREQUEST;
 	}
-	nr_hashes = 1 << list->hash_bits;
+	nr_hashes = BIT(list->hash_bits);
 	hashed = rcu_dereference(list->hashed);
 	for (i=0; i<nr_hashes; i++) {
 #ifdef CONFIG_RSBAC_LIST_TRANS
@@ -12118,7 +12118,7 @@ long rsbac_ta_list_get_all_items_ttl(rsbac_list_ta_number_t ta_number,
 /*
 	rsbac_pr_debug(lists, "list %s.\n", list->name);
 */
-	nr_hashes = 1 << list->hash_bits;
+	nr_hashes = BIT(list->hash_bits);
 	hashed = rcu_dereference(list->hashed);
 	for (i=0; i<nr_hashes; i++) {
 #ifdef CONFIG_RSBAC_LIST_TRANS
@@ -12331,7 +12331,7 @@ long rsbac_ta_list_lol_get_all_items(rsbac_list_ta_number_t ta_number,
 /*
 	rsbac_pr_debug(lists, "list %s.\n", list->name);
 */
-	nr_hashes = 1 << list->hash_bits;
+	nr_hashes = BIT(list->hash_bits);
 	hashed = rcu_dereference(list->hashed);
 	for (i=0; i<nr_hashes; i++) {
 #ifdef CONFIG_RSBAC_LIST_TRANS
@@ -12482,7 +12482,7 @@ static int do_rehash(struct rsbac_list_reg_item_t *list, __u8 new_bits)
         struct rsbac_list_item_t *new_item_p;
         u_int new_hash;
         u_int old_nr;
-        u_int new_nr = 1 << new_bits;
+        u_int new_nr = BIT(new_bits);
         u_int item_size;
 
 	new_hashed = rsbac_kmalloc_clear_unlocked(new_nr*sizeof(struct rsbac_list_hashed_t));
@@ -12490,7 +12490,7 @@ static int do_rehash(struct rsbac_list_reg_item_t *list, __u8 new_bits)
 		return -RSBAC_ENOMEM;
 	}
 	write_lock(&list->hash_lock);
-	old_nr = 1 << list->hash_bits;
+	old_nr = BIT(list->hash_bits);
 #ifdef CONFIG_RSBAC_LIST_TRANS
 	for(i=0; i<old_nr; i++)
 		if(list->hashed[i].ta_copied) {
@@ -12569,7 +12569,7 @@ static int do_lol_rehash(struct rsbac_list_lol_reg_item_t *list, __u8 new_bits)
         struct rsbac_list_lol_item_t *new_item_p;
         u_int new_hash;
         u_int old_nr;
-        u_int new_nr = 1 << new_bits;
+        u_int new_nr = BIT(new_bits);
         u_int item_size;
 
 	new_hashed = rsbac_kmalloc_clear_unlocked(new_nr*sizeof(struct rsbac_list_lol_hashed_t));
@@ -12577,7 +12577,7 @@ static int do_lol_rehash(struct rsbac_list_lol_reg_item_t *list, __u8 new_bits)
 		return -RSBAC_ENOMEM;
 	}
 	write_lock(&list->hash_lock);
-	old_nr = 1 << list->hash_bits;
+	old_nr = BIT(list->hash_bits);
 #ifdef CONFIG_RSBAC_LIST_TRANS
 	for(i=0; i<old_nr; i++)
 		if(list->hashed[i].ta_copied) {
@@ -12666,7 +12666,7 @@ static int rsbac_list_auto_rehash(rsbac_boolean_t force_rehash)
 		if((list->flags & RSBAC_LIST_AUTO_HASH_RESIZE)
 		   && (list->hash_bits < rsbac_list_max_hash_bits)) {
 			count = 0;
-			nr_hashes = 1 << list->hash_bits;
+			nr_hashes = BIT(list->hash_bits);
 			for (i=0; i<nr_hashes; i++) {
 				if (list->hashed[i].count <= list->max_items_per_hash) {
 					count += list->hashed[i].count;
@@ -12681,12 +12681,12 @@ static int rsbac_list_auto_rehash(rsbac_boolean_t force_rehash)
 				list = list->next;
 				continue;
 			}
-			if(count / (1 << list->hash_bits) > rsbac_list_auto_rehash_trigger) {
+			if(count / BIT(list->hash_bits) > rsbac_list_auto_rehash_trigger) {
 				u_int new_bits;
 
 				new_bits = list->hash_bits;
 				while((new_bits < rsbac_list_max_hash_bits)
-					&& (count / (1 << new_bits) > rsbac_list_auto_rehash_trigger))
+					&& (count / BIT(new_bits) > rsbac_list_auto_rehash_trigger))
 					new_bits++;
 				if(new_bits > rsbac_list_max_hash_bits)
 					new_bits = rsbac_list_max_hash_bits;
@@ -12713,7 +12713,7 @@ static int rsbac_list_auto_rehash(rsbac_boolean_t force_rehash)
 		if((lol_list->flags & RSBAC_LIST_AUTO_HASH_RESIZE)
 		   && (lol_list->hash_bits < rsbac_list_max_hash_bits)) {
 			count = 0;
-			nr_hashes = 1 << lol_list->hash_bits;
+			nr_hashes = BIT(lol_list->hash_bits);
 			for (i=0; i<nr_hashes; i++) {
 				if (lol_list->hashed[i].count <= lol_list->max_items_per_hash) {
 					count += lol_list->hashed[i].count;
@@ -12728,12 +12728,12 @@ static int rsbac_list_auto_rehash(rsbac_boolean_t force_rehash)
 				lol_list = lol_list->next;
 				continue;
 			}
-			if(count / (1 << lol_list->hash_bits) > rsbac_list_auto_rehash_trigger) {
+			if(count / BIT(lol_list->hash_bits) > rsbac_list_auto_rehash_trigger) {
 				u_int new_bits;
 
 				new_bits = lol_list->hash_bits;
 				while((new_bits < rsbac_list_max_hash_bits)
-					&& (count / (1 << new_bits) > rsbac_list_auto_rehash_trigger))
+					&& (count / BIT(new_bits) > rsbac_list_auto_rehash_trigger))
 					new_bits++;
 				if(new_bits > rsbac_list_max_hash_bits)
 					new_bits = rsbac_list_max_hash_bits;
