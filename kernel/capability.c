@@ -444,11 +444,11 @@ static bool ns_capable_common(struct user_namespace *ns,
 		return true;
 	}
 
-#if defined(CONFIG_RSBAC_CAP_LOG_MISSING) || defined(CONFIG_RSBAC_JAIL_LOG_MISSING)
-	rsbac_log_missing_cap(cap);
-#endif
-
+#if defined(CONFIG_RSBAC_CAP_LOG_MISSING) || defined(CONFIG_RSBAC_CAP_LEARN) || defined(CONFIG_RSBAC_JAIL_LOG_MISSING)
+	return rsbac_log_missing_cap(cap);
+#else
 	return false;
+#endif
 }
 
 /**
