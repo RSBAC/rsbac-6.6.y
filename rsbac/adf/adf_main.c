@@ -3611,8 +3611,10 @@ int rsbac_set_audit_uid(rsbac_uid_t uid)
 #if defined(CONFIG_RSBAC_CAP_LOG_MISSING) || defined(CONFIG_RSBAC_JAIL_LOG_MISSING)
 EXPORT_SYMBOL(rsbac_log_missing_cap);
 
-void rsbac_log_missing_cap(int cap)
+bool rsbac_log_missing_cap(int cap)
   {
+    bool res = false;
+
     #if defined(CONFIG_RSBAC_CAP_LOG_MISSING) || defined(CONFIG_RSBAC_CAP_LEARN)
     #if defined(CONFIG_RSBAC_CAP_LOG_MISSING) && defined(CONFIG_RSBAC_CAP_LEARN)
     if(rsbac_cap_log_missing || rsbac_cap_learn)
@@ -3621,12 +3623,14 @@ void rsbac_log_missing_cap(int cap)
     #else
     if(rsbac_cap_log_missing)
     #endif
-      rsbac_cap_log_missing_cap(cap);
+      res = rsbac_cap_log_missing_cap(cap);
     #endif
     #if defined(CONFIG_RSBAC_JAIL_LOG_MISSING)
     if(rsbac_jail_log_missing)
       rsbac_jail_log_missing_cap(cap);
     #endif
+
+    return res;
   }
 #endif
 
