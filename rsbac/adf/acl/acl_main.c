@@ -4,9 +4,9 @@
 /* Facility (ADF) - Access Control Lists (ACL)        */
 /* File: rsbac/adf/acl/acl_main.c                     */
 /*                                                    */
-/* Author and (c) 1999-2021: Amon Ott <ao@rsbac.org>  */
+/* Author and (c) 1999-2023: Amon Ott <ao@rsbac.org>  */
 /*                                                    */
-/* Last modified: 03/Dec/2021                         */
+/* Last modified: 18/Dec/2023                         */
 /**************************************************** */
 
 #include <linux/string.h>
@@ -322,7 +322,7 @@ rsbac_boolean_t rsbac_acl_check_forward(enum  rsbac_target_t target,
                                       rsbac_acl_rights_vector_t rights)
   {
     rsbac_acl_rights_vector_t i_rights = 0;
-    rsbac_acl_rights_vector_t i_rvec = ((rsbac_acl_rights_vector_t) 1 << ACLR_FORWARD) | rights;
+    rsbac_acl_rights_vector_t i_rvec = BIT_ULL(ACLR_FORWARD) | rights;
     int                       err=0;
 
 
