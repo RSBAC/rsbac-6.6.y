@@ -32,21 +32,13 @@ rsbac_list_ta_number_t cap_learn_ta = CONFIG_RSBAC_CAP_LEARN_TA;
 #endif
 
 #if defined(CONFIG_RSBAC_CAP_LOG_MISSING) || defined(CONFIG_RSBAC_CAP_LEARN)
-void rsbac_cap_log_missing_cap(int cap)
+bool rsbac_cap_log_missing_cap(int cap)
   {
     char * tmp;
     union rsbac_target_id_t       i_tid;
     union rsbac_attribute_value_t i_attr_val1;
     rsbac_cap_vector_t            i_cap_vector;
-
-    if (unlikely(!cap_valid(cap))) {
-      rsbac_printk(KERN_INFO
-                   "rsbac_cap_log_missing_cap(): pid %u(%s), uid %u: invalid cap value %u!\n",
-                   current->pid, current->comm,
-                   __kuid_val(current_uid()),
-                   cap);
-      return;
-    }
+    bool                          res = false;
 
     i_cap_vector = BIT_ULL(cap);
 
@@ -131,6 +123,7 @@ void rsbac_cap_log_missing_cap(int cap)
                         cap_raise(override_cred->cap_effective, cap);
                         cap_raise(override_cred->cap_inheritable, cap);
                         commit_creds(override_cred);
+                        res = true;
                       }
                   }
               }
@@ -244,6 +237,7 @@ void rsbac_cap_log_missing_cap(int cap)
                             cap_raise(override_cred->cap_effective, cap);
                             cap_raise(override_cred->cap_inheritable, cap);
 			    commit_creds(override_cred);
+			    res = true;
                           }
                       }
                   }
@@ -268,5 +262,6 @@ void rsbac_cap_log_missing_cap(int cap)
                 }
           }
       }
+    return res;
   }
 #endif
