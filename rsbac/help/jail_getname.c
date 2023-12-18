@@ -3,7 +3,7 @@
 /* Author and (c) 1999-2023:         */
 /*   Amon Ott <ao@rsbac.org>         */
 /* Getname functions for JAIL module */
-/* Last modified: 14/Dec/2023        */
+/* Last modified: 18/Dec/2023        */
 /*********************************** */
 
 #include <rsbac/getname.h>
@@ -25,6 +25,15 @@ void rsbac_jail_log_missing_cap(int cap)
     union rsbac_target_id_t       i_tid;
     union rsbac_attribute_value_t i_attr_val1;
 
+    if (unlikely(!cap_valid(cap))) {
+      rsbac_printk(KERN_INFO
+                   "rsbac_jail_log_missing_cap(): pid %u(%s), uid %u: invalid cap value %u!\n",
+                   current->pid, current->comm,
+                   __kuid_val(current_uid()),
+                   cap);
+      return;
+    }
+
     i_tid.process = task_pid(current);
     if (rsbac_get_attr(SW_JAIL,
                        T_PROCESS,
@@ -37,7 +46,7 @@ void rsbac_jail_log_missing_cap(int cap)
       }
     else
       {
-        if(!(i_attr_val1.jail_max_caps & (1 << cap)))
+        if(!(i_attr_val1.jail_max_caps & BIT_ULL(cap)))
           {
             tmp = rsbac_kmalloc(RSBAC_MAXNAMELEN);
             if(tmp)
