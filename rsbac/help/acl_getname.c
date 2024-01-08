@@ -1,10 +1,10 @@
 /************************************ */
 /* Rule Set Based Access Control      */
 /*                                    */
-/* Author and (c) 1999-2021: Amon Ott */
+/* Author and (c) 1999-2024: Amon Ott */
 /*                                    */
 /* Getname functions for ACL module   */
-/* Last modified: 04/Oct/2021         */
+/* Last modified: 08/Jan/2024         */
 /************************************ */
 
 #include <rsbac/types.h>
@@ -77,7 +77,7 @@ char * get_acl_scd_type_name(char * name,
       return(NULL);
     if(value < AST_min)
       {
-        return(get_scd_type_name(name, value));
+        return(get_scd_type_name(name, (enum rsbac_scd_type_t) value));
       }
     value -= AST_min;
     if(value > AST_none)
@@ -96,7 +96,7 @@ char * get_acl_special_right_name(char * name,
       return(NULL);
     if(value < RSBAC_ACL_SPECIAL_RIGHT_BASE)
       {
-        return(get_request_name(name, value));
+        return(get_request_name(name, (enum rsbac_adf_request_t) value));
       }
     value -= RSBAC_ACL_SPECIAL_RIGHT_BASE;
     if(value > ACLR_NONE)
