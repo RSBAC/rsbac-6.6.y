@@ -1,9 +1,9 @@
 /*************************************************** */
 /* Rule Set Based Access Control                     */
 /* Implementation of RSBAC general system calls      */
-/* Author and (C) 1999-2021: Amon Ott <ao@rsbac.org> */
+/* Author and (C) 1999-2024: Amon Ott <ao@rsbac.org> */
 /*                                                   */
-/* Last modified: 03/Dec/2021                        */
+/* Last modified: 08/Jan/2024                        */
 /*************************************************** */
 
 #include <rsbac/types.h>
@@ -8287,7 +8287,7 @@ int sys_rsbac_adf_log_switch(enum rsbac_adf_request_t request,
       rsbac_printk(KERN_DEBUG "sys_rsbac_adf_log_switch(): calling ADF\n");
 #endif
     rsbac_target_id.dummy = 0;
-    rsbac_attribute_value.request = target;
+    rsbac_attribute_value.request = request;
     if (!rsbac_adf_request(R_SWITCH_LOG,
                            task_pid(current),
                            T_NONE,
@@ -8303,7 +8303,7 @@ int sys_rsbac_adf_log_switch(enum rsbac_adf_request_t request,
         char * request_name = rsbac_kmalloc_unlocked(RSBAC_MAXNAMELEN);
         if(request_name)
           {
-            get_request_name(request_name,target);
+            get_request_name(request_name, request);
             rsbac_printk(KERN_INFO "sys_rsbac_adf_log_switch(): switching RSBAC module logging for request %s (No. %i) to %i!\n",
                    request_name, target, value);
             rsbac_kfree(request_name);
@@ -8353,7 +8353,7 @@ int sys_rsbac_get_adf_log(enum rsbac_adf_request_t   request,
         char * request_name = rsbac_kmalloc_unlocked(RSBAC_MAXNAMELEN);
         if(request_name)
           {
-            get_request_name(request_name,target);
+            get_request_name(request_name, request);
             rsbac_printk(KERN_DEBUG "sys_rsbac_get_adf_log(): getting RSBAC module logging for request %s (No. %i)!\n",
                    request_name, target);
             rsbac_kfree(request_name);
