@@ -4,9 +4,9 @@
 /* Facility (ADF) - ACL module                       */
 /* File: rsbac/adf/acl/syscalls.c                    */
 /*                                                   */
-/* Author and (c) 1999-2021: Amon Ott <ao@rsbac.org> */
+/* Author and (c) 1999-2024: Amon Ott <ao@rsbac.org> */
 /*                                                   */
-/* Last modified: 27/Sep/2021                        */
+/* Last modified: 08/Jan/2024                        */
 /*************************************************** */
 
 #include <linux/string.h>
@@ -75,7 +75,7 @@ rsbac_boolean_t rsbac_acl_check_super(enum  rsbac_target_t target,
                                      tid,
                                      ACLS_USER,
                                      (rsbac_acl_subject_id_t) user,
-                                     ACLR_SUPERVISOR,
+                                     (enum rsbac_adf_request_t) ACLR_SUPERVISOR,
                                      &i_result);
     if(err)
       {
@@ -99,7 +99,7 @@ rsbac_boolean_t rsbac_acl_check_super(enum  rsbac_target_t target,
                                      tid,
                                      ACLS_GROUP,
                                      RSBAC_ACL_GROUP_EVERYONE,
-                                     ACLR_SUPERVISOR,
+                                     (enum rsbac_adf_request_t) ACLR_SUPERVISOR,
                                      &i_result);
     if(err)
       {
@@ -137,7 +137,7 @@ rsbac_boolean_t rsbac_acl_check_super(enum  rsbac_target_t target,
                                          tid,
                                          ACLS_ROLE,
                                          i_attr_val1.rc_role,
-                                         ACLR_SUPERVISOR,
+                                         (enum rsbac_adf_request_t) ACLR_SUPERVISOR,
                                          &i_result);
         if(err)
           {
@@ -181,7 +181,7 @@ rsbac_boolean_t rsbac_acl_check_super(enum  rsbac_target_t target,
                                             tid,
                                             ACLS_GROUP,
                                             group_p[i],
-                                            ACLR_SUPERVISOR,
+                                            (enum rsbac_adf_request_t) ACLR_SUPERVISOR,
                                             &i_result);
         if(tmperr)
           {
@@ -266,7 +266,7 @@ int rsbac_acl_sys_set_acl_entry(
         if(rsbac_get_owner(&user))
           return -RSBAC_EREADFAILED;
         /* first try access control right (SUPERVISOR try is included) */
-        if(!rsbac_acl_check_right(target, tid, user, task_pid(current), ACLR_ACCESS_CONTROL))
+        if(!rsbac_acl_check_right(target, tid, user, task_pid(current), (enum rsbac_adf_request_t) ACLR_ACCESS_CONTROL))
           {
             /* no access control -> try forward for these rights */
             /* but only, if no ttl requested */
@@ -402,7 +402,7 @@ int rsbac_acl_sys_remove_acl_entry(
         if(rsbac_get_owner(&user))
           return -RSBAC_EREADFAILED;
         /* first try access control right (SUPERVISOR is included) */
-        if(!rsbac_acl_check_right(target, tid, user, task_pid(current), ACLR_ACCESS_CONTROL))
+        if(!rsbac_acl_check_right(target, tid, user, task_pid(current), (enum rsbac_adf_request_t) ACLR_ACCESS_CONTROL))
           {
             char * subject_type_name = rsbac_kmalloc_unlocked(RSBAC_MAXNAMELEN);
             char * target_type_name = rsbac_kmalloc_unlocked(RSBAC_MAXNAMELEN);
@@ -606,7 +606,7 @@ int rsbac_acl_sys_add_to_acl_entry(
         if(rsbac_get_owner(&user))
           return -RSBAC_EREADFAILED;
         /* first try access control right (SUPERVISOR is included) */
-        if(!rsbac_acl_check_right(target, tid, user, task_pid(current), ACLR_ACCESS_CONTROL))
+        if(!rsbac_acl_check_right(target, tid, user, task_pid(current), (enum rsbac_adf_request_t) ACLR_ACCESS_CONTROL))
           {
             /* no access control -> try forward for these rights */
             /* but only, if no ttl requested */
@@ -741,7 +741,7 @@ int rsbac_acl_sys_remove_from_acl_entry(
         if(rsbac_get_owner(&user))
           return -RSBAC_EREADFAILED;
         /* first try access control right (SUPERVISOR is included) */
-        if(!rsbac_acl_check_right(target, tid, user, task_pid(current), ACLR_ACCESS_CONTROL))
+        if(!rsbac_acl_check_right(target, tid, user, task_pid(current), (enum rsbac_adf_request_t) ACLR_ACCESS_CONTROL))
           {
             char * rights_string = rsbac_kmalloc_unlocked(RSBAC_MAXNAMELEN);
             char * subject_type_name = rsbac_kmalloc_unlocked(RSBAC_MAXNAMELEN);
@@ -868,7 +868,7 @@ int rsbac_acl_sys_set_mask(
 #endif
       {
         /* first try access control right (SUPERVISOR is included) */
-        if(!rsbac_acl_check_right(target, tid, user, task_pid(current), ACLR_ACCESS_CONTROL))
+        if(!rsbac_acl_check_right(target, tid, user, task_pid(current), (enum rsbac_adf_request_t) ACLR_ACCESS_CONTROL))
           {
             char * rights_string = rsbac_kmalloc_unlocked(RSBAC_MAXNAMELEN);
             char * target_type_name = rsbac_kmalloc_unlocked(RSBAC_MAXNAMELEN);
@@ -1189,7 +1189,7 @@ int rsbac_acl_sys_get_rights(
                                                  tid,
                                                  subj_type,
                                                  subj_id,
-                                                 ACLR_SUPERVISOR,
+                                                 (enum rsbac_adf_request_t) ACLR_SUPERVISOR,
                                                  &i_result);
                 if(err)
                   {
