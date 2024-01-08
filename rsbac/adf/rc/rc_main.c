@@ -4,9 +4,9 @@
 /* Facility (ADF) - Role Compatibility               */
 /* File: rsbac/adf/rc/main.c                         */
 /*                                                   */
-/* Author and (c) 1999-2023: Amon Ott <ao@rsbac.org> */
+/* Author and (c) 1999-2024: Amon Ott <ao@rsbac.org> */
 /*                                                   */
-/* Last modified: 17/Feb/2023                        */
+/* Last modified: 08/Jan/2024                        */
 /*************************************************** */
 
 #include <linux/string.h>
@@ -185,7 +185,7 @@ check_comp_rc(enum rsbac_target_t target,
 	/* get type_comp_xxx of role */
 	i_rc_subtid.type = i_attr_val2.rc_type;
 	if (rsbac_rc_check_comp(i_attr_val1.rc_role,
-				i_rc_subtid, i_rc_item, request)) {
+				i_rc_subtid, i_rc_item, (enum rsbac_rc_special_rights_t) request)) {
 #ifdef CONFIG_RSBAC_DEBUG
 		if (rsbac_debug_adf_rc && (request <= R_NONE) && (rsbac_log_levels[request][target] == LL_full)) {
 			char *tmp = rsbac_kmalloc(RSBAC_MAXNAMELEN);
@@ -213,7 +213,7 @@ check_comp_rc(enum rsbac_target_t target,
 							     (tmp, target),
 							     i_attr_val2.rc_type,
 							     get_rc_special_right_name
-								     (tmp2, request));
+								     (tmp2, (enum rsbac_rc_special_rights_t) request));
 					else
 #endif
 						rsbac_pr_debug(adf_rc, "pid %u(%s), owner %u, rc_role %u, %s rc_type %u, request %s -> GRANTED!\n",
@@ -225,7 +225,7 @@ check_comp_rc(enum rsbac_target_t target,
 								     (tmp, target),
 							     i_attr_val2.rc_type,
 							     get_rc_special_right_name
-								     (tmp2, request));
+								     (tmp2, (enum rsbac_rc_special_rights_t) request));
 					rsbac_kfree(tmp2);
 				}
 				rsbac_kfree(tmp);
@@ -342,7 +342,7 @@ check_comp_rc(enum rsbac_target_t target,
 								     (tmp, target),
 								     i_attr_val2.rc_type,
 								     get_rc_special_right_name
-									     (tmp2, request));
+									     (tmp2, (enum rsbac_rc_special_rights_t) request));
 						} else
 #endif
 						rsbac_pr_debug(adf_rc, "pid %u(%s), owner %u, rc_role %u, %s rc_type %u, request %s -> NOT_GRANTED!\n",
@@ -354,7 +354,7 @@ check_comp_rc(enum rsbac_target_t target,
 								     (tmp, target),
 							     i_attr_val2.rc_type,
 							     get_rc_special_right_name
-								     (tmp2, request));
+								     (tmp2, (enum rsbac_rc_special_rights_t) request));
 					}
 					rsbac_kfree(tmp2);
 				}
@@ -396,7 +396,7 @@ check_comp_rc_scd(enum rsbac_rc_scd_type_t scd_type,
 	/* get type_comp_scd of role */
 	i_rc_subtid.type = scd_type;
 	if (rsbac_rc_check_comp(i_attr_val1.rc_role,
-				i_rc_subtid, RI_type_comp_scd, request)) {
+				i_rc_subtid, RI_type_comp_scd, (enum rsbac_rc_special_rights_t) request)) {
 #ifdef CONFIG_RSBAC_RC_FORCE_LOG
 		if (rsbac_rc_check_log(i_attr_val1.rc_role,
 					i_rc_subtid.type, RI_type_comp_scd, request, RL_ALWAYS))
@@ -513,7 +513,7 @@ rc_check_create(
 	union rsbac_rc_target_id_t subtid,
 	enum rsbac_rc_item_t item)
 {
-	if (rsbac_rc_check_comp(tid.role, subtid, item, R_CREATE)) {
+	if (rsbac_rc_check_comp(tid.role, subtid, item, (enum rsbac_rc_special_rights_t) R_CREATE)) {
 #ifdef CONFIG_RSBAC_RC_FORCE_LOG
 		if (rsbac_rc_check_log(tid.role,
 					subtid.type, item, R_CREATE, RL_ALWAYS))
@@ -632,12 +632,12 @@ int rsbac_rc_test_admin_roles(rsbac_rc_role_id_t t_role,
 	if (!modify) {
 		if (rsbac_rc_check_comp(i_attr_val1.rc_role,
 					i_rc_subtid,
-					RI_assign_roles, R_NONE))
+					RI_assign_roles, (enum rsbac_rc_special_rights_t) R_NONE))
 			return 0;
 	}
 	/* check admin_roles of role */
 	if (rsbac_rc_check_comp(i_attr_val1.rc_role,
-				i_rc_subtid, RI_admin_roles, R_NONE))
+				i_rc_subtid, RI_admin_roles, (enum rsbac_rc_special_rights_t) R_NONE))
 		return 0;
 
         if (t_role <= RC_role_max_value)
@@ -712,7 +712,7 @@ static int rsbac_rc_test_assign_roles(enum rsbac_target_t target,
 	/* we allow without assign role entry in this special case */
 	if (   i_rc_subtid.role != RC_role_inherit_parent
 	    && !rsbac_rc_check_comp(i_attr_val1.rc_role,
-				 i_rc_subtid, RI_assign_roles, R_NONE)) {
+				 i_rc_subtid, RI_assign_roles, (enum rsbac_rc_special_rights_t) R_NONE)) {
                 if (i_attr_val2.rc_role <= RC_role_max_value)
                         rsbac_pr_debug(adf_rc,
                                "rsbac_rc_test_assign_roles(): old role %u not in assign roles of role %u, pid %u, user %u!\n",
@@ -757,7 +757,7 @@ static int rsbac_rc_test_assign_roles(enum rsbac_target_t target,
 	if (   i_rc_subtid.role != RC_role_inherit_parent
 	    && !rsbac_rc_check_comp(i_attr_val1.rc_role,
 				 i_rc_subtid,
-				 RI_assign_roles, R_NONE)) {
+				 RI_assign_roles, (enum rsbac_rc_special_rights_t) R_NONE)) {
                 if (t_role <= RC_role_max_value)
                         rsbac_pr_debug(adf_rc,
        	                       "rsbac_rc_test_assign_roles(): new role %u not in assign roles of role %u, pid %u, user %u!\n",
@@ -962,8 +962,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 		case T_USER:
 		case T_GROUP:
 #endif
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 
 			/* all other cases are unknown */
 		default:
@@ -981,8 +980,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 #if defined(CONFIG_RSBAC_RC_NET_OBJ_PROT)
 		case T_NETOBJ:
 #endif
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 
 		default:
 			return DO_NOT_CARE;
@@ -991,8 +989,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 	case R_GET_STATUS_DATA:
 		switch (target) {
 		case T_SCD:
-			return check_comp_rc_scd
-				(tid.scd, request, caller_pid);
+			return check_comp_rc_scd (tid.scd, request, caller_pid);
 		case T_FILE:
 		case T_DIR:
 		case T_FIFO:
@@ -1005,18 +1002,15 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 		case T_USER:
 		case T_GROUP:
 #endif
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 
 #if defined(CONFIG_RSBAC_RC_NET_DEV_PROT)
 		case T_NETDEV:
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 #endif
 #if defined(CONFIG_RSBAC_RC_NET_OBJ_PROT)
 		case T_NETOBJ:
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 #endif
 
 		default:
@@ -1029,8 +1023,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 #if defined(CONFIG_RSBAC_RC_NET_OBJ_PROT)
 		case T_NETOBJ:
 #endif
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 
                 case T_UNIXSOCK:
                 case T_IPC:
@@ -1052,8 +1045,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 					return tmp_result;
 			}
 #endif				/* UNIX_PROCESS */
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 
 
 			/* all other cases are undefined */
@@ -1069,8 +1061,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 #if defined(CONFIG_RSBAC_RC_NET_OBJ_PROT)
 		case T_NETOBJ:
 #endif
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 
 			/* all other cases are undefined */
 		default:
@@ -1100,13 +1091,11 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 					return tmp_result;
 			}
 #endif				/* UNIX_PROCESS */
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 
 #if defined(CONFIG_RSBAC_RC_NET_OBJ_PROT)
 		case T_NETOBJ:
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 #endif
 
 			/* all other cases are undefined */
@@ -1132,8 +1121,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 		case T_NETTEMP:
 #endif
 #endif
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 
 #ifdef CONFIG_RSBAC_RW
 		case T_IPC:
@@ -1163,19 +1151,16 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 					return tmp_result;
 			}
 #endif				/* UNIX_PROCESS */
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 #endif				/* RW */
 
 		case T_SCD:
-			return check_comp_rc_scd
-				(tid.scd, request, caller_pid);
+			return check_comp_rc_scd (tid.scd, request, caller_pid);
 
 #if defined(CONFIG_RSBAC_RC_NET_OBJ_PROT)
 #if defined(CONFIG_RSBAC_NET_OBJ_RW)
 		case T_NETOBJ:
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 #endif
 #endif
 
@@ -1187,8 +1172,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 	case R_MOVETO:
 		switch (target) {
 		case T_DIR:
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 
 		default:
 			return DO_NOT_CARE;
@@ -1201,8 +1185,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 		case T_DEV:
 		case T_FIFO:
 		case T_IPC:
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 
 			/* all other cases are unknown */
 		default:
@@ -1212,12 +1195,10 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 	case R_MAP_EXEC:
 		switch (target) {
 		case T_FILE:
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 		case T_NONE:
 			/* anonymous mapping */
-			return check_comp_rc_scd
-				(ST_other, request, caller_pid);
+			return check_comp_rc_scd ((enum rsbac_rc_scd_type_t) ST_other, request, caller_pid);
 
 			/* all other cases are unknown */
 		default:
@@ -1234,8 +1215,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 #if defined(CONFIG_RSBAC_RC_UM_PROT)
 		case T_USER:
 #endif
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 
 			/* all other cases are unknown */
 		default:
@@ -1249,8 +1229,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 		case T_FIFO:
 		case T_SYMLINK:
 		case T_IPC:
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 
 #ifdef CONFIG_RSBAC_USER_CHOWN
 		case T_USER:
@@ -1275,7 +1254,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 			if(i_attr_val1.auth_last_auth != tid.user)
 				return NOT_GRANTED;
 			else
-				return check_comp_rc(target, tid, RCR_CHANGE_AUTHED_OWNER, caller_pid);
+				return check_comp_rc(target, tid, (enum rsbac_adf_request_t) RCR_CHANGE_AUTHED_OWNER, caller_pid);
 #else
 			return check_comp_rc(target, tid, request, caller_pid);
 #endif
@@ -1316,8 +1295,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 	case R_CHDIR:
 		switch (target) {
 		case T_DIR:
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 
 			/* all other cases are unknown */
 		default:
@@ -1704,8 +1682,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 		case T_USER:
 		case T_GROUP:
 #endif
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 
 			/* all other cases are unknown */
 		default:
@@ -1739,9 +1716,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 			if (i_rc_item_val1.type_id == RC_type_no_execute)
 				return NOT_GRANTED;
 			else
-				return check_comp_rc
-					(target, tid, request,
-					 caller_pid);
+				return check_comp_rc (target, tid, request, caller_pid);
 
 			/* all other cases are unknown */
 		default:
@@ -1751,8 +1726,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 	case R_GET_PERMISSIONS_DATA:
 		switch (target) {
 		case T_SCD:
-			return check_comp_rc_scd
-				(tid.scd, request, caller_pid);
+			return check_comp_rc_scd (tid.scd, request, caller_pid);
 		case T_FILE:
 		case T_DIR:
 		case T_FIFO:
@@ -1767,8 +1741,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 		case T_USER:
 		case T_GROUP:
 #endif
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 
 		default:
 			return DO_NOT_CARE;
@@ -1780,8 +1753,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 		case T_UNIXSOCK:
 		case T_FIFO:
 		case T_SYMLINK:
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 
 			/* all other cases are unknown */
 		default:
@@ -1795,8 +1767,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 		case T_FIFO:
 		case T_SYMLINK:
 		case T_UNIXSOCK:
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 
 			/* all other cases are unknown */
 		default:
@@ -1806,8 +1777,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 	case R_AUTHENTICATE:
 		switch (target) {
 		case T_USER:
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 
 			/* all other cases are unknown */
 		default:
@@ -1952,9 +1922,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 
 			default:
 				/* Explicitely granted? */
-				return check_comp_rc
-					(target, tid, request,
-					 caller_pid);
+				return check_comp_rc (target, tid, request, caller_pid);
 			}
 
 #ifdef CONFIG_RSBAC_RC_AUTH_PROT
@@ -1984,7 +1952,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 				/* ...and for this target */
 				result =
 				    check_comp_rc(target, tid,
-						  RCR_MODIFY_AUTH,
+						  (enum rsbac_adf_request_t) RCR_MODIFY_AUTH,
 						  caller_pid);
 				if (   (result == GRANTED)
 				    || (result == DO_NOT_CARE)
@@ -2018,7 +1986,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 				/* ...and for this target */
 				result =
 				    check_comp_rc(target, tid,
-						  RCR_MODIFY_UDF,
+						  (enum rsbac_adf_request_t) RCR_MODIFY_UDF,
 						  caller_pid);
 				if (   (result == GRANTED)
 				    || (result == DO_NOT_CARE)
@@ -2051,7 +2019,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 				/* ...and for this target */
 				result =
 				    check_comp_rc(target, tid,
-						  RCR_MODIFY_UDF,
+						  (enum rsbac_adf_request_t) RCR_MODIFY_UDF,
 						  caller_pid);
 				if (   (result == GRANTED)
 				    || (result == DO_NOT_CARE)
@@ -2097,12 +2065,10 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 #if defined(CONFIG_RSBAC_RC_NET_OBJ_PROT)
 		case T_NETOBJ:
 #endif
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 
 		case T_SCD:
-			return check_comp_rc_scd
-				(tid.scd, request, caller_pid);
+			return check_comp_rc_scd (tid.scd, request, caller_pid);
 
 			/* all other cases are unknown */
 		default:
@@ -2112,8 +2078,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 	case R_MODIFY_SYSTEM_DATA:
 		switch (target) {
 		case T_SCD:
-			return check_comp_rc_scd
-				(tid.scd, request, caller_pid);
+			return check_comp_rc_scd (tid.scd, request, caller_pid);
 
 		case T_DEV:
 		case T_PROCESS:
@@ -2124,8 +2089,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 #if defined(CONFIG_RSBAC_RC_NET_OBJ_PROT)
 		case T_NETOBJ:
 #endif
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 
 			/* all other cases are unknown */
 		default:
@@ -2137,8 +2101,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 		case T_FILE:
 		case T_DIR:
 		case T_DEV:
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 
 			/* all other cases are unknown */
 		default:
@@ -2256,8 +2219,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
                 case T_UNIXSOCK:
 		case T_DEV:
 		case T_IPC:
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 
 			/* all other cases are unknown */
 		default:
@@ -2268,13 +2230,11 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 		switch (target) {
 		case T_NONE:
 			/* may add to kernel, if compatible */
-			return check_comp_rc_scd
-				(ST_other, request, caller_pid);
+			return check_comp_rc_scd ((enum rsbac_rc_scd_type_t) ST_other, request, caller_pid);
 
 		case T_FILE:
 		case T_DEV:
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 
 			/* all other cases are unknown */
 		default:
@@ -2286,8 +2246,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 		/* only for IPC */
 		switch (target) {
 		case T_IPC:
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 
 			/* all other cases are unknown */
 		default:
@@ -2297,13 +2256,11 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 	case R_REMOVE_FROM_KERNEL:
 		switch (target) {
 		case T_NONE:
-			return check_comp_rc_scd
-				(ST_other, request, caller_pid);
+			return check_comp_rc_scd ((enum rsbac_rc_scd_type_t) ST_other, request, caller_pid);
 
 		case T_FILE:
 		case T_DEV:
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 
 			/* all other cases are unknown */
 		default:
@@ -2322,8 +2279,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 		case T_USER:
 		case T_GROUP:
 #endif
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 
 			/* all other cases are unknown */
 		default:
@@ -2332,8 +2288,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 
 	case R_SEND_SIGNAL:
 		if (target == T_PROCESS)
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 		else
 			return DO_NOT_CARE;
 
@@ -2346,8 +2301,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 		case T_SYMLINK:
 		case T_UNIXSOCK:
 		case T_DEV:
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 
 			/* all other cases are unknown */
 		default:
@@ -2357,8 +2311,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 	case R_SHUTDOWN:
 		switch (target) {
 		case T_NONE:
-			return check_comp_rc_scd
-				(ST_other, request, caller_pid);
+			return check_comp_rc_scd ((enum rsbac_rc_scd_type_t) ST_other, request, caller_pid);
 
 			/* all other cases are unknown */
 		default:
@@ -2368,8 +2321,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 	case R_SWITCH_LOG:
 		switch (target) {
 		case T_NONE:
-			return check_comp_rc_scd
-				(ST_other, request, caller_pid);
+			return check_comp_rc_scd ((enum rsbac_rc_scd_type_t) ST_other, request, caller_pid);
 
 			/* all other cases are unknown */
 		default:
@@ -2393,10 +2345,10 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 #ifdef CONFIG_RSBAC_MPROTECT
 				case SW_MPROTECT:
 #endif
-					return check_comp_rc_scd (ST_other, request, caller_pid);
+					return check_comp_rc_scd ((enum rsbac_rc_scd_type_t) ST_other, request, caller_pid);
 #ifdef CONFIG_RSBAC_RC_AUTH_PROT
 				case SW_AUTH:
-					if (check_comp_rc_scd (ST_other, request, caller_pid) == GRANTED)
+					if (check_comp_rc_scd ((enum rsbac_rc_scd_type_t) ST_other, request, caller_pid) == GRANTED)
 						return GRANTED;
 					return check_comp_rc_scd (RST_auth_administration, request, caller_pid);
 #endif
@@ -2420,8 +2372,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 	case R_TRUNCATE:
 		switch (target) {
 		case T_FILE:
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 
 			/* all other cases are unknown */
 		default:
@@ -2435,8 +2386,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 		case T_FIFO:
                 case T_UNIXSOCK:
 		case T_IPC:
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 
 			/* all other cases are unknown */
 		default:
@@ -2448,8 +2398,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 		case T_FILE:
 		case T_DIR:
 		case T_DEV:
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 
 			/* all other cases are unknown */
 		default:
@@ -2519,14 +2468,12 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 			}
 #if defined(CONFIG_RSBAC_RC_NET_DEV_PROT)
 		case T_NETDEV:
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 #endif
 
 #if defined(CONFIG_RSBAC_RC_NET_OBJ_PROT)
 		case T_NETOBJ:
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 #endif
 
 			/* all other cases are undefined */
@@ -2539,13 +2486,11 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 		case T_DEV:
                 case T_UNIXSOCK:
 		case T_IPC:
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 #if defined(CONFIG_RSBAC_RC_NET_OBJ_PROT)
 		case T_NETOBJ:
 #endif
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 
 		default:
 			return DO_NOT_CARE;
@@ -2558,8 +2503,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 		case T_FIFO:
 		case T_SYMLINK:
                 case T_UNIXSOCK:
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 
 		default:
 			return DO_NOT_CARE;
@@ -2571,8 +2515,7 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 		case T_FIFO:
 		case T_SYMLINK:
                 case T_UNIXSOCK:
-			return check_comp_rc
-				(target, tid, request, caller_pid);
+			return check_comp_rc (target, tid, request, caller_pid);
 		default:
 			return DO_NOT_CARE;
 		}
