@@ -1,14 +1,11 @@
-/*
- * rc_getname.c: Getname functions for the RC module.
- *
- * Author and Copyright (C) 1999-2021 Amon Ott <ao@rsbac.org>
- *
- *      This program is free software; you can redistribute it and/or
- *      modify it under the terms of the GNU General Public License as
- *      published by the Free Software Foundation, version 2.
- *
- * Last modified 04/Oct/2021.
- */
+/************************************ */
+/* Rule Set Based Access Control      */
+/*                                    */
+/* Author and (c) 1999-2024: Amon Ott */
+/*                                    */
+/* Getname functions for RC module    */
+/* Last modified: 08/Jan/2024         */
+/************************************ */
 
 #include <rsbac/getname.h>
 #include <rsbac/rc_getname.h>
@@ -130,12 +127,12 @@ static char rc_special_right_list[RCR_NONE - RSBAC_RC_SPECIAL_RIGHT_BASE +
 char *get_rc_target_name(char *name, enum rsbac_rc_target_t value)
 {
 	if (!name)
-		return (NULL);
+		return NULL;
 	if (value > RT_NONE)
 		strcpy(name, "ERROR!");
 	else
 		strcpy(name, rc_target_list[value]);
-	return (name);
+	return name;
 };
 
 enum rsbac_rc_target_t get_rc_target_nr(const char *name)
@@ -143,24 +140,24 @@ enum rsbac_rc_target_t get_rc_target_nr(const char *name)
 	enum rsbac_rc_target_t i;
 
 	if (!name)
-		return (RT_NONE);
+		return RT_NONE;
 	for (i = 0; i < RT_NONE; i++) {
 		if (!strcmp(name, rc_target_list[i])) {
-			return (i);
+			return i;
 		}
 	}
-	return (RT_NONE);
+	return RT_NONE;
 };
 
 char *get_rc_admin_name(char *name, enum rsbac_rc_admin_type_t value)
 {
 	if (!name)
-		return (NULL);
+		return NULL;
 	if (value > RC_none)
 		strcpy(name, "ERROR!");
 	else
 		strcpy(name, rc_admin_list[value]);
-	return (name);
+	return name;
 };
 
 enum rsbac_rc_admin_type_t get_rc_admin_nr(const char *name)
@@ -168,29 +165,29 @@ enum rsbac_rc_admin_type_t get_rc_admin_nr(const char *name)
 	enum rsbac_rc_admin_type_t i;
 
 	if (!name)
-		return (RC_none);
+		return RC_none;
 	for (i = 0; i < RC_none; i++) {
 		if (!strcmp(name, rc_admin_list[i])) {
-			return (i);
+			return i;
 		}
 	}
-	return (RC_none);
+	return RC_none;
 };
 
 char *get_rc_scd_type_name(char *name, enum rsbac_rc_scd_type_t value)
 {
 	if (!name)
-		return (NULL);
+		return NULL;
 	if (value < RST_min) {
-		return (get_scd_type_name(name, value));
+		return get_scd_type_name(name, (enum rsbac_scd_type_t) value);
 	}
 	value -= RST_min;
 	if (value > RST_none) {
 		strcpy(name, "ERROR!");
-		return (name);
+		return name;
 	}
 	strcpy(name, rc_scd_type_list[value]);
-	return (name);
+	return name;
 };
 
 enum rsbac_rc_scd_type_t get_rc_scd_type_nr(const char *name)
@@ -198,24 +195,24 @@ enum rsbac_rc_scd_type_t get_rc_scd_type_nr(const char *name)
 	enum rsbac_rc_scd_type_t i;
 
 	if (!name)
-		return (RC_none);
+		return (enum rsbac_rc_scd_type_t) RC_none;
 	for (i = 0; i < RC_none - RST_min; i++) {
 		if (!strcmp(name, rc_scd_type_list[i])) {
-			return (i + RST_min);
+			return i + RST_min;
 		}
 	}
-	return (get_scd_type_nr(name));
+	return (enum rsbac_rc_scd_type_t) get_scd_type_nr(name);
 };
 
 char *get_rc_item_name(char *name, enum rsbac_rc_item_t value)
 {
 	if (!name)
-		return (NULL);
+		return NULL;
 	if (value > RI_none)
 		strcpy(name, "ERROR!");
 	else
 		strcpy(name, rc_item_list[value]);
-	return (name);
+	return name;
 };
 
 enum rsbac_rc_item_t get_rc_item_nr(const char *name)
@@ -223,28 +220,28 @@ enum rsbac_rc_item_t get_rc_item_nr(const char *name)
 	enum rsbac_rc_item_t i;
 
 	if (!name)
-		return (RI_none);
+		return RI_none;
 	for (i = 0; i < RI_none; i++) {
 		if (!strcmp(name, rc_item_list[i])) {
-			return (i);
+			return i;
 		}
 	}
-	return (RI_none);
+	return RI_none;
 };
 
 char *get_rc_special_right_name(char *name,
 				enum rsbac_rc_special_rights_t value)
 {
 	if (!name)
-		return (NULL);
+		return NULL;
 	if (value < RSBAC_RC_SPECIAL_RIGHT_BASE) {
-		return (get_request_name(name, value));
+		return get_request_name(name, (enum rsbac_adf_request_t) value);
 	}
 	value -= RSBAC_RC_SPECIAL_RIGHT_BASE;
 	if (value > RCR_NONE) {
 		strcpy(name, "ERROR!");
-		return (name);
+		return name;
 	}
 	strcpy(name, rc_special_right_list[value]);
-	return (name);
+	return name;
 };
