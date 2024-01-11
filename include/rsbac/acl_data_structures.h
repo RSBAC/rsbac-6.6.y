@@ -311,12 +311,12 @@
 #define RSBAC_ACL_FD_OLD_FILENAME "aclfd."
 #define RSBAC_ACL_DEF_FD_FILENAME "aclfd.df"
 #define RSBAC_ACL_NR_FD_LIST_BITS 2
-#define RSBAC_ACL_FD_LIST_VERSION 3
-#define RSBAC_ACL_DEF_FD_LIST_VERSION 3
-#define RSBAC_ACL_FD_OLD_LIST_VERSION 2
-#define RSBAC_ACL_DEF_FD_OLD_LIST_VERSION 2
-#define RSBAC_ACL_FD_OLD_OLD_LIST_VERSION 1
-#define RSBAC_ACL_DEF_FD_OLD_OLD_LIST_VERSION 1
+#define RSBAC_ACL_FD_LIST_VERSION 4
+#define RSBAC_ACL_DEF_FD_LIST_VERSION 4
+#define RSBAC_ACL_FD_OLD_LIST_VERSION 3
+#define RSBAC_ACL_DEF_FD_OLD_LIST_VERSION 3
+#define RSBAC_ACL_FD_OLD_OLD_LIST_VERSION 2
+#define RSBAC_ACL_DEF_FD_OLD_OLD_LIST_VERSION 2
 
 /* The list of devices is also a double linked list, so we define list    */
 /* items and a list head.                                                 */
