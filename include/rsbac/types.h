@@ -521,7 +521,7 @@ struct rsbac_net_obj_desc_t
     rsbac_net_temp_id_t remote_temp;
   };
 
-#define RSBAC_ADF_REQUEST_ARRAY_VERSION 2
+#define RSBAC_ADF_REQUEST_ARRAY_VERSION 3
 
 enum  rsbac_adf_request_t {
                         R_ADD_TO_KERNEL,
