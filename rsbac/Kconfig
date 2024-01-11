@@ -2194,7 +2194,7 @@ config RSBAC_ENFORCE_CLOSE
 
 config RSBAC_MOVETO
 	bool 'Use MOVETO requests when writing to DIR'
-	default n
+	default y
 	help
 	  When moving an object into a directory, use request
 	  MOVETO, not the old WRITE.
