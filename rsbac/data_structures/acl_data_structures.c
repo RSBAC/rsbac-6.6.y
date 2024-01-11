@@ -1,9 +1,9 @@
 /*************************************************** */
 /* Rule Set Based Access Control                     */
 /* Implementation of ACL data structures             */
-/* Author and (c) 1999-2023: Amon Ott <ao@rsbac.org> */
+/* Author and (c) 1999-2024: Amon Ott <ao@rsbac.org> */
 /*                                                   */
-/* Last modified: 18/Nov/2023                        */
+/* Last modified: 11/Jan/2024                        */
 /*************************************************** */
 
 #include <linux/types.h>
@@ -166,22 +166,13 @@ static int netdev_compare(void *desc1, void *desc2)
 static int fd_conv(void *old_desc,
 		   void *old_data, void *new_desc, void *new_data)
 {
-	memcpy(new_desc, old_desc, sizeof(rsbac_old_inode_nr_t));
-	memcpy(new_data, old_data, sizeof(rsbac_acl_rights_vector_t));
-	return 0;
-}
-
-static int fd_old_conv(void *old_desc,
-		   void *old_data, void *new_desc, void *new_data)
-{
 	rsbac_acl_rights_vector_t *new = new_data;
 	rsbac_acl_rights_vector_t *old = old_data;
 
 	memcpy(new_desc, old_desc, sizeof(rsbac_old_inode_nr_t));
-	*new = (*old & RSBAC_ALL_REQUEST_VECTOR)
-	    | ((*old & ~(RSBAC_ALL_REQUEST_VECTOR)) <<
-	       (RSBAC_ACL_SPECIAL_RIGHT_BASE -
-		RSBAC_ACL_OLD_SPECIAL_RIGHT_BASE));
+	*new = *old;
+	if (*new & RSBAC_REQUEST_VECTOR(R_WRITE))
+		*new |= RSBAC_REQUEST_VECTOR(R_MOVETO);
 	return 0;
 }
 
@@ -189,9 +180,8 @@ static rsbac_list_conv_function_t *fd_get_conv(rsbac_version_t old_version)
 {
 	switch (old_version) {
 	case RSBAC_ACL_FD_OLD_LIST_VERSION:
-		return fd_conv;
 	case RSBAC_ACL_FD_OLD_OLD_LIST_VERSION:
-		return fd_old_conv;
+		return fd_conv;
 	default:
 		return NULL;
 	}
@@ -501,13 +491,25 @@ static int common_old_subconv(void *old_desc,
 	return 0;
 }
 
+static int fd_subconv(void *old_desc,
+			  void *old_data, void *new_desc, void *new_data)
+{
+	rsbac_acl_rights_vector_t *new_d = new_data;
+	rsbac_acl_rights_vector_t *old_d = old_data;
+
+	memcpy(new_desc, old_desc, sizeof(struct rsbac_acl_entry_desc_t));
+	*new_d = *old_d;
+	if (*new_d & RSBAC_REQUEST_VECTOR(R_WRITE))
+		*new_d |= RSBAC_REQUEST_VECTOR(R_MOVETO);
+	return 0;
+}
+
 static rsbac_list_conv_function_t *fd_get_subconv(rsbac_version_t old_version)
 {
 	switch (old_version) {
 	case RSBAC_ACL_FD_OLD_LIST_VERSION:
-		return common_subconv;
 	case RSBAC_ACL_FD_OLD_OLD_LIST_VERSION:
-		return common_old_subconv;
+		return fd_subconv;
 	default:
 		return NULL;
 	}
@@ -626,9 +628,8 @@ static rsbac_list_conv_function_t *def_fd_get_conv(rsbac_version_t old_version)
 {
 	switch (old_version) {
 	case RSBAC_ACL_DEF_FD_OLD_LIST_VERSION:
-		return common_subconv;
 	case RSBAC_ACL_DEF_FD_OLD_OLD_LIST_VERSION:
-		return common_old_subconv;
+		return fd_subconv;
 	default:
 		return NULL;
 	}
@@ -959,8 +960,9 @@ static void clear_device_item(struct rsbac_acl_device_list_item_t
 {
 	if (!device_p)
 		return;
+
 	acl_detach_fd_lists(device_p);
-	rsbac_sfree(acl_device_item_slab, device_p);;
+	rsbac_sfree(acl_device_item_slab, device_p);
 }
 
 static void remove_device_item(__u32 major, __u32 minor)
@@ -1005,7 +1007,7 @@ static void remove_device_item(__u32 major, __u32 minor)
 		/* now we can remove the item from memory. This means cleaning up */
 		/* everything below. */
 		clear_device_item(item_p);
-	}			/* end of if: item was found */
+	}
 	else
 		spin_unlock(&device_list_lock);
 }
@@ -2885,7 +2887,7 @@ int __init rsbac_init_acl(void)
 #if defined(CONFIG_RSBAC_ACL_BACKUP)
 				      RSBAC_LIST_BACKUP |
 #endif
-				      RSBAC_LIST_PERSIST | RSBAC_LIST_AUTO_HASH_RESIZE | RSBAC_LIST_OWN_SLAB,
+				      RSBAC_LIST_PERSIST | RSBAC_LIST_AUTO_HASH_RESIZE,
 				      NULL,
 				      entry_compare,
 				      u_get_conv,
@@ -2953,7 +2955,7 @@ int __init rsbac_init_acl(void)
 #if defined(CONFIG_RSBAC_ACL_BACKUP)
 				      RSBAC_LIST_BACKUP |
 #endif
-				      RSBAC_LIST_PERSIST | RSBAC_LIST_AUTO_HASH_RESIZE | RSBAC_LIST_OWN_SLAB,
+				      RSBAC_LIST_PERSIST | RSBAC_LIST_AUTO_HASH_RESIZE,
 				      NULL,
 				      entry_compare,
 				      g_get_conv,

@@ -242,9 +242,30 @@ static int tc_subconv(
 #else
 static int __init tc_subconv(
 #endif
-				    void *old_desc,
-				    void *old_data,
-				    void *new_desc, void *new_data)
+	void *old_desc,
+	void *old_data,
+	void *new_desc,
+	void *new_data)
+{
+	rsbac_rc_rights_vector_t *new = new_data;
+	rsbac_rc_rights_vector_t *old = old_data;
+
+	memcpy(new_desc, old_desc, sizeof(rsbac_rc_type_id_t));
+	*new = *old;
+	if (*new & RSBAC_REQUEST_VECTOR(R_WRITE))
+		*new |= RSBAC_REQUEST_VECTOR(R_MOVETO);
+	return 0;
+}
+
+#ifdef CONFIG_RSBAC_INIT_DELAY
+static int tc_old_subconv(
+#else
+static int __init tc_old_subconv(
+#endif
+	void *old_desc,
+	void *old_data,
+	void *new_desc,
+	void *new_data)
 {
 	rsbac_rc_rights_vector_t *new = new_data;
 	rsbac_rc_rights_vector_t *old = old_data;
@@ -254,6 +275,8 @@ static int __init tc_subconv(
 	    | ((*old & ~(RSBAC_ALL_REQUEST_VECTOR)) <<
 	       (RSBAC_RC_SPECIAL_RIGHT_BASE -
 		RSBAC_RC_OLD_SPECIAL_RIGHT_BASE));
+	if (*new & RSBAC_REQUEST_VECTOR(R_WRITE))
+		*new |= RSBAC_REQUEST_VECTOR(R_MOVETO);
 	return 0;
 }
 
@@ -266,10 +289,12 @@ static rsbac_list_conv_function_t *__init tcfd_get_subconv(rsbac_version_t
 #endif
 {
 	switch (old_version) {
-	case RSBAC_RC_ROLE_TCFD_OLD_LIST_VERSION:
-		return tc_subconv;
-	default:
-		return NULL;
+		case RSBAC_RC_ROLE_TCFD_OLD_LIST_VERSION:
+			return tc_subconv;
+		case RSBAC_RC_ROLE_TCFD_OLD_OLD_LIST_VERSION:
+			return tc_old_subconv;
+		default:
+			return NULL;
 	}
 }
 
@@ -296,6 +321,7 @@ static rsbac_list_conv_function_t *__init tcfd_get_conv(rsbac_version_t
 {
 	switch (old_version) {
 	case RSBAC_RC_ROLE_TCFD_OLD_LIST_VERSION:
+	case RSBAC_RC_ROLE_TCFD_OLD_OLD_LIST_VERSION:
 		return tc_conv;
 	default:
 		return NULL;
@@ -2903,7 +2929,7 @@ int rsbac_rc_copy_role(rsbac_list_ta_number_t ta_number,
 }
 
 int rsbac_rc_copy_type(rsbac_list_ta_number_t ta_number,
-		       enum rsbac_target_t target,
+		       enum rsbac_rc_target_t target,
 		       rsbac_rc_type_id_t from_type,
 		       rsbac_rc_type_id_t to_type)
 {
