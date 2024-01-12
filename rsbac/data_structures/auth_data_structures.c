@@ -1,9 +1,9 @@
 /*************************************************** */
 /* Rule Set Based Access Control                     */
 /* Implementation of AUTH data structures            */
-/* Author and (c) 1999-2020: Amon Ott <ao@rsbac.org> */
+/* Author and (c) 1999-2024: Amon Ott <ao@rsbac.org> */
 /*                                                   */
-/* Last modified: 29/Dec/2020                        */
+/* Last modified: 12/Jan/2024                        */
 /*************************************************** */
 
 #include <linux/types.h>
@@ -2924,7 +2924,9 @@ rsbac_boolean_t rsbac_auth_p_capset_member(rsbac_pid_t pid,
 							NULL);
 
 				tid.process = pid;
+				rcu_read_lock();
 				file_p = get_task_exe_file(pid_task(pid, PIDTYPE_PID));
+				rcu_read_unlock();
 				if (file_p) {
 					if (file_p->f_path.dentry && file_p->f_path.dentry->d_inode) {
 						struct rsbac_auth_device_list_item_t *device_p;
@@ -3059,7 +3061,9 @@ rsbac_boolean_t rsbac_auth_p_capset_member(rsbac_pid_t pid,
 							NULL);
 
 				tid.process = pid;
+				rcu_read_lock();
 				file_p = get_task_exe_file(pid_task(pid, PIDTYPE_PID));
+				rcu_read_unlock();
 				if (file_p) {
 					if(file_p->f_path.dentry && file_p->f_path.dentry->d_inode) {
 						struct
@@ -3210,7 +3214,9 @@ rsbac_boolean_t rsbac_auth_p_capset_member(rsbac_pid_t pid,
 							NULL);
 
 				tid.process = pid;
+				rcu_read_lock();
 				file_p = get_task_exe_file(pid_task(pid, PIDTYPE_PID));
+				rcu_read_unlock();
 				if (file_p) {
 					if (file_p->f_path.dentry && file_p->f_path.dentry->d_inode) {
 						struct
@@ -3363,7 +3369,9 @@ rsbac_boolean_t rsbac_auth_p_capset_member(rsbac_pid_t pid,
 							NULL);
 
 				tid.process = pid;
+				rcu_read_lock();
 				file_p = get_task_exe_file(pid_task(pid, PIDTYPE_PID));
+				rcu_read_unlock();
 				if (file_p) {
 					if (file_p->f_path.dentry && file_p->f_path.dentry->d_inode) {
 						struct
@@ -3502,7 +3510,9 @@ rsbac_boolean_t rsbac_auth_p_capset_member(rsbac_pid_t pid,
 							NULL);
 
 				tid.process = pid;
+				rcu_read_lock();
 				file_p = get_task_exe_file(pid_task(pid, PIDTYPE_PID));
+				rcu_read_unlock();
 				if (file_p) {
 					if (file_p->f_path.dentry && file_p->f_path.dentry->d_inode) {
 						struct
@@ -3652,7 +3662,9 @@ rsbac_boolean_t rsbac_auth_p_capset_member(rsbac_pid_t pid,
 							NULL);
 
 				tid.process = pid;
+				rcu_read_lock();
 				file_p = get_task_exe_file(pid_task(pid, PIDTYPE_PID));
+				rcu_read_unlock();
 				if (file_p) {
 					if (file_p->f_path.dentry && file_p->f_path.dentry->d_inode) {
 						struct
