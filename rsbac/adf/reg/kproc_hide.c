@@ -2,6 +2,7 @@
  * RSBAC REG decision module kproc_hide. Hiding kernel processes.
  *
  * Author and (c) 2004 Michal Purzynski <albeiro@rsbac.org>
+ * (c) 2024 Amon Ott <ao@rsbac.org>
  */
 
 #include <linux/module.h>
@@ -36,13 +37,17 @@ Return value: 1 if is, 0 otherwise.
 int is_kproc(struct pid *pid)
 {
 	struct task_struct *tid_task;
+	int result;
 
+	rcu_read_lock();
 	tid_task = pid_task(pid, PIDTYPE_PID);
 
 	if (tid_task->mm == NULL)
-		return 1;
+		result = 1;
 	else
-		return 0;
+		result = 0;
+	rcu_read_unlock();
+	return result;
 }
 
 /**** Decision Functions ****/
