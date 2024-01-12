@@ -1,11 +1,11 @@
 /*************************************************** */
 /* Rule Set Based Access Control                     */
 /* Implementation of ACI data structures             */
-/* Author and (c) 1999-2023: Amon Ott <ao@rsbac.org> */
+/* Author and (c) 1999-2024: Amon Ott <ao@rsbac.org> */
 /* (some smaller parts copied from fs/namei.c        */
 /*  and others)                                      */
 /*                                                   */
-/* Last modified: 18/Dec/2023                        */
+/* Last modified: 12/Jan/2024                        */
 /*************************************************** */
 
 #include <linux/types.h>
@@ -2485,6 +2485,7 @@ long rsbac_read_open(char *name, __u32 major, __u32 minor)
 		rsbac_pr_debug(ds, "could not lookup file %s, trying backup %s\n",
 			     name, bname);
 		fname = getname_kernel(bname);
+		rsbac_kfree(bname);
 		f2 = do_filp_open(dir_fd, fname, &op);
 		putname(fname);
 	}
