@@ -1,7 +1,7 @@
 /*
  * RSBAC REG decision module sample
  *
- * Author and (c) 1999-2009 Amon Ott <ao@rsbac.org>
+ * Author and (c) 1999-2024 Amon Ott <ao@rsbac.org>
  */
 
 /* general stuff */
@@ -116,12 +116,11 @@ static int reg_sample_proc_open(struct inode *inode, struct file *file)
 	return single_open(file, reg_sample_proc_show, NULL);
 }
 
-static const struct file_operations reg_sample_proc_fops = {
-       .owner          = THIS_MODULE,
-       .open           = reg_sample_proc_open,
-       .read           = seq_read,
-       .llseek         = seq_lseek,
-       .release        = single_release,
+static const struct proc_ops reg_sample_proc_ops = {
+       .proc_open      = reg_sample_proc_open,
+       .proc_read      = seq_read,
+       .proc_lseek     = seq_lseek,
+       .proc_release   = single_release,
 };
 
 #endif /* CONFIG_RSBAC_PROC */
@@ -247,6 +246,7 @@ int init_module(void)
                          NULL,
                          NULL,
                          FILENAME,
+                         0,
                          0))
     {
       rsbac_printk(KERN_WARNING "RSBAC REG decision module sample 3: Registering list failed. Unloading.\n");
@@ -326,7 +326,7 @@ int init_module(void)
     }
 
   #if defined(CONFIG_RSBAC_PROC)
-  reg_sample_proc_p = proc_create(PROC_NAME, S_IFREG | S_IRUGO, proc_rsbac_root_p, &reg_sample_proc_fops);
+  reg_sample_proc_p = proc_create(PROC_NAME, S_IFREG | S_IRUGO, proc_rsbac_root_p, &reg_sample_proc_ops);
   if(!reg_sample_proc_p)
     {
       rsbac_printk(KERN_WARNING "%s: Not loaded due to failed proc entry registering.\n", name);
