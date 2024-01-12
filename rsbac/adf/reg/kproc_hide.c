@@ -66,7 +66,9 @@ static int request_func(enum rsbac_adf_request_t	request,
 			switch (target) {
 				case T_PROCESS:
 					if (is_kproc(tid.process))
-					return NOT_GRANTED;
+						return NOT_GRANTED;
+					else
+						return DO_NOT_CARE;
 				default:
 					return DO_NOT_CARE;
 			}
@@ -93,7 +95,7 @@ int init_module(void)
 	/* clearing registration entries */
 	memset(&entry, 0, sizeof(entry));
 
-	strcpy(entry.name, "RSBAC REG kproc_hide ADF module");
+	strncpy(entry.name, "RSBAC REG kproc_hide ADF module", sizeof(entry.name));
 	rsbac_printk(KERN_INFO "RSBAC REG decision module kproc_hide: REG Version: %u, Name: %s, Handle: %li\n",
 								RSBAC_REG_VERSION, entry.name, handle);
 
