@@ -1,7 +1,7 @@
 /*
  * RSBAC REG decision module sample2
  *
- * Author and (c) 1999-2019 Amon Ott <ao@rsbac.org>
+ * Author and (c) 1999-2024 Amon Ott <ao@rsbac.org>
  */
 
 /* general stuff */
@@ -99,12 +99,11 @@ static int adf_sample_proc_open(struct inode *inode, struct file *file)
 	return single_open(file, adf_sample_proc_show, NULL);
 }
 
-static const struct file_operations adf_sample_proc_fops = {
-       .owner          = THIS_MODULE,
-       .open           = adf_sample_proc_open,
-       .read           = seq_read,
-       .llseek         = seq_lseek,
-       .release        = single_release,
+static const struct proc_ops adf_sample_proc_ops = {
+       .proc_open      = adf_sample_proc_open,
+       .proc_read      = seq_read,
+       .proc_lseek     = seq_lseek,
+       .proc_release   = single_release,
 };
 
 static struct proc_dir_entry *adf_sample;
@@ -130,7 +129,8 @@ static int read_info(void)
 
     /* open file */
     if ((file_fd = rsbac_read_open(name,
-                               rsbac_root_dev) ) < 0)
+                                   RSBAC_MAJOR(rsbac_root_dev),
+                                   RSBAC_MINOR(rsbac_root_dev)) ) < 0)
       return file_fd;
 
     /* OK, now we can start reading */
@@ -223,7 +223,8 @@ static int write_info(void)
 
     /* open file */
     if ((file_fd = rsbac_write_open(name,
-                                rsbac_root_dev) ) < 0)
+                                    RSBAC_MAJOR(rsbac_root_dev),
+                                    RSBAC_MINOR(rsbac_root_dev)) ) < 0)
     {
       return file_fd;
     }
@@ -420,7 +421,7 @@ int init_module(void)
     }
   
   #if defined(CONFIG_RSBAC_PROC)
-  adf_sample = proc_create(PROC_NAME,  S_IFREG | S_IRUGO, proc_rsbac_root_p, &adf_sample_proc_fops);
+  adf_sample = proc_create(PROC_NAME,  S_IFREG | S_IRUGO, proc_rsbac_root_p, &adf_sample_proc_ops);
   #endif 
 
   rsbac_printk(KERN_INFO "RSBAC REG decision module sample 2: Loaded.\n");

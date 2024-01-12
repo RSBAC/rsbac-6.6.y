@@ -3,6 +3,7 @@
  *   
  *   Author and (c) 2004 Michal Purzynski <michal@rsbac.org>
  *   Adjusted 2011 Amon Ott <ao@rsbac.org>
+ *   (c) 2011-2024 Amon Ott <ao@rsbac.org>
  */
 
 #include <linux/module.h>
@@ -56,7 +57,7 @@ int init_module(void)
 	/* clearing registration entries */
 	memset(&entry, 0, sizeof(entry));
 
-	strcpy(entry.name, "RSBAC REG modules_off ADF module");
+	strncpy(entry.name, "RSBAC REG modules_off ADF module", sizeof(entry.name));
 	rsbac_printk(KERN_INFO "RSBAC REG decision module modules_off: REG Version: %u, Name: %s, Handle: %li\n",RSBAC_REG_VERSION, entry.name, handle);
 
 	entry.handle = handle;
