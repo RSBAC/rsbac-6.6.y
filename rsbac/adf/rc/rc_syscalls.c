@@ -6,7 +6,7 @@
 /*                                                   */
 /* Author and (c) 1999-2024: Amon Ott <ao@rsbac.org> */
 /*                                                   */
-/* Last modified: 08/Jan/2024                        */
+/* Last modified: 16/Jan/2024                        */
 /*************************************************** */
 
 #include <linux/string.h>
@@ -122,7 +122,7 @@ int rsbac_rc_sys_copy_role(
 /* Here we only check access rights and pass on to rc_data_structures */
 int rsbac_rc_sys_copy_type (
         rsbac_list_ta_number_t ta_number,
-  enum  rsbac_target_t      target,
+  enum  rsbac_target_t         target,
         rsbac_rc_type_id_t     from_type,
         rsbac_rc_type_id_t     to_type)
   {
