@@ -224,7 +224,7 @@ int rsbac_rc_sys_copy_type (
       }
 
     /* pass on */
-    return(rsbac_rc_copy_type(ta_number, (enum rsbac_rc_target_t) target, from_type, to_type));
+    return(rsbac_rc_copy_type(ta_number, target, from_type, to_type));
   }
 
 /* Getting values */
