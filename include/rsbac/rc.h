@@ -1,11 +1,11 @@
 /******************************* */
 /* Rule Set Based Access Control */
-/* Author and (c) 1999-2017:     */
+/* Author and (c) 1999-2024:     */
 /*   Amon Ott <ao@rsbac.org>     */
 /* API: Data structures          */
 /* and functions for Access      */
 /* Control Information / RC      */
-/* Last modified: 20/Sep/2017    */
+/* Last modified: 16/Jan/2024    */
 /******************************* */
 
 #ifndef __RSBAC_RC_H
@@ -56,7 +56,7 @@ int rsbac_rc_copy_role(rsbac_list_ta_number_t ta_number,
 		       rsbac_rc_role_id_t to_role);
 
 int rsbac_rc_copy_type(rsbac_list_ta_number_t ta_number,
-		       enum rsbac_rc_target_t target,
+		       enum rsbac_target_t target,
 		       rsbac_rc_type_id_t from_type,
 		       rsbac_rc_type_id_t to_type);
 
