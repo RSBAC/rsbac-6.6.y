@@ -1,11 +1,11 @@
 /************************************ */
 /* Rule Set Based Access Control      */
-/* Author and (c) 1999-2013:          */
+/* Author and (c) 1999-2024:          */
 /*   Amon Ott <ao@rsbac.org>          */
 /*                                    */
 /* Helper Prototypes for model        */
 /* specific system calls              */
-/* Last modified: 18/Nov/2013         */
+/* Last modified: 16/Jan/2024         */
 /************************************ */
 
 #ifndef __RSBAC_ADF_SYSHELPERS_H
@@ -83,7 +83,7 @@ extern int rsbac_rc_sys_copy_role (
 
 extern int rsbac_rc_sys_copy_type (
         rsbac_list_ta_number_t ta_number,
-  enum  rsbac_rc_target_t      target,
+  enum  rsbac_target_t         target,
         rsbac_rc_type_id_t     from_type,
         rsbac_rc_type_id_t     to_type);
 
