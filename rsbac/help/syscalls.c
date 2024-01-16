@@ -3,7 +3,7 @@
 /* Implementation of RSBAC general system calls      */
 /* Author and (C) 1999-2024: Amon Ott <ao@rsbac.org> */
 /*                                                   */
-/* Last modified: 08/Jan/2024                        */
+/* Last modified: 16/Jan/2024                        */
 /*************************************************** */
 
 #include <rsbac/types.h>
@@ -2476,7 +2476,7 @@ int sys_rsbac_rc_copy_role(
 
 int sys_rsbac_rc_copy_type(
         rsbac_list_ta_number_t ta_number,
-  enum  rsbac_rc_target_t      target,
+  enum  rsbac_target_t         target,
         rsbac_rc_type_id_t     from_type,
         rsbac_rc_type_id_t     to_type)
   {
