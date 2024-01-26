@@ -166,13 +166,13 @@ jail_check_sysrole(rsbac_uid_t owner,
 	if (rsbac_get_attr(SW_JAIL, T_USER, i_tid,
 			   A_jail_role, &i_attr_val1, FALSE)) {
 		rsbac_ds_get_error("jail_check_sysrole()", A_jail_role);
-		return (NOT_GRANTED);
+		return NOT_GRANTED;
 	}
 	/* if correct role, then grant */
 	if (i_attr_val1.system_role == role)
-		return (GRANTED);
+		return GRANTED;
 	else
-		return (NOT_GRANTED);
+		return NOT_GRANTED;
 }
 
 #if defined(CONFIG_RSBAC_NET_OBJ)
@@ -273,13 +273,38 @@ jail_check_ip(rsbac_pid_t pid, union rsbac_target_id_t tid)
 					return NOT_GRANTED;
 				}
 			}
+		case SOCK_RAW:
+			if (jail_get_flags_process(pid) &
+			    JAIL_allow_inet_raw)
+				return GRANTED;
+			else {
+				rsbac_pr_debug(adf_jail, "network type is raw and allow_inet_raw is not set -> NOT_GRANTED!\n");
+				return NOT_GRANTED;
+			}
+
+		default:
+			rsbac_pr_debug(adf_jail, "network type not STREAM, DGRAM, RDM or RAW -> NOT_GRANTED!\n");
+			return NOT_GRANTED;
+		}
+
+
+	case AF_INET6:
+		switch (tid.netobj.sock_p->type) {
+		case SOCK_STREAM:
+		case SOCK_DGRAM:
+		case SOCK_RDM:
+			jail_ip = jail_get_ip_process(pid);
+			if (jail_ip == INADDR_ANY)
+				return GRANTED;
+			rsbac_pr_debug(adf_jail, "INET6 and jail_ip not INADDR_ANY -> NOT_GRANTED!\n");
+			return NOT_GRANTED;
 
 		case SOCK_RAW:
 			if (jail_get_flags_process(pid) &
 			    JAIL_allow_inet_raw)
 				return GRANTED;
 			else {
-				rsbac_pr_debug(adf_jail, "network type is raw  and allow_inet_raw is not set -> NOT_GRANTED!\n");
+				rsbac_pr_debug(adf_jail, "network type is raw and allow_inet_raw is not set -> NOT_GRANTED!\n");
 				return NOT_GRANTED;
 			}
 
@@ -661,7 +686,7 @@ rsbac_adf_request_jail(enum rsbac_adf_request_t request,
 			}
 			switch (tid.netobj.sock_p->ops->family) {
 			case AF_UNIX:
-				return (GRANTED);
+				return GRANTED;
 
 			case AF_INET:
 			case AF_INET6:
@@ -678,7 +703,7 @@ rsbac_adf_request_jail(enum rsbac_adf_request_t request,
 						    (caller_pid);
 						if (jail_flags &
 						    JAIL_allow_inet_raw)
-							return (GRANTED);
+							return GRANTED;
 						else
 							return NOT_GRANTED;
 					} else
@@ -690,12 +715,12 @@ rsbac_adf_request_jail(enum rsbac_adf_request_t request,
 					    (caller_pid);
 					if (jail_flags &
 					    JAIL_allow_inet_raw)
-						return (GRANTED);
+						return GRANTED;
 					else
 						return NOT_GRANTED;
 
 				default:
-					return (NOT_GRANTED);
+					return NOT_GRANTED;
 				}
 
 			case AF_NETLINK:
@@ -868,7 +893,7 @@ rsbac_adf_request_jail(enum rsbac_adf_request_t request,
 			if (jail_get_id_process(caller_pid)) {
 				if (jail_get_scd_modify_process(caller_pid)
 				    & RSBAC_SCD_VECTOR(tid.scd))
-					return (GRANTED);
+					return GRANTED;
 				else
 					return NOT_GRANTED;
 			} else
