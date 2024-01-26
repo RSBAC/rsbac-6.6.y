@@ -4,9 +4,9 @@
 /* Facility (ADF) - Authorization module              */
 /* File: rsbac/adf/jail/jail_main.c                   */
 /*                                                    */
-/* Author and (c) 1999-2023: Amon Ott <ao@rsbac.org>  */
+/* Author and (c) 1999-2024: Amon Ott <ao@rsbac.org>  */
 /*                                                    */
-/* Last modified: 14/Dec/2023                         */
+/* Last modified: 26/Jan/2024                         */
 /**************************************************** */
 
 #include <linux/string.h>
@@ -664,6 +664,7 @@ rsbac_adf_request_jail(enum rsbac_adf_request_t request,
 				return (GRANTED);
 
 			case AF_INET:
+			case AF_INET6:
 				switch (tid.netobj.sock_p->type) {
 				case SOCK_STREAM:
 				case SOCK_DGRAM:
