@@ -1,9 +1,9 @@
 /************************************* */
 /* Rule Set Based Access Control       */
-/* Author and (c) 1999-2023:           */
+/* Author and (c) 1999-2024:           */
 /*   Amon Ott <ao@rsbac.org>           */
 /* Generic lists for all parts         */
-/* Last modified: 18/Dec/2023          */
+/* Last modified: 24/Jun/2024          */
 /************************************* */
 
 #include <linux/sched.h>
@@ -189,7 +189,7 @@ static void rcu_free(struct rsbac_list_reg_item_t * list, u_int hash, void * mem
 		return;
 	}
 #ifdef CONFIG_RSBAC_LIST_STATS
-	rcu_free_calls++;
+	data_race(rcu_free_calls++);
 #endif
 #if 0
 	/* Sanity check for dupes - to be removed after test phase */
@@ -212,7 +212,7 @@ static void rcu_free(struct rsbac_list_reg_item_t * list, u_int hash, void * mem
 			     list->name, mem);
 		rcu_callback_count = rsbac_list_rcu_rate;
 #ifdef CONFIG_RSBAC_LIST_STATS
-		rcu_free_alloc_failed++;
+		data_race(rcu_free_alloc_failed++);
 #endif
 	}
 }
@@ -228,7 +228,7 @@ static void rcu_free_lol(struct rsbac_list_lol_reg_item_t * list, u_int hash, vo
 		return;
 	}
 #ifdef CONFIG_RSBAC_LIST_STATS
-	rcu_free_lol_calls++;
+	data_race(rcu_free_lol_calls++);
 #endif
 #if 0
 	/* Sanity check for dupes - to be removed after test phase  */
@@ -251,7 +251,7 @@ static void rcu_free_lol(struct rsbac_list_lol_reg_item_t * list, u_int hash, vo
 			     list->name, mem);
 		rcu_callback_count = rsbac_list_rcu_rate;
 #ifdef CONFIG_RSBAC_LIST_STATS
-		rcu_free_lol_alloc_failed++;
+		data_race(rcu_free_lol_alloc_failed++);
 #endif
 	}
 }
@@ -267,7 +267,7 @@ static void rcu_free_lol_sub(struct rsbac_list_lol_reg_item_t * list, u_int hash
 		return;
 	}
 #ifdef CONFIG_RSBAC_LIST_STATS
-	rcu_free_lol_calls++;
+	data_race(rcu_free_lol_calls++);
 #endif
 #if 0
 	/* Sanity check for dupes - to be removed after test phase  */
@@ -290,7 +290,7 @@ static void rcu_free_lol_sub(struct rsbac_list_lol_reg_item_t * list, u_int hash
 			     list->name, mem);
 		rcu_callback_count = rsbac_list_rcu_rate;
 #ifdef CONFIG_RSBAC_LIST_STATS
-		rcu_free_lol_sub_alloc_failed++;
+		data_race(rcu_free_lol_sub_alloc_failed++);
 #endif
 	}
 }
@@ -308,7 +308,7 @@ static void rcu_free_item_chain(struct rsbac_list_reg_item_t * list,
 		return;
 	}
 #ifdef CONFIG_RSBAC_LIST_STATS
-	rcu_free_item_chain_calls++;
+	data_race(rcu_free_item_chain_calls++);
 #endif
 	if (!list->hashed[hash].rcu_free->item_chain) {
 		list->hashed[hash].rcu_free->item_chain = item_chain;
@@ -333,7 +333,7 @@ static void rcu_free_lol_subitem_chain(struct rsbac_list_lol_reg_item_t * list,
 		return;
 	}
 #ifdef CONFIG_RSBAC_LIST_STATS
-	rcu_free_lol_subitem_chain_calls++;
+	data_race(rcu_free_lol_subitem_chain_calls++);
 #endif
 	if (!list->hashed[hash].rcu_free->lol_item_subchain) {
 		list->hashed[hash].rcu_free->lol_item_subchain = subitem_chain;
@@ -358,7 +358,7 @@ static void rcu_free_lol_item_chain(struct rsbac_list_lol_reg_item_t * list,
 		return;
 	}
 #ifdef CONFIG_RSBAC_LIST_STATS
-	rcu_free_lol_item_chain_calls++;
+	data_race(rcu_free_lol_item_chain_calls++);
 #endif
 	if (!list->hashed[hash].rcu_free->lol_item_chain) {
 		list->hashed[hash].rcu_free->lol_item_chain = lol_item_chain;
@@ -388,7 +388,7 @@ static void rcu_free_do_cleanup(struct rsbac_list_rcu_free_head_t * rcu_head)
 	if (!rcu_head)
 		return;
 #ifdef CONFIG_RSBAC_LIST_STATS
-	rcu_free_do_cleanup_calls++;
+	data_race(rcu_free_do_cleanup_calls++);
 #endif
 	rcu_item = rcu_head->head;
 	if (rcu_head->slab) {
@@ -434,7 +434,7 @@ static void rcu_free_do_cleanup_lol(struct rsbac_list_rcu_free_head_lol_t * rcu_
 	if (!rcu_head)
 		return;
 #ifdef CONFIG_RSBAC_LIST_STATS
-	rcu_free_do_cleanup_lol_calls++;
+	data_race(rcu_free_do_cleanup_lol_calls++);
 #endif
 	rcu_item = rcu_head->head;
 	if (rcu_head->slab) {
@@ -504,7 +504,7 @@ static void rcu_free_callback(struct rcu_head *rp)
 	if (unlikely(!rp))
 		return;
 #ifdef CONFIG_RSBAC_LIST_STATS
-	rcu_free_callback_calls++;
+	data_race(rcu_free_callback_calls++);
 #endif
 	rcu_free_do_cleanup((struct rsbac_list_rcu_free_head_t *) rp);
 }
@@ -515,7 +515,7 @@ static void rcu_free_callback_lol(struct rcu_head *rp)
 	if (unlikely(!rp))
 		return;
 #ifdef CONFIG_RSBAC_LIST_STATS
-	rcu_free_callback_lol_calls++;
+	data_race(rcu_free_callback_lol_calls++);
 #endif
 	rcu_free_do_cleanup_lol((struct rsbac_list_rcu_free_head_lol_t *) rp);
 }
@@ -524,7 +524,7 @@ static void rcu_free_callback_lol(struct rcu_head *rp)
 static void do_call_rcu(struct rsbac_list_rcu_free_head_t * rcu_head)
 {
 	if (rcu_head) {
-		rcu_callback_count++;
+		data_race(rcu_callback_count++);
 		call_rcu(&rcu_head->rcu, rcu_free_callback);
 	}
 }
@@ -532,7 +532,7 @@ static void do_call_rcu(struct rsbac_list_rcu_free_head_t * rcu_head)
 static void do_call_rcu_lol(struct rsbac_list_rcu_free_head_lol_t * rcu_head)
 {
 	if (rcu_head) {
-		rcu_callback_count++;
+		data_race(rcu_callback_count++);
 		call_rcu(&rcu_head->rcu, rcu_free_callback_lol);
 	}
 }
@@ -541,14 +541,14 @@ static void do_call_rcu_lol(struct rsbac_list_rcu_free_head_lol_t * rcu_head)
 static void do_sync_rcu(struct rsbac_list_rcu_free_head_t * rcu_head)
 {
 	if (rcu_head) {
-		rcu_callback_count++;
+		data_race(rcu_callback_count++);
 		if (rcu_callback_count < rsbac_list_rcu_rate)
 			call_rcu(&rcu_head->rcu, rcu_free_callback);
 		else {
 			synchronize_rcu();
 			rcu_free_do_cleanup(rcu_head);
 #ifdef CONFIG_RSBAC_LIST_STATS
-			rcu_rate_reached_count++;
+			data_race(rcu_rate_reached_count++);
 #endif
 		}
 	}
@@ -558,14 +558,14 @@ static void do_sync_rcu(struct rsbac_list_rcu_free_head_t * rcu_head)
 static void do_sync_rcu_lol(struct rsbac_list_rcu_free_head_lol_t * rcu_head)
 {
 	if (rcu_head) {
-		rcu_callback_count++;
+		data_race(rcu_callback_count++);
 		if (rcu_callback_count < rsbac_list_rcu_rate)
 			call_rcu(&rcu_head->rcu, rcu_free_callback_lol);
 		else {
 			synchronize_rcu();
 			rcu_free_do_cleanup_lol(rcu_head);
 #ifdef CONFIG_RSBAC_LIST_STATS
-			rcu_rate_reached_count++;
+			data_race(rcu_rate_reached_count++);
 #endif
 		}
 	}
@@ -8389,7 +8389,7 @@ int rsbac_ta_list_add_ttl(rsbac_list_ta_number_t ta_number,
 		}
 	}
 #ifdef CONFIG_RSBAC_LIST_STATS
-	list->write_count++;
+	data_race(list->write_count++);
 #endif
 	rcu_head_p = get_rcu_free(list, hash);
 	spin_unlock(&list->hashed[hash].lock);
@@ -8612,7 +8612,7 @@ int rsbac_ta_list_lol_subadd_ttl(rsbac_list_ta_number_t ta_number,
 #endif
 
 #ifdef CONFIG_RSBAC_LIST_STATS
-	list->write_count++;
+	data_race(list->write_count++);
 #endif
 
 out_unlock:
@@ -8768,7 +8768,7 @@ int rsbac_ta_list_lol_add_ttl(rsbac_list_ta_number_t ta_number,
 	}
 #endif
 #ifdef CONFIG_RSBAC_LIST_STATS
-	list->write_count++;
+	data_race(list->write_count++);
 #endif
 	rcu_head_lol_p = get_rcu_free_lol(list, hash);
 	spin_unlock(&list->hashed[hash].lock);
@@ -8845,7 +8845,7 @@ int rsbac_ta_list_remove(rsbac_list_ta_number_t ta_number,
 			touch(list);
 			list->dirty = TRUE;
 #ifdef CONFIG_RSBAC_LIST_STATS
-			list->write_count++;
+			data_race(list->write_count++);
 #endif
 		}
 	}
@@ -8961,7 +8961,7 @@ int rsbac_ta_list_remove_all(rsbac_list_ta_number_t ta_number,
 	if(list->hash_function)
 		read_unlock(&list->hash_lock);
 #ifdef CONFIG_RSBAC_LIST_STATS
-	list->write_count++;
+	data_race(list->write_count++);
 #endif
 	synchronize_rcu();
 #ifdef CONFIG_RSBAC_LIST_TRANS
@@ -9084,7 +9084,7 @@ int rsbac_ta_list_lol_subremove_count(rsbac_list_ta_number_t ta_number,
 				lol_touch(list);
 				list->dirty = TRUE;
 #ifdef CONFIG_RSBAC_LIST_STATS
-				list->write_count++;
+				data_race(list->write_count++);
 #endif
 			} else {
 				struct rsbac_list_item_t * subitem_p;
@@ -9100,7 +9100,7 @@ int rsbac_ta_list_lol_subremove_count(rsbac_list_ta_number_t ta_number,
 				lol_touch(list);
 				list->dirty = TRUE;
 #ifdef CONFIG_RSBAC_LIST_STATS
-				list->write_count++;
+				data_race(list->write_count++);
 #endif
 				if (!sublist->count
 				    && ((list->def_data
@@ -9229,7 +9229,7 @@ int rsbac_ta_list_lol_subremove(rsbac_list_ta_number_t ta_number,
 				lol_touch(list);
 				list->dirty = TRUE;
 #ifdef CONFIG_RSBAC_LIST_STATS
-				list->write_count++;
+				data_race(list->write_count++);
 #endif
 			} else {
 				if (lookup_lol_subitem_locked(list, sublist, subdesc)) {	/* exists -> remove and set dirty */
@@ -9238,7 +9238,7 @@ int rsbac_ta_list_lol_subremove(rsbac_list_ta_number_t ta_number,
 					lol_touch(list);
 					list->dirty = TRUE;
 #ifdef CONFIG_RSBAC_LIST_STATS
-					list->write_count++;
+					data_race(list->write_count++);
 #endif
 				}
 				if (!sublist->head
@@ -9391,7 +9391,7 @@ int rsbac_ta_list_lol_subremove_from_all(rsbac_list_ta_number_t ta_number,
 #endif
 #ifdef CONFIG_RSBAC_LIST_STATS
 	if (list->dirty)
-		list->write_count++;
+		data_race(list->write_count++);
 #endif
 	return 0;
 }
@@ -9486,7 +9486,7 @@ int rsbac_ta_list_lol_subremove_all(rsbac_list_ta_number_t ta_number,
 			lol_touch(list);
 			list->dirty = TRUE;
 #ifdef CONFIG_RSBAC_LIST_STATS
-			list->write_count++;
+			data_race(list->write_count++);
 #endif
 		}
 	}
@@ -9565,7 +9565,7 @@ int rsbac_ta_list_lol_remove(rsbac_list_ta_number_t ta_number,
 			lol_touch(list);
 			list->dirty = TRUE;
 #ifdef CONFIG_RSBAC_LIST_STATS
-			list->write_count++;
+			data_race(list->write_count++);
 #endif
 		}
 	}
@@ -9683,7 +9683,7 @@ int rsbac_ta_list_lol_remove_all(rsbac_list_ta_number_t ta_number,
 		read_unlock(&list->hash_lock);
 #ifdef CONFIG_RSBAC_LIST_STATS
 	if (list->dirty)
-		list->write_count++;
+		data_race(list->write_count++);
 #endif
 	synchronize_rcu();
 #ifdef CONFIG_RSBAC_LIST_TRANS
@@ -9780,10 +9780,11 @@ int rsbac_ta_list_get_data_ttl(rsbac_list_ta_number_t ta_number,
 				       list->info.data_size);
 		}
 	}
-#ifdef CONFIG_RSBAC_LIST_STATS
-	list->read_count++;
-#endif
 	rcu_read_unlock();
+
+#ifdef CONFIG_RSBAC_LIST_STATS
+	data_race(list->read_count++);
+#endif
 	return err;
 }
 
@@ -9852,10 +9853,11 @@ int rsbac_ta_list_lol_get_max_subdesc(rsbac_list_ta_number_t ta_number,
 		if (!(list->flags & RSBAC_LIST_DEF_DATA))
 			err = -RSBAC_ENOTFOUND;
 	}
-#ifdef CONFIG_RSBAC_LIST_STATS
-	list->read_count++;
-#endif
 	rcu_read_unlock();
+
+#ifdef CONFIG_RSBAC_LIST_STATS
+	data_race(list->read_count++);
+#endif
 	return err;
 }
 
@@ -9956,10 +9958,11 @@ int rsbac_ta_list_lol_get_subdata_ttl(rsbac_list_ta_number_t ta_number,
 				       list->info.subdata_size);
 		}
 	}
-#ifdef CONFIG_RSBAC_LIST_STATS
-	list->read_count++;
-#endif
 	rcu_read_unlock();
+
+#ifdef CONFIG_RSBAC_LIST_STATS
+	data_race(list->read_count++);
+#endif
 	return err;
 }
 
@@ -10040,10 +10043,11 @@ int rsbac_ta_list_lol_get_data_ttl(rsbac_list_ta_number_t ta_number,
 				       list->info.data_size);
 		}
 	}
-#ifdef CONFIG_RSBAC_LIST_STATS
-	list->read_count++;
-#endif
 	rcu_read_unlock();
+
+#ifdef CONFIG_RSBAC_LIST_STATS
+	data_race(list->read_count++);
+#endif
 	return err;
 }
 
@@ -10111,10 +10115,11 @@ int rsbac_ta_list_get_max_desc(rsbac_list_ta_number_t ta_number,
 		memset(desc, 0, list->info.desc_size);
 		err = -RSBAC_ENOTFOUND;
 	}
-#ifdef CONFIG_RSBAC_LIST_STATS
-	list->read_count++;
-#endif
 	rcu_read_unlock();
+
+#ifdef CONFIG_RSBAC_LIST_STATS
+	data_race(list->read_count++);
+#endif
 	return err;
 }
 
@@ -10194,10 +10199,11 @@ int rsbac_ta_list_get_next_desc(rsbac_list_ta_number_t ta_number,
 		memcpy(next_desc, (char *) item_p + sizeof(*item_p),
 		       list->info.desc_size);
 	}
-#ifdef CONFIG_RSBAC_LIST_STATS
-	list->read_count++;
-#endif
 	rcu_read_unlock();
+
+#ifdef CONFIG_RSBAC_LIST_STATS
+	data_race(list->read_count++);
+#endif
 	if (item_p)
 		return 0;
 	else
@@ -10286,10 +10292,11 @@ int rsbac_ta_list_get_next_desc_selector(
 		memcpy(next_desc, (char *) item_p + sizeof(*item_p),
 		       list->info.desc_size);
 	}
-#ifdef CONFIG_RSBAC_LIST_STATS
-	list->read_count++;
-#endif
 	rcu_read_unlock();
+
+#ifdef CONFIG_RSBAC_LIST_STATS
+	data_race(list->read_count++);
+#endif
 	if (item_p)
 		return 0;
 	else
@@ -10372,10 +10379,11 @@ int rsbac_ta_list_lol_get_next_desc(rsbac_list_ta_number_t ta_number,
 		memcpy(next_desc, (char *) item_p + sizeof(*item_p),
 		       list->info.desc_size);
 	}
-#ifdef CONFIG_RSBAC_LIST_STATS
-	list->read_count++;
-#endif
 	rcu_read_unlock();
+
+#ifdef CONFIG_RSBAC_LIST_STATS
+	data_race(list->read_count++);
+#endif
 	if (item_p)
 		return 0;
 	else
@@ -10463,10 +10471,11 @@ int rsbac_ta_list_lol_get_next_desc_selector(
 		memcpy(next_desc, (char *) item_p + sizeof(*item_p),
 		       list->info.desc_size);
 	}
-#ifdef CONFIG_RSBAC_LIST_STATS
-	list->read_count++;
-#endif
 	rcu_read_unlock();
+
+#ifdef CONFIG_RSBAC_LIST_STATS
+	data_race(list->read_count++);
+#endif
 	if (item_p)
 		return 0;
 	else
@@ -10542,10 +10551,11 @@ int rsbac_ta_list_get_desc_ttl(rsbac_list_ta_number_t ta_number,
 	} else {
 		err = -RSBAC_ENOTFOUND;
 	}
-#ifdef CONFIG_RSBAC_LIST_STATS
-	list->read_count++;
-#endif
 	rcu_read_unlock();
+
+#ifdef CONFIG_RSBAC_LIST_STATS
+	data_race(list->read_count++);
+#endif
 	return err;
 }
 
@@ -10621,10 +10631,11 @@ int rsbac_ta_list_get_desc_selector_ttl(
 	} else {
 		err = -RSBAC_ENOTFOUND;
 	}
-#ifdef CONFIG_RSBAC_LIST_STATS
-	list->read_count++;
-#endif
 	rcu_read_unlock();
+
+#ifdef CONFIG_RSBAC_LIST_STATS
+	data_race(list->read_count++);
+#endif
 	return err;
 }
 
@@ -10688,10 +10699,11 @@ int rsbac_ta_list_lol_get_desc_ttl(rsbac_list_ta_number_t ta_number,
 	} else {
 		err = -RSBAC_ENOTFOUND;
 	}
-#ifdef CONFIG_RSBAC_LIST_STATS
-	list->read_count++;
-#endif
 	rcu_read_unlock();
+
+#ifdef CONFIG_RSBAC_LIST_STATS
+	data_race(list->read_count++);
+#endif
 	return err;
 }
 
@@ -10765,10 +10777,11 @@ int rsbac_ta_list_lol_get_desc_selector_ttl(
 	} else {
 		err = -RSBAC_ENOTFOUND;
 	}
-#ifdef CONFIG_RSBAC_LIST_STATS
-	list->read_count++;
-#endif
 	rcu_read_unlock();
+
+#ifdef CONFIG_RSBAC_LIST_STATS
+	data_race(list->read_count++);
+#endif
 	return err;
 }
 
@@ -10823,10 +10836,11 @@ int rsbac_ta_list_exist(rsbac_list_ta_number_t ta_number,
 	} else {
 		result = FALSE;
 	}
-#ifdef CONFIG_RSBAC_LIST_STATS
-	list->read_count++;
-#endif
 	rcu_read_unlock();
+
+#ifdef CONFIG_RSBAC_LIST_STATS
+	data_race(list->read_count++);
+#endif
 	return result;
 }
 
@@ -10888,10 +10902,11 @@ int rsbac_ta_list_lol_subexist(rsbac_list_ta_number_t ta_number,
 	} else {
 		result = FALSE;
 	}
-#ifdef CONFIG_RSBAC_LIST_STATS
-	list->read_count++;
-#endif
 	rcu_read_unlock();
+
+#ifdef CONFIG_RSBAC_LIST_STATS
+	data_race(list->read_count++);
+#endif
 	return result;
 }
 
@@ -10961,10 +10976,11 @@ int rsbac_ta_list_lol_subexist_compare(rsbac_list_ta_number_t ta_number,
 	} else {
 		result = FALSE;
 	}
-#ifdef CONFIG_RSBAC_LIST_STATS
-	list->read_count++;
-#endif
 	rcu_read_unlock();
+
+#ifdef CONFIG_RSBAC_LIST_STATS
+	data_race(list->read_count++);
+#endif
 	return result;
 }
 
@@ -11018,10 +11034,11 @@ int rsbac_ta_list_lol_exist(rsbac_list_ta_number_t ta_number,
 	} else {
 		result = FALSE;
 	}
-#ifdef CONFIG_RSBAC_LIST_STATS
-	list->read_count++;
-#endif
 	rcu_read_unlock();
+
+#ifdef CONFIG_RSBAC_LIST_STATS
+	data_race(list->read_count++);
+#endif
 	return result;
 }
 
@@ -11074,10 +11091,11 @@ long rsbac_ta_list_lol_subcount(rsbac_list_ta_number_t ta_number,
 	} else {
 		result = -RSBAC_ENOTFOUND;
 	}
-#ifdef CONFIG_RSBAC_LIST_STATS
-	list->read_count++;
-#endif
 	rcu_read_unlock();
+
+#ifdef CONFIG_RSBAC_LIST_STATS
+	data_race(list->read_count++);
+#endif
 	return result;
 }
 
@@ -11312,9 +11330,13 @@ long rsbac_ta_list_get_all_desc(rsbac_list_ta_number_t ta_number,
 	}
 	*array_p = buffer;
 
+	rcu_read_unlock();
+
 #ifdef CONFIG_RSBAC_LIST_STATS
-	list->read_count++;
+	data_race(list->read_count++);
 #endif
+	return result;
+
 out_unlock:
 	rcu_read_unlock();
 	return result;
@@ -11410,9 +11432,12 @@ long rsbac_ta_list_get_all_desc_selector (
 	}
 	*array_p = buffer;
 
+	rcu_read_unlock();
 #ifdef CONFIG_RSBAC_LIST_STATS
-	list->read_count++;
+	data_race(list->read_count++);
 #endif
+	return result;
+
 out_unlock:
 	rcu_read_unlock();
 	return result;
@@ -11512,10 +11537,11 @@ long rsbac_ta_list_lol_get_all_subdesc_ttl(rsbac_list_ta_number_t
 			result = -RSBAC_ENOMEM;
 		}
 	}
-#ifdef CONFIG_RSBAC_LIST_STATS
-	list->read_count++;
-#endif
 	rcu_read_unlock();
+
+#ifdef CONFIG_RSBAC_LIST_STATS
+	data_race(list->read_count++);
+#endif
 	return result;
 }
 
@@ -11607,9 +11633,12 @@ long rsbac_ta_list_lol_get_all_desc(rsbac_list_ta_number_t ta_number,
 	}
 	*array_p = buffer;
 
+	rcu_read_unlock();
 #ifdef CONFIG_RSBAC_LIST_STATS
-	list->read_count++;
+	data_race(list->read_count++);
 #endif
+	return result;
+
 out_unlock:
 	rcu_read_unlock();
 	return result;
@@ -11708,9 +11737,12 @@ long rsbac_ta_list_lol_get_all_desc_selector (
 	}
 	*array_p = buffer;
 
+	rcu_read_unlock();
 #ifdef CONFIG_RSBAC_LIST_STATS
-	list->read_count++;
+	data_race(list->read_count++);
 #endif
+	return result;
+
 out_unlock:
 	rcu_read_unlock();
 	return result;
@@ -11813,9 +11845,11 @@ long rsbac_ta_list_get_all_data(rsbac_list_ta_number_t ta_number,
 	}
 	*array_p = buffer;
 
+	rcu_read_unlock();
 #ifdef CONFIG_RSBAC_LIST_STATS
-	list->read_count++;
+	data_race(list->read_count++);
 #endif
+	return result;
 
 out_unlock:
 	rcu_read_unlock();
@@ -11905,10 +11939,11 @@ long rsbac_ta_list_lol_get_all_subdata(rsbac_list_ta_number_t ta_number,
 			result = -RSBAC_ENOMEM;
 		}
 	}
-#ifdef CONFIG_RSBAC_LIST_STATS
-	list->read_count++;
-#endif
 	rcu_read_unlock();
+
+#ifdef CONFIG_RSBAC_LIST_STATS
+	data_race(list->read_count++);
+#endif
 	return result;
 }
 
@@ -12005,9 +12040,12 @@ long rsbac_ta_list_lol_get_all_data(rsbac_list_ta_number_t ta_number,
 	}
 	*array_p = buffer;
 
+	rcu_read_unlock();
 #ifdef CONFIG_RSBAC_LIST_STATS
-	list->read_count++;
+	data_race(list->read_count++);
 #endif
+	return result;
+
 out_unlock:
 	rcu_read_unlock();
 	return result;
@@ -12180,9 +12218,12 @@ long rsbac_ta_list_get_all_items_ttl(rsbac_list_ta_number_t ta_number,
 	if (ttl_array_p)
 		*ttl_array_p = ttl_p;
 
+	rcu_read_unlock();
 #ifdef CONFIG_RSBAC_LIST_STATS
-	list->read_count++;
+	data_race(list->read_count++);
 #endif
+	return result;
+
 out_unlock:
 	rcu_read_unlock();
 	return result;
@@ -12283,10 +12324,11 @@ long rsbac_ta_list_lol_get_all_subitems_ttl(rsbac_list_ta_number_t
 			result = -RSBAC_ENOMEM;
 		}
 	}
-#ifdef CONFIG_RSBAC_LIST_STATS
-	list->read_count++;
-#endif
 	rcu_read_unlock();
+
+#ifdef CONFIG_RSBAC_LIST_STATS
+	data_race(list->read_count++);
+#endif
 	return result;
 }
 
@@ -12376,9 +12418,12 @@ long rsbac_ta_list_lol_get_all_items(rsbac_list_ta_number_t ta_number,
 	}
 	*array_p = buffer;
 
+	rcu_read_unlock();
 #ifdef CONFIG_RSBAC_LIST_STATS
-	list->read_count++;
+	data_race(list->read_count++);
 #endif
+	return result;
+
 out_unlock:
 	rcu_read_unlock();
 	return result;
