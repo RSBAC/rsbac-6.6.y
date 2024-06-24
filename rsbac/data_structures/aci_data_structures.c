@@ -5,7 +5,7 @@
 /* (some smaller parts copied from fs/namei.c        */
 /*  and others)                                      */
 /*                                                   */
-/* Last modified: 12/Jan/2024                        */
+/* Last modified: 24/Jun/2024                        */
 /*************************************************** */
 
 #include <linux/types.h>
@@ -589,8 +589,6 @@ static struct rsbac_device_list_item_t *lookup_device(__u32 major, __u32 minor, 
 		      ) {
 			curr = srcu_dereference(curr->next, &device_list_srcu[hash]);
 		}
-		if (curr)
-			device_head_p[hash]->curr = curr;
 	}
 	/* it is the current item -> return it */
 	return curr;
@@ -2354,12 +2352,10 @@ static void clear_device_item(struct rsbac_device_list_item_t *item_p)
 }
 
 /* remove_device_item unlocks device_list_locks[hash]! */
-static void remove_device_item(__u32 major, __u32 minor)
+static void remove_device_item(__u32 major, __u32 minor, u_int hash)
 {
 	struct rsbac_device_list_item_t *item_p;
-	u_int hash;
       
-	hash = device_hash(minor);
 	if ((item_p = lookup_device_locked(major, minor, hash))) {
 		struct rsbac_device_list_head_t * new_p;
 		struct rsbac_device_list_head_t * old_p;
@@ -7587,7 +7583,7 @@ int rsbac_umount(struct vfsmount *vfsmount_p)
 	if (device_p) {
 		if (device_p->mount_count == 1) {
 			/* remove_device_item unlocks device_list_locks[hash]! */
-			remove_device_item(major, minor);
+			remove_device_item(major, minor, hash);
 #ifdef CONFIG_RSBAC_FD_CACHE
 			unregister_fd_cache_lists(device_p);
 #endif
@@ -8028,7 +8024,7 @@ int rsbac_get_parent(enum rsbac_target_t target,
 		return -RSBAC_ENOTFOUND;
 
 #ifdef CONFIG_RSBAC_XSTATS
-	get_parent_count++;
+	data_race(get_parent_count++);
 #endif
 	*parent_target_p = T_DIR;
 	/* Is this dentry root of a mounted device? */
@@ -8065,7 +8061,8 @@ int rsbac_get_parent(enum rsbac_target_t target,
 		    real_mount(device_p->vfsmount_p)->mnt_mountpoint->d_parent->d_sb->s_dev;
 		parent_tid_p->dir.inode =
 		    real_mount(device_p->vfsmount_p)->mnt_mountpoint->d_parent->d_inode->i_ino;
-		parent_tid_p->dir.dentry_p = real_mount(device_p->vfsmount_p)->mnt_mountpoint->d_parent;
+		parent_tid_p->dir.dentry_p =
+		    real_mount(device_p->vfsmount_p)->mnt_mountpoint->d_parent;
 		srcu_read_unlock(&device_list_srcu[hash], srcu_idx);
 	} else {		/* no root of filesystem -> use d_parent, dev keeps unchanged */
 		if (!tid.file.dentry_p->d_parent) {
@@ -8217,7 +8214,7 @@ static int get_attr_fd(rsbac_list_ta_number_t ta_number,
 						}
 #endif
 #ifdef CONFIG_RSBAC_XSTATS
-						device_p->fd_cache_misses[module]++;
+						data_race(device_p->fd_cache_misses[module]++);
 #endif
 					}
 #ifdef CONFIG_RSBAC_DEBUG
@@ -8232,7 +8229,7 @@ static int get_attr_fd(rsbac_list_ta_number_t ta_number,
 #endif
 #ifdef CONFIG_RSBAC_XSTATS
 				} else {
-					device_p->fd_cache_hits[module]++;
+					data_race(device_p->fd_cache_hits[module]++);
 #endif
 				}
 #ifdef CONFIG_RSBAC_DEBUG
@@ -8937,7 +8934,7 @@ static int get_attr_fd(rsbac_list_ta_number_t ta_number,
 					err = 0;
 				}
 #ifdef CONFIG_RSBAC_XSTATS
-				device_p->fd_cache_misses[module]++;
+				data_race(device_p->fd_cache_misses[module]++);
 #endif
 			}
 #ifdef CONFIG_RSBAC_DEBUG
@@ -10400,7 +10397,7 @@ int rsbac_fd_cache_invalidate(struct rsbac_fs_file_t * file_p)
 			rsbac_list_lol_remove(device_p->fd_cache_handle[i], &file_p->inode);
 	}
 #ifdef CONFIG_RSBAC_XSTATS
-	device_p->fd_cache_invalidates++;
+	data_race(device_p->fd_cache_invalidates++);
 #endif
 	srcu_read_unlock(&device_list_srcu[hash], srcu_idx);
 	return 0;
@@ -10433,7 +10430,7 @@ int rsbac_fd_cache_invalidate_device(__u32 major, __u32 minor)
 			rsbac_list_lol_remove_all(device_p->fd_cache_handle[i]);
 	}
 #ifdef CONFIG_RSBAC_XSTATS
-	device_p->fd_cache_invalidate_alls++;
+	data_race(device_p->fd_cache_invalidate_alls++);
 #endif
 	srcu_read_unlock(&device_list_srcu[hash], srcu_idx);
 	return 0;
@@ -10458,7 +10455,7 @@ int rsbac_fd_cache_invalidate_all(void)
 					rsbac_list_lol_remove_all(device_p->fd_cache_handle[j]);
 			}
 #ifdef CONFIG_RSBAC_XSTATS
-			device_p->fd_cache_invalidate_alls++;
+			data_race(device_p->fd_cache_invalidate_alls++);
 #endif
 			device_p = srcu_dereference(device_p->next, &device_list_srcu[i]);
 		}
@@ -10493,7 +10490,7 @@ int rsbac_ta_get_attr(rsbac_list_ta_number_t ta_number,
 		return -RSBAC_EFROMINTERRUPT;
 	}
 #ifdef CONFIG_RSBAC_XSTATS
-	get_attr_count[target]++;
+	data_race(get_attr_count[target]++);
 #endif
 	switch (target) {
 	case T_FILE:
@@ -11342,7 +11339,7 @@ static int set_attr_fd_ttl(rsbac_list_ta_number_t ta_number,
 				tid_p->file.inode, module, get_attribute_name(attr_name, attr), get_attribute_value_name(attr_val_name, attr, value_p));
 		rsbac_list_lol_remove(device_p->fd_cache_handle[module], &tid_p->file.inode);
 #ifdef CONFIG_RSBAC_XSTATS
-		device_p->fd_cache_invalidates++;
+		data_race(device_p->fd_cache_invalidates++);
 #endif
 #ifdef CONFIG_RSBAC_DEBUG
 		if (attr_name)
@@ -12773,7 +12770,7 @@ int rsbac_ta_set_attr_ttl(rsbac_list_ta_number_t ta_number,
 	}
 #ifdef CONFIG_RSBAC_XSTATS
 	if (!err)
-		set_attr_count[target]++;
+		data_race(set_attr_count[target]++);
 #endif
 	return err;
 }
@@ -13135,7 +13132,7 @@ int rsbac_ta_remove_target(rsbac_list_ta_number_t ta_number,
 		return -RSBAC_EINVALIDTARGET;
 	}
 #ifdef CONFIG_RSBAC_XSTATS
-	remove_count[target]++;
+	data_race(remove_count[target]++);
 #endif
 	return error;
 }
@@ -14241,8 +14238,8 @@ void rsbac_delayed_kfree(void * data, rsbac_time_t ttl)
 	} else
 		delayed_kfree_last = delayed_kfree_first = new_item;
 #ifdef CONFIG_RSBAC_XSTATS
-	delayed_kfree_count++;
-	delayed_kfree_used++;
+	data_race(delayed_kfree_count++);
+	data_race(delayed_kfree_used++);
 #endif
 	spin_unlock(&delayed_kfree_lock);
 #endif
