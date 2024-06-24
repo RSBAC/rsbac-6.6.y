@@ -3,9 +3,9 @@
 /* Implementation of the Access Control Decision     */
 /* Facility (ADF) - Main file main.c                 */
 /*                                                   */
-/* Author and (c) 1999-2023: Amon Ott <ao@rsbac.org> */
+/* Author and (c) 1999-2024: Amon Ott <ao@rsbac.org> */
 /*                                                   */
-/* Last modified: 18/Dec/2023                        */
+/* Last modified: 24/Jun/2024                        */
 /*************************************************** */
 
 #include <linux/string.h>
@@ -1427,9 +1427,9 @@ log:
       result = NOT_GRANTED;
 
 /* count */
-    rsbac_adf_request_count[target]++;
+    data_race(rsbac_adf_request_count[target]++);
 #ifdef CONFIG_RSBAC_XSTATS
-    rsbac_adf_request_xcount[target][request]++;
+    data_race(rsbac_adf_request_xcount[target][request]++);
 #endif
 
 #ifdef CONFIG_RSBAC_RC_FORCE_LOG
@@ -2520,9 +2520,9 @@ log:
       }
 
 /* count */
-    rsbac_adf_set_attr_count[target]++;
+    data_race(rsbac_adf_set_attr_count[target]++);
 #ifdef CONFIG_RSBAC_XSTATS
-    rsbac_adf_set_attr_xcount[target][request]++;
+    data_race(rsbac_adf_set_attr_xcount[target][request]++);
 #endif
 
     return(error);
