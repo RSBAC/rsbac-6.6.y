@@ -3,7 +3,7 @@
 /* Implementation of ACL data structures             */
 /* Author and (c) 1999-2024: Amon Ott <ao@rsbac.org> */
 /*                                                   */
-/* Last modified: 11/Jan/2024                        */
+/* Last modified: 24/Jun/2024                        */
 /*************************************************** */
 
 #include <linux/types.h>
@@ -858,8 +858,6 @@ static struct rsbac_acl_device_list_item_t *acl_lookup_device(__u32 major, __u32
 		    ) {
 			curr = srcu_dereference(curr->next, &device_list_srcu);
 		}
-		if (curr)
-			device_list_head_p->curr = curr;
 	}
 	/* it is the current item -> return it */
 	return curr;
