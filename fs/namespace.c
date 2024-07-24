@@ -1130,12 +1130,6 @@ struct vfsmount *vfs_create_mount(struct fs_context *fc)
 	mnt->mnt_mountpoint	= mnt->mnt.mnt_root;
 	mnt->mnt_parent		= mnt;
 
-#ifdef CONFIG_RSBAC
-	rsbac_pr_debug(ds, "calling rsbac_mount() for device %02u:%02u\n",
-			RSBAC_MAJOR((&mnt->mnt)->mnt_sb->s_dev), RSBAC_MINOR((&mnt->mnt)->mnt_sb->s_dev));
-	rsbac_mount(&mnt->mnt, mnt_has_parent(mnt) ? &mnt->mnt_parent->mnt : NULL);
-#endif
-
 	lock_mount_hash();
 	list_add_tail(&mnt->mnt_instance, &mnt->mnt.mnt_sb->s_mounts);
 	unlock_mount_hash();
@@ -3472,21 +3466,8 @@ static int do_move_mount(struct path *old_path, struct path *new_path,
 #endif
 
 	err = attach_recursive_mnt(old, real_mount(new_path->mnt), mp, flags);
-	if (err) {
-#ifdef CONFIG_RSBAC
-		rsbac_printk(KERN_WARNING
-				"do_move_mount() [sys_mount()]: attach_recursive_mnt() failed -> calling rsbac_mount() for old Device %02u:%02u\n",
-				MAJOR(old_path->mnt->mnt_sb->s_dev),MINOR(old_path->mnt->mnt_sb->s_dev));
-		rsbac_mount(old_path->mnt, mnt_has_parent(old) ? &old->mnt_parent->mnt : NULL);
-#endif
+	if (err)
 		goto out;
-        }
-
-#ifdef CONFIG_RSBAC
-	rsbac_pr_debug(ds, "calling rsbac_mount() for device %02u:%02u\n",
-			RSBAC_MAJOR(new_path->mnt->mnt_sb->s_dev), RSBAC_MINOR(new_path->mnt->mnt_sb->s_dev));
-	rsbac_mount(new_path->mnt, mnt_has_parent(real_mount(new_path->mnt)) ? &real_mount(new_path->mnt)->mnt_parent->mnt : NULL);
-#endif
 
 	/* if the mount is moved, it should no longer be expire
 	 * automatically */
@@ -3625,6 +3606,15 @@ static int do_new_mount_fc(struct fs_context *fc, struct path *mountpoint,
 	unlock_mount(mp);
 	if (error < 0)
 		mntput(mnt);
+
+#ifdef CONFIG_RSBAC
+	if (error >= 0) {
+		rsbac_pr_debug(ds, "calling rsbac_mount() for device %02u:%02u\n",
+				RSBAC_MAJOR((&real_mount(mnt)->mnt)->mnt_sb->s_dev), RSBAC_MINOR((&real_mount(mnt)->mnt)->mnt_sb->s_dev));
+		rsbac_mount(&real_mount(mnt)->mnt, real_mount(mountpoint->mnt) ? &real_mount(mountpoint->mnt)->mnt : NULL);
+	}
+#endif
+
 	return error;
 }
 
@@ -3736,6 +3726,12 @@ int finish_automount(struct vfsmount *m, const struct path *path)
 	unlock_mount(mp);
 	if (unlikely(err))
 		goto discard;
+
+#ifdef CONFIG_RSBAC
+	rsbac_pr_debug(ds, "calling rsbac_mount() for device %02u:%02u\n",
+			RSBAC_MAJOR((&mnt->mnt)->mnt_sb->s_dev), RSBAC_MINOR((&mnt->mnt)->mnt_sb->s_dev));
+	rsbac_mount(&mnt->mnt, real_mount(path->mnt) ? &real_mount(path->mnt)->mnt : NULL);
+#endif
 	mntput(m);
 	return 0;
 

@@ -437,9 +437,11 @@ static int rsbac_set_rsbac_dat_inode(__u32 major, __u32 minor, long dir_fd)
 		srcu_read_unlock(&device_list_srcu[hash], srcu_idx);
 		return -RSBAC_EINVALIDDEV;
 	}
-	rsbac_pr_debug(ds, "rsbac_set_rsbac_dat_inode(): Set rsbac_dir_inode for device %02u:%02u to %llu\n",
-		     major, minor, f.file->f_inode->i_ino);
-	device_p->rsbac_dir_inode = f.file->f_inode->i_ino;
+	if (device_p->rsbac_dir_inode != f.file->f_inode->i_ino) {
+		rsbac_pr_debug(ds, "rsbac_set_rsbac_dat_inode(): Set rsbac_dir_inode for device %02u:%02u to %llu\n",
+			     major, minor, f.file->f_inode->i_ino);
+		device_p->rsbac_dir_inode = f.file->f_inode->i_ino;
+	}
 	srcu_read_unlock(&device_list_srcu[hash], srcu_idx);
 	fdput_pos(f);
 	return 0;
@@ -2852,8 +2854,8 @@ devices_proc_show(struct seq_file *m, void *v)
 					    device_p->vfsmount_p->mnt_sb->s_type->name,
 					    device_p->vfsmount_p->mnt_sb->s_magic,
 					    real_mount(device_p->vfsmount_p)->mnt_mountpoint->d_name.name,
-					    parent_dev != RSBAC_MKDEV(device_p->major, device_p->minor) ? device_p->major : 0,
-					    parent_dev != RSBAC_MKDEV(device_p->major, device_p->minor) ? device_p->minor : 0,
+					    parent_dev != RSBAC_MKDEV(device_p->major, device_p->minor) ? RSBAC_MAJOR(parent_dev) : 0,
+					    parent_dev != RSBAC_MKDEV(device_p->major, device_p->minor) ? RSBAC_MINOR(parent_dev) : 0,
 					    device_p->persist,
 					    device_p->automounted,
 					    device_p->rsbac_dir_inode);
