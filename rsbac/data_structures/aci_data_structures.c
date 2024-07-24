@@ -7334,8 +7334,16 @@ int rsbac_mount(struct vfsmount * vfsmount_p, struct vfsmount * vfsmount_parent_
 
 	major = RSBAC_MAJOR(vfsmount_p->mnt_sb->s_dev);
 	minor = RSBAC_MINOR(vfsmount_p->mnt_sb->s_dev);
-	rsbac_pr_debug(ds, "mounting device %02u:%02u\n",
-			major, minor);
+	if (vfsmount_parent_p) {
+		__u32 pmajor = RSBAC_MAJOR(vfsmount_parent_p->mnt_sb->s_dev);
+		__u32 pminor = RSBAC_MINOR(vfsmount_parent_p->mnt_sb->s_dev);
+
+		rsbac_pr_debug(ds, "mounting device %02u:%02u, parent %02u:%02u\n",
+				major, minor, pmajor, pminor);
+	} else {
+		rsbac_pr_debug(ds, "mounting device %02u:%02u, no parent given\n",
+				major, minor);
+	}
 	rsbac_pr_debug(stack, "free stack: %lu\n", rsbac_stack_free_space());
 	if (vfsmount_parent_p) {
 		__u32 pmajor;
