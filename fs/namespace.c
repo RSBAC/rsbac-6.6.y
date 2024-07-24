@@ -1131,6 +1131,8 @@ struct vfsmount *vfs_create_mount(struct fs_context *fc)
 	mnt->mnt_parent		= mnt;
 
 #ifdef CONFIG_RSBAC
+	rsbac_pr_debug(ds, "calling rsbac_mount() for device %02u:%02u\n",
+			RSBAC_MAJOR((&mnt->mnt)->mnt_sb->s_dev), RSBAC_MINOR((&mnt->mnt)->mnt_sb->s_dev));
 	rsbac_mount(&mnt->mnt, mnt_has_parent(mnt) ? &mnt->mnt_parent->mnt : NULL);
 #endif
 
@@ -2817,8 +2819,11 @@ out:
 	path_put(&old_path);
 
 #ifdef CONFIG_RSBAC
-	if (!err)
+	if (!err) {
+		rsbac_pr_debug(ds, "calling rsbac_mount() for device %02u:%02u\n",
+				RSBAC_MAJOR((&mnt->mnt)->mnt_sb->s_dev), RSBAC_MINOR((&mnt->mnt)->mnt_sb->s_dev));
 		rsbac_mount(&mnt->mnt, mnt_has_parent(mnt) ? &mnt->mnt_parent->mnt : NULL);
+	}
 #endif
 
 	return err;
@@ -3478,7 +3483,9 @@ static int do_move_mount(struct path *old_path, struct path *new_path,
         }
 
 #ifdef CONFIG_RSBAC
-	rsbac_mount(old_path->mnt, mnt_has_parent(old) ? &old->mnt_parent->mnt : NULL);
+	rsbac_pr_debug(ds, "calling rsbac_mount() for device %02u:%02u\n",
+			RSBAC_MAJOR(new_path->mnt->mnt_sb->s_dev), RSBAC_MINOR(new_path->mnt->mnt_sb->s_dev));
+	rsbac_mount(new_path->mnt, mnt_has_parent(real_mount(new_path->mnt)) ? &real_mount(new_path->mnt)->mnt_parent->mnt : NULL);
 #endif
 
 	/* if the mount is moved, it should no longer be expire
