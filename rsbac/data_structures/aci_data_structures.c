@@ -7067,7 +7067,7 @@ int __init rsbac_init(rsbac_dev_t root_dev)
 			read_lock(&tasklist_lock);
 			if(pid_task(rsbac_kthread_entry->pid, PIDTYPE_PID)) {
 				read_unlock(&tasklist_lock);
-				rsbac_pr_debug(ds, "Setting for kthread %u\n", pid_nr(rsbac_kthread_entry->pid));
+				rsbac_pr_debug(ds, "Setting other ACI for kthread %u\n", pid_nr(rsbac_kthread_entry->pid));
 				rsbac_kthread_notify(rsbac_kthread_entry->pid);
 			}
 			else {
