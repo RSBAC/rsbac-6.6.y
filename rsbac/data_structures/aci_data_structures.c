@@ -7230,13 +7230,12 @@ static int rsbac_automount(__u32 major, __u32 minor)
 EXPORT_SYMBOL(rsbac_mount);
 int rsbac_mount(struct vfsmount * vfsmount_p, struct vfsmount * vfsmount_parent_p)
 {
-	int err = 0;
 	struct rsbac_device_list_item_t *device_p;
-	struct rsbac_device_list_item_t *new_device_p;
 	u_int hash;
 	int srcu_idx;
 	__u32 major;
 	__u32 minor;
+	int err = 0;
 
 	if (in_interrupt()) {
 		rsbac_printk(KERN_WARNING "rsbac_mount(): called from interrupt, process %u(%s)!\n",
@@ -7336,16 +7335,6 @@ int rsbac_mount(struct vfsmount * vfsmount_p, struct vfsmount * vfsmount_parent_
 
 	major = RSBAC_MAJOR(vfsmount_p->mnt_sb->s_dev);
 	minor = RSBAC_MINOR(vfsmount_p->mnt_sb->s_dev);
-	if (vfsmount_parent_p) {
-		__u32 pmajor = RSBAC_MAJOR(vfsmount_parent_p->mnt_sb->s_dev);
-		__u32 pminor = RSBAC_MINOR(vfsmount_parent_p->mnt_sb->s_dev);
-
-		rsbac_pr_debug(ds, "mounting device %02u:%02u, parent %02u:%02u\n",
-				major, minor, pmajor, pminor);
-	} else {
-		rsbac_pr_debug(ds, "mounting device %02u:%02u, no parent given\n",
-				major, minor);
-	}
 	rsbac_pr_debug(stack, "free stack: %lu\n", rsbac_stack_free_space());
 	if (vfsmount_parent_p) {
 		__u32 pmajor;
@@ -7353,11 +7342,16 @@ int rsbac_mount(struct vfsmount * vfsmount_p, struct vfsmount * vfsmount_parent_
 
 		pmajor = RSBAC_MAJOR(vfsmount_parent_p->mnt_sb->s_dev);
 		pminor = RSBAC_MINOR(vfsmount_parent_p->mnt_sb->s_dev);
+		rsbac_pr_debug(ds, "mounting device %02u:%02u, parent %02u:%02u\n",
+				major, minor, pmajor, pminor);
 		hash = device_hash(pminor);
 		srcu_idx = srcu_read_lock(&device_list_srcu[hash]);
 		device_p = lookup_device(pmajor, pminor, hash);
 		srcu_read_unlock(&device_list_srcu[hash], srcu_idx);
-		if(!device_p) {
+		if(device_p) {
+			rsbac_pr_debug(ds, "found parent %02u:%02u\n",
+					pmajor, pminor);
+		} else {
 			rsbac_printk(KERN_WARNING "rsbac_mount(): while mounting device %02u:%02u, fs-type %s, its parent device %02u:%02u, fs-type %s, is not mounted, forcing parent mount!\n",
 				major, minor,
 				vfsmount_p->mnt_sb->s_type->name,
@@ -7365,6 +7359,9 @@ int rsbac_mount(struct vfsmount * vfsmount_p, struct vfsmount * vfsmount_parent_
 				vfsmount_parent_p->mnt_sb->s_type->name);
 			rsbac_mount(vfsmount_parent_p, NULL);
 		}
+	} else {
+		rsbac_pr_debug(ds, "mounting device %02u:%02u, no parent given\n",
+				major, minor);
 	}
 	hash = device_hash(minor);
 	srcu_idx = srcu_read_lock(&device_list_srcu[hash]);
@@ -7409,6 +7406,8 @@ int rsbac_mount(struct vfsmount * vfsmount_p, struct vfsmount * vfsmount_parent_
 			}
 		srcu_read_unlock(&device_list_srcu[hash], srcu_idx);
 	} else {
+		struct rsbac_device_list_item_t *new_device_p;
+
 		srcu_read_unlock(&device_list_srcu[hash], srcu_idx);
 		/* OK, go on */
 		new_device_p = create_device_item(vfsmount_p, major, minor, FALSE);
