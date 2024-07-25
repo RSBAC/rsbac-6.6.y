@@ -3,7 +3,7 @@
 /* Implementation of ACL data structures             */
 /* Author and (c) 1999-2024: Amon Ott <ao@rsbac.org> */
 /*                                                   */
-/* Last modified: 24/Jun/2024                        */
+/* Last modified: 25/Jul/2024                        */
 /*************************************************** */
 
 #include <linux/types.h>
@@ -4369,7 +4369,7 @@ int rsbac_acl_set_acl_entry(rsbac_list_ta_number_t ta_number,
 		/* lookup device */
 		device_p = acl_lookup_device(RSBAC_MAJOR(tid.file.device), RSBAC_MINOR(tid.file.device));
 		if (!device_p) {
-			rsbac_printk(KERN_WARNING "rsbac_acl_set_acl_entry(): Could not lookup device!\n");
+			rsbac_printk(KERN_WARNING "rsbac_acl_set_acl_entry(): Could not lookup device %02u:%02u!\n", RSBAC_MAJOR(tid.file.device), RSBAC_MINOR(tid.file.device));
 			/* free read lock */
 			srcu_read_unlock(&device_list_srcu, srcu_idx);
 			return -RSBAC_EINVALIDDEV;
@@ -4726,7 +4726,7 @@ int rsbac_acl_remove_acl_entry(rsbac_list_ta_number_t ta_number,
 		/* lookup device */
 		device_p = acl_lookup_device(RSBAC_MAJOR(tid.file.device), RSBAC_MINOR(tid.file.device));
 		if (!device_p) {
-			rsbac_printk(KERN_WARNING "rsbac_acl_remove_acl_entry(): Could not lookup device!\n");
+			rsbac_printk(KERN_WARNING "rsbac_acl_remove_acl_entry(): Could not lookup device %02u:%02u!\n", RSBAC_MAJOR(tid.file.device), RSBAC_MINOR(tid.file.device));
 			srcu_read_unlock(&device_list_srcu, srcu_idx);
 			return -RSBAC_EINVALIDDEV;
 		}
@@ -5097,7 +5097,7 @@ int rsbac_acl_remove_acl(rsbac_list_ta_number_t ta_number,
 		/* lookup device */
 		device_p = acl_lookup_device(RSBAC_MAJOR(tid_p->file.device), RSBAC_MINOR(tid_p->file.device));
 		if (!device_p) {
-			rsbac_printk(KERN_WARNING "rsbac_acl_remove_acl(): Could not lookup device!\n");
+			rsbac_printk(KERN_WARNING "rsbac_acl_remove_acl(): Could not lookup device %02u:%02u!\n", RSBAC_MAJOR(tid_p->file.device), RSBAC_MINOR(tid_p->file.device));
 			srcu_read_unlock(&device_list_srcu, srcu_idx);
 			return -RSBAC_EINVALIDDEV;
 		}
@@ -5276,7 +5276,7 @@ int rsbac_acl_add_to_acl_entry(rsbac_list_ta_number_t ta_number,
 		/* lookup device */
 		device_p = acl_lookup_device(RSBAC_MAJOR(tid.file.device), RSBAC_MINOR(tid.file.device));
 		if (!device_p) {
-			rsbac_printk(KERN_WARNING "rsbac_acl_set_acl_entry(): Could not lookup device!\n");
+			rsbac_printk(KERN_WARNING "rsbac_acl_set_acl_entry(): Could not lookup device %02u:%02u!\n", RSBAC_MAJOR(tid.file.device), RSBAC_MINOR(tid.file.device));
 			srcu_read_unlock(&device_list_srcu, srcu_idx);
 			return -RSBAC_EINVALIDDEV;
 		}
@@ -5722,7 +5722,7 @@ int rsbac_acl_remove_from_acl_entry(rsbac_list_ta_number_t ta_number,
 		/* lookup device */
 		device_p = acl_lookup_device(RSBAC_MAJOR(tid.file.device), RSBAC_MINOR(tid.file.device));
 		if (!device_p) {
-			rsbac_printk(KERN_WARNING "rsbac_acl_remove_from_acl_entry(): Could not lookup device!\n");
+			rsbac_printk(KERN_WARNING "rsbac_acl_remove_from_acl_entry(): Could not lookup device %02u:%02u!\n", RSBAC_MAJOR(tid.file.device), RSBAC_MINOR(tid.file.device));
 			srcu_read_unlock(&device_list_srcu, srcu_idx);
 			return -RSBAC_EINVALIDDEV;
 		}
@@ -6092,7 +6092,7 @@ int rsbac_acl_set_mask(rsbac_list_ta_number_t ta_number,
 		srcu_idx = srcu_read_lock(&device_list_srcu);
 		device_p = acl_lookup_device(RSBAC_MAJOR(tid.file.device), RSBAC_MINOR(tid.file.device));
 		if (!device_p) {
-			rsbac_printk(KERN_WARNING "rsbac_acl_set_mask(): Could not lookup device!\n");
+			rsbac_printk(KERN_WARNING "rsbac_acl_set_mask(): Could not lookup device %02u:%02u!\n", RSBAC_MAJOR(tid.file.device), RSBAC_MINOR(tid.file.device));
 			srcu_read_unlock(&device_list_srcu, srcu_idx);
 			return -RSBAC_EINVALIDDEV;
 		}
@@ -6260,7 +6260,7 @@ int rsbac_acl_get_mask(rsbac_list_ta_number_t ta_number,
 		/* lookup device */
 		device_p = acl_lookup_device(RSBAC_MAJOR(tid.file.device), RSBAC_MINOR(tid.file.device));
 		if (!device_p) {
-			rsbac_printk(KERN_WARNING "rsbac_acl_get_mask(): Could not lookup device!\n");
+			rsbac_printk(KERN_WARNING "rsbac_acl_get_mask(): Could not lookup device %02u:%02u!\n", RSBAC_MAJOR(tid.file.device), RSBAC_MINOR(tid.file.device));
 			srcu_read_unlock(&device_list_srcu, srcu_idx);
 			return -RSBAC_EINVALIDDEV;
 		}
@@ -7108,7 +7108,7 @@ int rsbac_acl_get_single_right(enum rsbac_target_t target,
 			/* lookup device */
 			device_p = acl_lookup_device(RSBAC_MAJOR(tid.file.device), RSBAC_MINOR(tid.file.device));
 			if (!device_p) {
-				rsbac_printk(KERN_WARNING "rsbac_acl_get_single_right(): Could not lookup device, blindly granting access!\n");
+				rsbac_printk(KERN_WARNING "rsbac_acl_get_single_right(): Could not lookup device %02u:%02u, blindly granting access!\n", RSBAC_MAJOR(tid.file.device), RSBAC_MINOR(tid.file.device));
 				srcu_read_unlock(&device_list_srcu, srcu_idx);
 				*result = TRUE;
 				return 0;
@@ -7828,7 +7828,7 @@ int rsbac_acl_get_tlist(rsbac_list_ta_number_t ta_number,
 		/* lookup device */
 		device_p = acl_lookup_device(RSBAC_MAJOR(tid.file.device), RSBAC_MINOR(tid.file.device));
 		if (!device_p) {
-			rsbac_printk(KERN_WARNING "rsbac_acl_get_tlist(): Could not lookup device!\n");
+			rsbac_printk(KERN_WARNING "rsbac_acl_get_tlist(): Could not lookup device %02u:%02u!\n", RSBAC_MAJOR(tid.file.device), RSBAC_MINOR(tid.file.device));
 			srcu_read_unlock(&device_list_srcu, srcu_idx);
 			return -RSBAC_EINVALIDDEV;
 		}
