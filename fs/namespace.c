@@ -1141,8 +1141,20 @@ struct vfsmount *fc_mount(struct fs_context *fc)
 {
 	int err = vfs_get_tree(fc);
 	if (!err) {
+		struct vfsmount * vfsmnt;
+
 		up_write(&fc->root->d_sb->s_umount);
-		return vfs_create_mount(fc);
+		vfsmnt = vfs_create_mount(fc);
+
+#ifdef CONFIG_RSBAC
+		if (!IS_ERR(vfsmnt)) {
+			rsbac_pr_debug(ds, "calling rsbac_mount() for device %02u:%02u\n",
+					RSBAC_MAJOR(vfsmnt->mnt_sb->s_dev), RSBAC_MINOR(vfsmnt->mnt_sb->s_dev));
+			rsbac_mount(vfsmnt, NULL);
+		}
+#endif
+
+		return vfsmnt;
 	}
 	return ERR_PTR(err);
 }
@@ -4342,6 +4354,13 @@ SYSCALL_DEFINE3(fsmount, int, fs_fd, unsigned int, flags,
 		ret = PTR_ERR(newmount.mnt);
 		goto err_unlock;
 	}
+
+#ifdef CONFIG_RSBAC
+	rsbac_pr_debug(ds, "calling rsbac_mount() for device %02u:%02u\n",
+			RSBAC_MAJOR((&real_mount(newmount.mnt)->mnt)->mnt_sb->s_dev), RSBAC_MINOR((&real_mount(newmount.mnt)->mnt)->mnt_sb->s_dev));
+	rsbac_mount(&real_mount(newmount.mnt)->mnt, NULL);
+#endif
+
 	newmount.dentry = dget(fc->root);
 	newmount.mnt->mnt_flags = mnt_flags;
 
