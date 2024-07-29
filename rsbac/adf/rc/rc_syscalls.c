@@ -6,7 +6,7 @@
 /*                                                   */
 /* Author and (c) 1999-2024: Amon Ott <ao@rsbac.org> */
 /*                                                   */
-/* Last modified: 16/Jan/2024                        */
+/* Last modified: 29/Jul/2024                        */
 /*************************************************** */
 
 #include <linux/string.h>
@@ -69,14 +69,12 @@ int rsbac_rc_sys_copy_role(
               {
                 rsbac_uid_t user;
 
-                if(!rsbac_get_owner(&user))
-                  {
-                    rsbac_printk(KERN_INFO
-                                 "rsbac_rc_sys_copy_role(): copying of role %u denied for pid %u, user %u - not in admin_roles!\n",
-                                 from_role,
-                                 current->pid,
-                                 user);
-                  }
+                rsbac_get_owner(&user);
+                rsbac_printk(KERN_INFO
+                             "rsbac_rc_sys_copy_role(): copying of role %u denied for pid %u, user %u - not in admin_roles!\n",
+                             from_role,
+                             current->pid,
+                             user);
                 #ifdef CONFIG_RSBAC_SOFTMODE
                 if(   !rsbac_softmode
                 #ifdef CONFIG_RSBAC_SOFTMODE_IND
@@ -96,14 +94,12 @@ int rsbac_rc_sys_copy_role(
           {
             rsbac_uid_t user;
 
-            if(!rsbac_get_owner(&user))
-              {
-                rsbac_printk(KERN_INFO
-                             "rsbac_rc_sys_copy_role(): overwriting of existing role %u denied for pid %u, user %u - no role_admin!\n",
-                             to_role,
-                             current->pid,
-                             user);
-              }
+            rsbac_get_owner(&user);
+            rsbac_printk(KERN_INFO
+                         "rsbac_rc_sys_copy_role(): overwriting of existing role %u denied for pid %u, user %u - no role_admin!\n",
+                         to_role,
+                         current->pid,
+                         user);
             #ifdef CONFIG_RSBAC_SOFTMODE
             if(   !rsbac_softmode
             #ifdef CONFIG_RSBAC_SOFTMODE_IND
@@ -162,21 +158,18 @@ int rsbac_rc_sys_copy_type (
             if(err == -EPERM)
               {
                 rsbac_uid_t user;
+                char * tmp = rsbac_kmalloc(RSBAC_MAXNAMELEN);
 
-                if(!rsbac_get_owner(&user))
+                if(tmp)
                   {
-                    char * tmp = rsbac_kmalloc(RSBAC_MAXNAMELEN);
-
-                    if(tmp)
-                      {
-                        rsbac_printk(KERN_INFO
-                                     "rsbac_rc_sys_copy_type(): copying of %s type %u denied for pid %u, user %u - not in admin_roles!\n",
-                                     get_target_name_only(tmp, target),
-                                     from_type,
-                                     current->pid,
-                                     user);
-                        rsbac_kfree(tmp);
-                      }
+                    rsbac_get_owner(&user);
+                    rsbac_printk(KERN_INFO
+                                 "rsbac_rc_sys_copy_type(): copying of %s type %u denied for pid %u, user %u - not in admin_roles!\n",
+                                 get_target_name_only(tmp, target),
+                                 from_type,
+                                 current->pid,
+                                 user);
+                    rsbac_kfree(tmp);
                   }
                 #ifdef CONFIG_RSBAC_SOFTMODE
                 if(   !rsbac_softmode
@@ -196,21 +189,18 @@ int rsbac_rc_sys_copy_type (
            )
           {
             rsbac_uid_t user;
+            char * tmp = rsbac_kmalloc(RSBAC_MAXNAMELEN);
 
-            if(!rsbac_get_owner(&user))
+            if(tmp)
               {
-                char * tmp = rsbac_kmalloc(RSBAC_MAXNAMELEN);
-
-                if(tmp)
-                  {
-                    rsbac_printk(KERN_INFO
-                                 "rsbac_rc_sys_copy_type(): overwriting of existing %s type %u denied for pid %u, user %u - no role_admin!\n",
-                                 get_target_name_only(tmp, target),
-                                 to_type,
-                                 current->pid,
-                                 user);
-                    rsbac_kfree(tmp);
-                  }
+                rsbac_get_owner(&user);
+                rsbac_printk(KERN_INFO
+                             "rsbac_rc_sys_copy_type(): overwriting of existing %s type %u denied for pid %u, user %u - no role_admin!\n",
+                             get_target_name_only(tmp, target),
+                             to_type,
+                             current->pid,
+                             user);
+                rsbac_kfree(tmp);
               }
             #ifdef CONFIG_RSBAC_SOFTMODE
             if(   !rsbac_softmode
@@ -270,14 +260,12 @@ int rsbac_rc_sys_get_item(
                     {
                       rsbac_uid_t user;
 
-                      if(!rsbac_get_owner(&user))
-                        {
-                          rsbac_printk(KERN_INFO
-                                       "rsbac_rc_sys_get_item(): reading fd_need_secdel of type %u denied for pid %u, user %u - no ADMIN right!\n",
-                                       tid.type,
-                                       current->pid,
-                                       user);
-                        }
+                      rsbac_get_owner(&user);
+                      rsbac_printk(KERN_INFO
+                                   "rsbac_rc_sys_get_item(): reading fd_need_secdel of type %u denied for pid %u, user %u - no ADMIN right!\n",
+                                   tid.type,
+                                   current->pid,
+                                   user);
                       #ifdef CONFIG_RSBAC_SOFTMODE
                       if(   !rsbac_softmode
                       #ifdef CONFIG_RSBAC_SOFTMODE_IND
@@ -304,14 +292,12 @@ int rsbac_rc_sys_get_item(
                     {
                       rsbac_uid_t user;
 
-                      if(!rsbac_get_owner(&user))
-                        {
-                          rsbac_printk(KERN_INFO
-                                       "rsbac_rc_sys_get_item(): getting item of role %u denied for pid %u, user %u - not in admin_roles!\n",
-                                       tid.role,
-                                       current->pid,
-                                       user);
-                        }
+                      rsbac_get_owner(&user);
+                      rsbac_printk(KERN_INFO
+                                   "rsbac_rc_sys_get_item(): getting item of role %u denied for pid %u, user %u - not in admin_roles!\n",
+                                   tid.role,
+                                   current->pid,
+                                   user);
                       #ifdef CONFIG_RSBAC_SOFTMODE
                       if(   !rsbac_softmode
                       #ifdef CONFIG_RSBAC_SOFTMODE_IND
@@ -364,15 +350,13 @@ int rsbac_rc_sys_set_item(
                       rsbac_uid_t user;
                       char tmp[80];
 
-                      if(!rsbac_get_owner(&user))
-                        {
-                          rsbac_printk(KERN_INFO
-                                       "rsbac_rc_sys_set_item(): changing %s of FD type %u denied for pid %u, user %u - no ADMIN right!\n",
-                                       get_rc_item_name(tmp, item),
-                                       tid.type,
-                                       current->pid,
-                                       user);
-                        }
+                      rsbac_get_owner(&user);
+                      rsbac_printk(KERN_INFO
+                                   "rsbac_rc_sys_set_item(): changing %s of FD type %u denied for pid %u, user %u - no ADMIN right!\n",
+                                   get_rc_item_name(tmp, item),
+                                   tid.type,
+                                   current->pid,
+                                   user);
                     }
                   #ifdef CONFIG_RSBAC_SOFTMODE
                   if(   !rsbac_softmode
@@ -396,14 +380,12 @@ int rsbac_rc_sys_set_item(
                     {
                       rsbac_uid_t user;
 
-                      if(!rsbac_get_owner(&user))
-                        {
-                          rsbac_printk(KERN_INFO
-                                       "rsbac_rc_sys_set_item(): changing name or removing of DEV type %u denied for pid %u, user %u - no ADMIN right!\n",
-                                       tid.type,
-                                       current->pid,
-                                       user);
-                        }
+                      rsbac_get_owner(&user);
+                      rsbac_printk(KERN_INFO
+                                   "rsbac_rc_sys_set_item(): changing name or removing of DEV type %u denied for pid %u, user %u - no ADMIN right!\n",
+                                   tid.type,
+                                   current->pid,
+                                   user);
                     }
                   #ifdef CONFIG_RSBAC_SOFTMODE
                   if(   !rsbac_softmode
@@ -427,14 +409,12 @@ int rsbac_rc_sys_set_item(
                     {
                       rsbac_uid_t user;
 
-                      if(!rsbac_get_owner(&user))
-                        {
-                          rsbac_printk(KERN_INFO
-                                       "rsbac_rc_sys_set_item(): changing name or removing of IPC type %u denied for pid %u, user %u - no ADMIN right!\n",
-                                       tid.type,
-                                       current->pid,
-                                       user);
-                        }
+                      rsbac_get_owner(&user);
+                      rsbac_printk(KERN_INFO
+                                   "rsbac_rc_sys_set_item(): changing name or removing of IPC type %u denied for pid %u, user %u - no ADMIN right!\n",
+                                   tid.type,
+                                   current->pid,
+                                   user);
                     }
                   #ifdef CONFIG_RSBAC_SOFTMODE
                   if(   !rsbac_softmode
@@ -458,14 +438,12 @@ int rsbac_rc_sys_set_item(
                     {
                       rsbac_uid_t user;
 
-                      if(!rsbac_get_owner(&user))
-                        {
-                          rsbac_printk(KERN_INFO
-                                       "rsbac_rc_sys_set_item(): changing name or removing of USER type %u denied for pid %u, user %u - no ADMIN right!\n",
-                                       tid.type,
-                                       current->pid,
-                                       user);
-                        }
+                      rsbac_get_owner(&user);
+                      rsbac_printk(KERN_INFO
+                                   "rsbac_rc_sys_set_item(): changing name or removing of USER type %u denied for pid %u, user %u - no ADMIN right!\n",
+                                   tid.type,
+                                   current->pid,
+                                   user);
                     }
                   #ifdef CONFIG_RSBAC_SOFTMODE
                   if(   !rsbac_softmode
@@ -489,14 +467,12 @@ int rsbac_rc_sys_set_item(
                     {
                       rsbac_uid_t user;
 
-                      if(!rsbac_get_owner(&user))
-                        {
-                          rsbac_printk(KERN_INFO
-                                       "rsbac_rc_sys_set_item(): changing name or removing of process type %u denied for pid %u, user %u - no ADMIN right!\n",
-                                       tid.type,
-                                       current->pid,
-                                       user);
-                        }
+                      rsbac_get_owner(&user);
+                      rsbac_printk(KERN_INFO
+                                   "rsbac_rc_sys_set_item(): changing name or removing of process type %u denied for pid %u, user %u - no ADMIN right!\n",
+                                   tid.type,
+                                   current->pid,
+                                   user);
                     }
                   #ifdef CONFIG_RSBAC_SOFTMODE
                   if(   !rsbac_softmode
@@ -519,14 +495,12 @@ int rsbac_rc_sys_set_item(
                     {
                       rsbac_uid_t user;
 
-                      if(!rsbac_get_owner(&user))
-                        {
-                          rsbac_printk(KERN_INFO
-                                       "rsbac_rc_sys_set_item(): changing name or removing of SCD type %u denied for pid %u, user %u - no ADMIN right!\n",
-                                       tid.type,
-                                       current->pid,
-                                       user);
-                        }
+                      rsbac_get_owner(&user);
+                      rsbac_printk(KERN_INFO
+                                   "rsbac_rc_sys_set_item(): changing name or removing of SCD type %u denied for pid %u, user %u - no ADMIN right!\n",
+                                   tid.type,
+                                   current->pid,
+                                   user);
                     }
                   #ifdef CONFIG_RSBAC_SOFTMODE
                   if(   !rsbac_softmode
@@ -550,14 +524,12 @@ int rsbac_rc_sys_set_item(
                     {
                       rsbac_uid_t user;
 
-                      if(!rsbac_get_owner(&user))
-                        {
-                          rsbac_printk(KERN_INFO
-                                       "rsbac_rc_sys_set_item(): changing name or removing of GROUP type %u denied for pid %u, user %u - no ADMIN right!\n",
-                                       tid.type,
-                                       current->pid,
-                                       user);
-                        }
+                      rsbac_get_owner(&user);
+                      rsbac_printk(KERN_INFO
+                                   "rsbac_rc_sys_set_item(): changing name or removing of GROUP type %u denied for pid %u, user %u - no ADMIN right!\n",
+                                   tid.type,
+                                   current->pid,
+                                   user);
                     }
                   #ifdef CONFIG_RSBAC_SOFTMODE
                   if(   !rsbac_softmode
@@ -581,14 +553,12 @@ int rsbac_rc_sys_set_item(
                     {
                       rsbac_uid_t user;
 
-                      if(!rsbac_get_owner(&user))
-                        {
-                          rsbac_printk(KERN_INFO
-                                       "rsbac_rc_sys_set_item(): changing name or removing of NETDEV type %u denied for pid %u, user %u - no ADMIN right!\n",
-                                       tid.type,
-                                       current->pid,
-                                       user);
-                        }
+                      rsbac_get_owner(&user);
+                      rsbac_printk(KERN_INFO
+                                   "rsbac_rc_sys_set_item(): changing name or removing of NETDEV type %u denied for pid %u, user %u - no ADMIN right!\n",
+                                   tid.type,
+                                   current->pid,
+                                   user);
                     }
                   #ifdef CONFIG_RSBAC_SOFTMODE
                   if(   !rsbac_softmode
@@ -612,14 +582,12 @@ int rsbac_rc_sys_set_item(
                     {
                       rsbac_uid_t user;
 
-                      if(!rsbac_get_owner(&user))
-                        {
-                          rsbac_printk(KERN_INFO
-                                       "rsbac_rc_sys_set_item(): changing name or removing of NETTEMP type %u denied for pid %u, user %u - no ADMIN right!\n",
-                                       tid.type,
-                                       current->pid,
-                                       user);
-                        }
+                      rsbac_get_owner(&user);
+                      rsbac_printk(KERN_INFO
+                                   "rsbac_rc_sys_set_item(): changing name or removing of NETTEMP type %u denied for pid %u, user %u - no ADMIN right!\n",
+                                   tid.type,
+                                   current->pid,
+                                   user);
                     }
                   #ifdef CONFIG_RSBAC_SOFTMODE
                   if(   !rsbac_softmode
@@ -643,14 +611,12 @@ int rsbac_rc_sys_set_item(
                     {
                       rsbac_uid_t user;
 
-                      if(!rsbac_get_owner(&user))
-                        {
-                          rsbac_printk(KERN_INFO
-                                       "rsbac_rc_sys_set_item(): changing name or removing of NETOBJ type %u denied for pid %u, user %u - no ADMIN right!\n",
-                                       tid.type,
-                                       current->pid,
-                                       user);
-                        }
+                      rsbac_get_owner(&user);
+                      rsbac_printk(KERN_INFO
+                                   "rsbac_rc_sys_set_item(): changing name or removing of NETOBJ type %u denied for pid %u, user %u - no ADMIN right!\n",
+                                   tid.type,
+                                   current->pid,
+                                   user);
                     }
                   #ifdef CONFIG_RSBAC_SOFTMODE
                   if(   !rsbac_softmode
@@ -681,14 +647,12 @@ int rsbac_rc_sys_set_item(
                       {
                         rsbac_uid_t user;
 
-                        if(!rsbac_get_owner(&user))
-                          {
-                            rsbac_printk(KERN_INFO
-                                         "rsbac_rc_sys_set_item(): changing role_comp of role %u denied for pid %u, user %u - not in admin_roles!\n",
-                                         tid.role,
-                                         current->pid,
-                                         user);
-                          }
+                        rsbac_get_owner(&user);
+                        rsbac_printk(KERN_INFO
+                                     "rsbac_rc_sys_set_item(): changing role_comp of role %u denied for pid %u, user %u - not in admin_roles!\n",
+                                     tid.role,
+                                     current->pid,
+                                     user);
                       }
                     #ifdef CONFIG_RSBAC_SOFTMODE
                     if(   !rsbac_softmode
@@ -718,20 +682,18 @@ int rsbac_rc_sys_set_item(
                                          (enum rsbac_rc_special_rights_t) R_NONE))
                   {
                     rsbac_uid_t user;
-                    if(!rsbac_get_owner(&user))
-                      {
-                        rsbac_printk(KERN_INFO
-                                     "rsbac_rc_sys_set_item(): changing role_comp for role %u denied for user %u, role %u - not in assign_roles!\n",
-                                     tid.role,
-                                     user,
-                                     i_attr_val1.rc_role);
-                      }
-                      #ifdef CONFIG_RSBAC_SOFTMODE
-                      if(   !rsbac_softmode
-                      #ifdef CONFIG_RSBAC_SOFTMODE_IND
-                         && !rsbac_ind_softmode[SW_RC]
-                      #endif
-                        )
+                    rsbac_get_owner(&user);
+                    rsbac_printk(KERN_INFO
+                                 "rsbac_rc_sys_set_item(): changing role_comp for role %u denied for user %u, role %u - not in assign_roles!\n",
+                                 tid.role,
+                                 user,
+                                 i_attr_val1.rc_role);
+                    #ifdef CONFIG_RSBAC_SOFTMODE
+                    if(   !rsbac_softmode
+                    #ifdef CONFIG_RSBAC_SOFTMODE_IND
+                       && !rsbac_ind_softmode[SW_RC]
+                    #endif
+                      )
                       #endif
                       return -EPERM;
                   }
@@ -751,15 +713,13 @@ int rsbac_rc_sys_set_item(
                       rsbac_uid_t user;
                       char tmp[80];
 
-                      if(!rsbac_get_owner(&user))
-                        {
-                          rsbac_printk(KERN_INFO
-                                       "rsbac_rc_sys_set_item(): changing %s of role %u denied for pid %u, user %u - no Role Admin!\n",
-                                       get_rc_item_name(tmp, item),
-                                       tid.role,
-                                       current->pid,
-                                       user);
-                        }
+                      rsbac_get_owner(&user);
+                      rsbac_printk(KERN_INFO
+                                   "rsbac_rc_sys_set_item(): changing %s of role %u denied for pid %u, user %u - no Role Admin!\n",
+                                   get_rc_item_name(tmp, item),
+                                   tid.role,
+                                   current->pid,
+                                   user);
                     }
                   #ifdef CONFIG_RSBAC_SOFTMODE
                   if(   !rsbac_softmode
@@ -782,14 +742,12 @@ int rsbac_rc_sys_set_item(
                     {
                       rsbac_uid_t user;
 
-                      if(!rsbac_get_owner(&user))
-                        {
-                          rsbac_printk(KERN_INFO
-                                       "rsbac_rc_sys_set_item(): changing name of role %u denied for pid %u, user %u - not in admin_roles!\n",
-                                       tid.role,
-                                       current->pid,
-                                       user);
-                        }
+                      rsbac_get_owner(&user);
+                      rsbac_printk(KERN_INFO
+                                   "rsbac_rc_sys_set_item(): changing name of role %u denied for pid %u, user %u - not in admin_roles!\n",
+                                   tid.role,
+                                   current->pid,
+                                   user);
                     }
                   #ifdef CONFIG_RSBAC_SOFTMODE
                   if(   !rsbac_softmode
@@ -810,14 +768,12 @@ int rsbac_rc_sys_set_item(
                     {
                       rsbac_uid_t user;
 
-                      if(!rsbac_get_owner(&user))
-                        {
-                          rsbac_printk(KERN_INFO
-                                       "rsbac_rc_sys_set_item(): removing of role %u denied for pid %u, user %u - not in admin_roles!\n",
-                                       tid.role,
-                                       current->pid,
-                                       user);
-                        }
+                      rsbac_get_owner(&user);
+                      rsbac_printk(KERN_INFO
+                                   "rsbac_rc_sys_set_item(): removing of role %u denied for pid %u, user %u - not in admin_roles!\n",
+                                   tid.role,
+                                   current->pid,
+                                   user);
                     }
                   #ifdef CONFIG_RSBAC_SOFTMODE
                   if(   !rsbac_softmode
@@ -842,14 +798,12 @@ int rsbac_rc_sys_set_item(
                     {
                       rsbac_uid_t user;
 
-                      if(!rsbac_get_owner(&user))
-                        {
-                          rsbac_printk(KERN_INFO
-                                       "rsbac_rc_sys_set_item(): changing def_fd_[ind_]create_type of role %u denied for pid %u, user %u - not in admin_roles!\n",
-                                       tid.role,
-                                       current->pid,
-                                       user);
-                        }
+                      rsbac_get_owner(&user);
+                      rsbac_printk(KERN_INFO
+                                   "rsbac_rc_sys_set_item(): changing def_fd_[ind_]create_type of role %u denied for pid %u, user %u - not in admin_roles!\n",
+                                   tid.role,
+                                   current->pid,
+                                   user);
                     }
                   #ifdef CONFIG_RSBAC_SOFTMODE
                   if(   !rsbac_softmode
@@ -873,14 +827,12 @@ int rsbac_rc_sys_set_item(
                     {
                       rsbac_uid_t user;
 
-                      if(!rsbac_get_owner(&user))
-                        {
-                          rsbac_printk(KERN_INFO
-                                       "rsbac_rc_sys_set_item(): changing def_fd_[ind_]create_type for role %u to %u denied for user %u - no ASSIGN right for type!\n",
-                                       tid.role,
-                                       value.type_id,
-                                       user);
-                        }
+                      rsbac_get_owner(&user);
+                      rsbac_printk(KERN_INFO
+                                   "rsbac_rc_sys_set_item(): changing def_fd_[ind_]create_type for role %u to %u denied for user %u - no ASSIGN right for type!\n",
+                                   tid.role,
+                                   value.type_id,
+                                   user);
                       #ifdef CONFIG_RSBAC_SOFTMODE
                       if(   !rsbac_softmode
                       #ifdef CONFIG_RSBAC_SOFTMODE_IND
@@ -903,14 +855,12 @@ int rsbac_rc_sys_set_item(
                     {
                       rsbac_uid_t user;
 
-                      if(!rsbac_get_owner(&user))
-                        {
-                          rsbac_printk(KERN_INFO
-                                       "rsbac_rc_sys_set_item(): changing def_fd_[ind_]create_type of role %u denied for pid %u, user %u - not in admin_roles!\n",
-                                       tid.role,
-                                       current->pid,
-                                       user);
-                        }
+                      rsbac_get_owner(&user);
+                      rsbac_printk(KERN_INFO
+                                   "rsbac_rc_sys_set_item(): changing def_fd_[ind_]create_type of role %u denied for pid %u, user %u - not in admin_roles!\n",
+                                   tid.role,
+                                   current->pid,
+                                   user);
                     }
                   #ifdef CONFIG_RSBAC_SOFTMODE
                   if(   !rsbac_softmode
@@ -934,14 +884,12 @@ int rsbac_rc_sys_set_item(
                     {
                       rsbac_uid_t user;
 
-                      if(!rsbac_get_owner(&user))
-                        {
-                          rsbac_printk(KERN_INFO
-                                       "rsbac_rc_sys_set_item(): changing def_user_create_type of role %u denied for pid %u, user %u - not in admin_roles!\n",
-                                       tid.role,
-                                       current->pid,
-                                       user);
-                        }
+                      rsbac_get_owner(&user);
+                      rsbac_printk(KERN_INFO
+                                   "rsbac_rc_sys_set_item(): changing def_user_create_type of role %u denied for pid %u, user %u - not in admin_roles!\n",
+                                   tid.role,
+                                   current->pid,
+                                   user);
                     }
                   #ifdef CONFIG_RSBAC_SOFTMODE
                   if(   !rsbac_softmode
@@ -965,14 +913,12 @@ int rsbac_rc_sys_set_item(
                     {
                       rsbac_uid_t user;
 
-                      if(!rsbac_get_owner(&user))
-                        {
-                          rsbac_printk(KERN_INFO
-                                       "rsbac_rc_sys_set_item(): changing def_user_create_type for role %u to %u denied for user %u - no ASSIGN right for type!\n",
-                                       tid.role,
-                                       value.type_id,
-                                       user);
-                        }
+                      rsbac_get_owner(&user);
+                      rsbac_printk(KERN_INFO
+                                   "rsbac_rc_sys_set_item(): changing def_user_create_type for role %u to %u denied for user %u - no ASSIGN right for type!\n",
+                                   tid.role,
+                                   value.type_id,
+                                   user);
                       #ifdef CONFIG_RSBAC_SOFTMODE
                       if(   !rsbac_softmode
                       #ifdef CONFIG_RSBAC_SOFTMODE_IND
@@ -999,15 +945,13 @@ int rsbac_rc_sys_set_item(
                       rsbac_uid_t user;
                       char tmp[80];
 
-                      if(!rsbac_get_owner(&user))
-                        {
-                          rsbac_printk(KERN_INFO
-                                       "rsbac_rc_sys_set_item(): changing %s of role %u denied for pid %u, user %u - not in admin_roles!\n",
-                                       get_rc_item_name(tmp, item),
-                                       tid.role,
-                                       current->pid,
-                                       user);
-                        }
+                      rsbac_get_owner(&user);
+                      rsbac_printk(KERN_INFO
+                                   "rsbac_rc_sys_set_item(): changing %s of role %u denied for pid %u, user %u - not in admin_roles!\n",
+                                   get_rc_item_name(tmp, item),
+                                   tid.role,
+                                   current->pid,
+                                   user);
                     }
                   #ifdef CONFIG_RSBAC_SOFTMODE
                   if(   !rsbac_softmode
@@ -1031,14 +975,12 @@ int rsbac_rc_sys_set_item(
                     {
                       rsbac_uid_t user;
 
-                      if(!rsbac_get_owner(&user))
-                        {
-                          rsbac_printk(KERN_INFO
-                                       "rsbac_rc_sys_set_item(): changing def_process_*_type for role %u to %u denied for user %u - no ASSIGN right for type!\n",
-                                       tid.role,
-                                       value.type_id,
-                                       user);
-                        }
+                      rsbac_get_owner(&user);
+                      rsbac_printk(KERN_INFO
+                                   "rsbac_rc_sys_set_item(): changing def_process_*_type for role %u to %u denied for user %u - no ASSIGN right for type!\n",
+                                   tid.role,
+                                   value.type_id,
+                                   user);
                       #ifdef CONFIG_RSBAC_SOFTMODE
                       if(   !rsbac_softmode
                       #ifdef CONFIG_RSBAC_SOFTMODE_IND
@@ -1061,14 +1003,12 @@ int rsbac_rc_sys_set_item(
                     {
                       rsbac_uid_t user;
 
-                      if(!rsbac_get_owner(&user))
-                        {
-                          rsbac_printk(KERN_INFO
-                                       "rsbac_rc_sys_set_item(): changing def_ipc_create_type of role %u denied for pid %u, user %u - not in admin_roles!\n",
-                                       tid.role,
-                                       current->pid,
-                                       user);
-                        }
+                      rsbac_get_owner(&user);
+                      rsbac_printk(KERN_INFO
+                                   "rsbac_rc_sys_set_item(): changing def_ipc_create_type of role %u denied for pid %u, user %u - not in admin_roles!\n",
+                                   tid.role,
+                                   current->pid,
+                                   user);
                     }
                   #ifdef CONFIG_RSBAC_SOFTMODE
                   if(   !rsbac_softmode
@@ -1092,14 +1032,12 @@ int rsbac_rc_sys_set_item(
                     {
                       rsbac_uid_t user;
 
-                      if(!rsbac_get_owner(&user))
-                        {
-                          rsbac_printk(KERN_INFO
-                                       "rsbac_rc_sys_set_item(): changing def_ipc_create_type for role %u to %u denied for user %u - no ASSIGN right for type!\n",
-                                       tid.role,
-                                       value.type_id,
-                                       user);
-                        }
+                      rsbac_get_owner(&user);
+                      rsbac_printk(KERN_INFO
+                                   "rsbac_rc_sys_set_item(): changing def_ipc_create_type for role %u to %u denied for user %u - no ASSIGN right for type!\n",
+                                   tid.role,
+                                   value.type_id,
+                                   user);
                       #ifdef CONFIG_RSBAC_SOFTMODE
                       if(   !rsbac_softmode
                       #ifdef CONFIG_RSBAC_SOFTMODE_IND
@@ -1122,14 +1060,12 @@ int rsbac_rc_sys_set_item(
                     {
                       rsbac_uid_t user;
 
-                      if(!rsbac_get_owner(&user))
-                        {
-                          rsbac_printk(KERN_INFO
-                                       "rsbac_rc_sys_set_item(): changing def_group_create_type of role %u denied for pid %u, user %u - not in admin_roles!\n",
-                                       tid.role,
-                                       current->pid,
-                                       user);
-                        }
+                      rsbac_get_owner(&user);
+                      rsbac_printk(KERN_INFO
+                                   "rsbac_rc_sys_set_item(): changing def_group_create_type of role %u denied for pid %u, user %u - not in admin_roles!\n",
+                                   tid.role,
+                                   current->pid,
+                                   user);
                     }
                   #ifdef CONFIG_RSBAC_SOFTMODE
                   if(   !rsbac_softmode
@@ -1153,14 +1089,12 @@ int rsbac_rc_sys_set_item(
                     {
                       rsbac_uid_t user;
 
-                      if(!rsbac_get_owner(&user))
-                        {
-                          rsbac_printk(KERN_INFO
-                                       "rsbac_rc_sys_set_item(): changing def_group_create_type for role %u to %u denied for user %u - no ASSIGN right for type!\n",
-                                       tid.role,
-                                       value.type_id,
-                                       user);
-                        }
+                      rsbac_get_owner(&user);
+                      rsbac_printk(KERN_INFO
+                                   "rsbac_rc_sys_set_item(): changing def_group_create_type for role %u to %u denied for user %u - no ASSIGN right for type!\n",
+                                   tid.role,
+                                   value.type_id,
+                                   user);
                       #ifdef CONFIG_RSBAC_SOFTMODE
                       if(   !rsbac_softmode
                       #ifdef CONFIG_RSBAC_SOFTMODE_IND
@@ -1182,12 +1116,11 @@ int rsbac_rc_sys_set_item(
 				if (err == -EPERM) {
 					rsbac_uid_t user;
 
-					if (!rsbac_get_owner(&user)) {
-						rsbac_printk(KERN_INFO "rsbac_rc_sys_set_item(): changing def_unixsock_create_type of role %u denied for pid %u, user %u - not in admin_roles\n",
-							     tid.role,
-							     current->pid,
-							     user);
-					}
+					rsbac_get_owner(&user);
+					rsbac_printk(KERN_INFO "rsbac_rc_sys_set_item(): changing def_unixsock_create_type of role %u denied for pid %u, user %u - not in admin_roles\n",
+						     tid.role,
+						     current->pid,
+						     user);
                                 }
                                 #ifdef CONFIG_RSBAC_SOFTMODE
                                 if(   !rsbac_softmode
@@ -1213,12 +1146,11 @@ int rsbac_rc_sys_set_item(
 				    ) {
 					rsbac_uid_t user;
 
-					if (!rsbac_get_owner(&user)) {
-						rsbac_printk(KERN_INFO "rsbac_rc_sys_set_item(): changing def_unixsock_create_type for role %u to %u denied for user %u - no ASSIGN right for type\n",
-							     tid.role,
-							     value.type_id,
-							     user);
-					}
+					rsbac_get_owner(&user);
+					rsbac_printk(KERN_INFO "rsbac_rc_sys_set_item(): changing def_unixsock_create_type for role %u to %u denied for user %u - no ASSIGN right for type\n",
+						     tid.role,
+						     value.type_id,
+						     user);
 #ifdef CONFIG_RSBAC_SOFTMODE
 					if (!rsbac_softmode
 #ifdef CONFIG_RSBAC_SOFTMODE_IND
@@ -1282,15 +1214,13 @@ int rsbac_rc_sys_set_item(
                         rsbac_uid_t user;
                         char tmp[80];
 
-                        if(!rsbac_get_owner(&user))
-                          {
-                            rsbac_printk(KERN_INFO
-                                         "rsbac_rc_sys_set_item(): changing %s of role %u denied for pid %u, user %u - not in admin_roles!\n",
-                                         get_rc_item_name(tmp, item),
-                                         tid.role,
-                                         current->pid,
-                                         user);
-                          }
+                        rsbac_get_owner(&user);
+                        rsbac_printk(KERN_INFO
+                                     "rsbac_rc_sys_set_item(): changing %s of role %u denied for pid %u, user %u - not in admin_roles!\n",
+                                     get_rc_item_name(tmp, item),
+                                     tid.role,
+                                     current->pid,
+                                     user);
                       }
                     #ifdef CONFIG_RSBAC_SOFTMODE
                     if(   !rsbac_softmode
@@ -1372,16 +1302,14 @@ int rsbac_rc_sys_set_item(
                             rsbac_uid_t user;
                             char tmp[80];
 
-                            if(!rsbac_get_owner(&user))
-                              {
-                                rsbac_printk(KERN_INFO
-                                             "rsbac_rc_sys_set_item(): changing %s of role %u denied for pid %u, user %u, role %u - insufficent rights!\n",
-                                             get_rc_item_name(tmp, item),
-                                             tid.role,
-                                             current->pid,
-                                             user,
-                                             i_attr_val1.rc_role);
-                              }
+                            rsbac_get_owner(&user);
+                            rsbac_printk(KERN_INFO
+                                         "rsbac_rc_sys_set_item(): changing %s of role %u denied for pid %u, user %u, role %u - insufficent rights!\n",
+                                         get_rc_item_name(tmp, item),
+                                         tid.role,
+                                         current->pid,
+                                         user,
+                                         i_attr_val1.rc_role);
                           }
                         #ifdef CONFIG_RSBAC_SOFTMODE
                         if(   !rsbac_softmode
@@ -1440,13 +1368,12 @@ int rsbac_rc_sys_change_role(rsbac_rc_role_id_t role, char __user * pass)
 					 i_rc_subtid, RI_role_comp, 0)) {
 			rsbac_uid_t user;
 
-			if (!rsbac_get_owner(&user)) {
-				rsbac_printk(KERN_INFO "rsbac_rc_sys_change_role(): changing from role %u to %u denied for pid %u, user %u, role %u - roles not compatible\n",
-					     i_attr_val1.rc_role,
-					     role,
-					     pid_nr(i_tid.process),
-					     user, i_attr_val1.rc_role);
-			}
+			rsbac_get_owner(&user);
+			rsbac_printk(KERN_INFO "rsbac_rc_sys_change_role(): changing from role %u to %u denied for pid %u, user %u, role %u - roles not compatible\n",
+				     i_attr_val1.rc_role,
+				     role,
+				     pid_nr(i_tid.process),
+				     user, i_attr_val1.rc_role);
 #ifdef CONFIG_RSBAC_SOFTMODE
 			if (!rsbac_softmode
 #ifdef CONFIG_RSBAC_SOFTMODE_IND
@@ -1489,12 +1416,7 @@ int rsbac_rc_sys_change_role(rsbac_rc_role_id_t role, char __user * pass)
 			if(unlikely(err < 0))
 				goto out_free;
 			k_pass[RSBAC_MAXNAMELEN - 1] = 0;
-			err = rsbac_get_owner(&user);
-			if (err) {
-				rsbac_printk(KERN_WARNING "rsbac_rc_sys_change_role(): rsbac_rc_get_item() returned error %i\n",
-					     err);
-				goto out_free;
-			}
+			rsbac_get_owner(&user);
 			err = rsbac_um_check_pass(user, k_pass);
 			if (err) {
 				goto out_free;
