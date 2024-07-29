@@ -1,9 +1,9 @@
 /************************************* */
 /* Rule Set Based Access Control       */
-/* Author and (c) 1999-2023:           */
+/* Author and (c) 1999-2024:           */
 /*   Amon Ott <ao@rsbac.org>           */
 /* Helper functions for all parts      */
-/* Last modified: 14/Dec/2023          */
+/* Last modified: 29/Jul/2024          */
 /************************************* */
 
 #include <rsbac/types.h>
@@ -222,14 +222,13 @@ rsbac_um_set_t rsbac_get_vset(void)
 #endif
 
 /* find the current owner of this process */
-int rsbac_get_owner(rsbac_uid_t * user_p)
+void rsbac_get_owner(rsbac_uid_t * user_p)
   {
 #ifdef CONFIG_RSBAC_UM_VIRTUAL
     *user_p = RSBAC_GEN_UID(rsbac_get_vset(), __kuid_val(current_uid()));
 #else
     *user_p = __kuid_val(current_uid());
 #endif
-    return 0;
   }
 
 void rsbac_ds_get_error(const char * function, enum rsbac_attribute_t attr)
@@ -368,11 +367,79 @@ void rsbac_rc_ds_set_error(const char * function, enum rsbac_rc_item_t item)
   }
 #endif
 
+#if defined(CONFIG_RSBAC_CAP_FD_HIDE)
+rsbac_boolean_t rsbac_cap_hide_fd(struct dentry * target_dentry)
+{
+	union  rsbac_target_id_t       rsbac_target_id;
+	union  rsbac_attribute_value_t rsbac_attribute_value;
+
+	if (!rsbac_cap_fd_hiding)
+		return FALSE;
+
+	rsbac_target_id.process = task_pid(current);
+	/* kernel and init are never blocked */
+	if (pid_nr(rsbac_target_id.process) < 2)
+		return FALSE;
+
+	if (unlikely(!target_dentry)) {
+		rsbac_printk(KERN_DEBUG "rsbac_cap_hide_fd(): called with NULL dentry!\n");
+		return FALSE;
+	}
+	if (!target_dentry->d_inode) {
+#if 0
+		if (target_dentry->d_sb)
+			rsbac_printk(KERN_DEBUG "rsbac_cap_hide_fd(): called with NULL dentry->d_inode, device %02u:%02u!\n", RSBAC_MAJOR(target_dentry->d_sb->s_dev), RSBAC_MINOR(target_dentry->d_sb->s_dev));
+		else
+			rsbac_printk(KERN_DEBUG "rsbac_cap_hide_fd(): called with NULL dentry->d_inode, unknown device!\n");
+#endif
+		return FALSE;
+	}
+	if (!generic_permission(&nop_mnt_idmap, target_dentry->d_inode, MAY_READ))
+		return FALSE;
+
+	rsbac_get_owner(&rsbac_target_id.user);
+	if (unlikely(rsbac_get_attr(SW_CAP,
+			T_USER,
+			rsbac_target_id,
+			A_cap_role,
+			&rsbac_attribute_value,
+			FALSE))) {
+		rsbac_ds_get_error("rsbac_cap_hide_fd()", A_cap_role);
+		return FALSE;  /* something weird happened */
+	}
+	if (   rsbac_attribute_value.system_role == SR_security_officer
+	    || rsbac_attribute_value.system_role == SR_administrator
+	)
+		return FALSE;
+
+#ifdef CONFIG_RSBAC_SOFTMODE
+	if(   rsbac_softmode
+#ifdef CONFIG_RSBAC_SOFTMODE_IND
+	   || rsbac_ind_softmode[SW_CAP]
+#endif
+	) {
+#if 0
+		rsbac_pr_debug(adf_cap, "running in softmode, FD hiding not applied to process %u(%s) with owner %u!\n",
+				pid_nr(task_pid(current)),
+				current->comm,
+				current_uid());
+#endif
+		return FALSE;
+	}
+#endif
+
+	return TRUE;
+}
+#endif
+
+#if defined(CONFIG_RSBAC_FSOBJ_HIDE) || defined(CONFIG_RSBAC_CAP_FD_HIDE)
 int rsbac_handle_filldir(const struct file *file, const char *name, const unsigned int namlen, const ino_t ino)
 {
+#if defined(CONFIG_RSBAC_FSOBJ_HIDE)
 	enum   rsbac_target_t	       rsbac_target = T_NONE;
-        union  rsbac_target_id_t       rsbac_target_id;
-        union  rsbac_attribute_value_t rsbac_attribute_value;
+	union  rsbac_target_id_t       rsbac_target_id;
+	union  rsbac_attribute_value_t rsbac_attribute_value;
+#endif
 	struct dentry *obj_dentry = NULL;
 	int err = 1;
 
@@ -404,6 +471,15 @@ int rsbac_handle_filldir(const struct file *file, const char *name, const unsign
 	if (!obj_dentry->d_sb || !obj_dentry->d_sb->s_magic) {
 		goto out_dput;
 	}
+
+#if defined(CONFIG_RSBAC_CAP_FD_HIDE)
+	if (rsbac_cap_hide_fd(obj_dentry)) {
+		err = 0;
+		goto out_dput;
+	}
+#endif
+
+#if defined(CONFIG_RSBAC_FSOBJ_HIDE)
 	rsbac_pr_debug(aef, "[readdir(), sys_getdents()]: calling ADF\n");
 
 	if (S_ISFIFO(obj_dentry->d_inode->i_mode)) {
@@ -451,6 +527,7 @@ int rsbac_handle_filldir(const struct file *file, const char *name, const unsign
 			err = 0;
 			goto out_dput;
 		}
+#endif
 
 out_dput:
 	if (obj_dentry)
@@ -458,6 +535,8 @@ out_dput:
 old_func:
 	return err;
 }
+#endif
+
 int rsbac_handle_rw_req(const struct file *file, struct rsbac_rw_req *rsbac_rw_req_obj)
 {
 	int err = 1;
