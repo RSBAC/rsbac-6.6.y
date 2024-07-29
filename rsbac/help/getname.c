@@ -1,9 +1,9 @@
 /************************************* */
 /* Rule Set Based Access Control       */
-/* Author and (c) 1999-2021:           */
+/* Author and (c) 1999-2024:           */
 /*   Amon Ott <ao@rsbac.org>           */
 /* Helper functions for all parts      */
-/* Last modified: 04/Oct/2021          */
+/* Last modified: 26/Jul/2024          */
 /************************************* */
 
 #include <rsbac/types.h>
@@ -185,7 +185,7 @@ static rsbac_switch_target_int_t attr_mod_list[A_last_user + 1] = {
 	SW_GEN,			/* fake_root_uid */
 	SW_GEN,			/* audit_uid */
 	SW_GEN,			/* auid_exempt */
-	SW_AUTH,			/* auth_last_auth */
+	SW_AUTH,		/* auth_last_auth */
 	SW_GEN,			/* remote_ip */
 	SW_CAP,                 /* cap_ld_env */
 	SW_DAZ,                 /* daz_do_scan */
@@ -194,6 +194,7 @@ static rsbac_switch_target_int_t attr_mod_list[A_last_user + 1] = {
 	SW_UDF,			/* udf_checked */
 	SW_UDF,			/* udf_checker */
 	SW_UDF,			/* udf_do_check */
+	SW_CAP,			/* cap_fd_hiding */
 };
 
 static char attribute_list[A_none + 1][23] = {
@@ -300,6 +301,7 @@ static char attribute_list[A_none + 1][23] = {
 	"udf_checked",
 	"udf_checker",
 	"udf_do_check",
+	"cap_fd_hiding",
 	/* adf-request helpers */
 	"owner",
 	"group",
