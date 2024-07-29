@@ -5,7 +5,7 @@
 /* (some smaller parts copied from fs/namei.c        */
 /*  and others)                                      */
 /*                                                   */
-/* Last modified: 24/Jun/2024                        */
+/* Last modified: 29/Jul/2024                        */
 /*************************************************** */
 
 #include <linux/types.h>
@@ -5645,10 +5645,6 @@ static int __init register_process_lists(void)
 	{
 		struct rsbac_cap_process_aci_t def_aci = DEFAULT_CAP_P_ACI;
 
-#if defined(CONFIG_RSBAC_CAP_PROC_HIDE)
-		if (rsbac_cap_process_hiding)
-			def_aci.cap_process_hiding = PH_from_other_users;
-#endif
 		list_info_p->version = RSBAC_CAP_PROCESS_ACI_VERSION;
 		list_info_p->key = RSBAC_CAP_PROCESS_ACI_KEY;
 		list_info_p->desc_size = sizeof(rsbac_pid_t);
@@ -9863,10 +9859,6 @@ static int get_attr_process(rsbac_list_ta_number_t ta_number,
 						   NULL,
 						   &tid_p->process, &aci);
 			switch (attr) {
-			case A_cap_process_hiding:
-				value->cap_process_hiding =
-				    aci.cap_process_hiding;
-				break;
 #if defined(CONFIG_RSBAC_CAP_LOG_MISSING) || defined(CONFIG_RSBAC_CAP_LEARN)
 			case A_max_caps_user:
 				value->max_caps_user = aci.max_caps_user;
@@ -12225,10 +12217,6 @@ static int set_attr_process_ttl(rsbac_list_ta_number_t ta_number,
 						   NULL,
 						   &tid_p->process, &aci);
 			switch (attr) {
-			case A_cap_process_hiding:
-				aci.cap_process_hiding =
-				    value_p->cap_process_hiding;
-				break;
 #if defined(CONFIG_RSBAC_CAP_LOG_MISSING) || defined(CONFIG_RSBAC_CAP_LEARN)
 			case A_max_caps_user:
 				aci.max_caps_user = value_p->max_caps_user;
