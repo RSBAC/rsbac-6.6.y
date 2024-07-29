@@ -1,10 +1,10 @@
 /*********************************** */
 /* Rule Set Based Access Control     */
-/* Author and (c)1999-2023:          */
+/* Author and (c)1999-2024:          */
 /*   Amon Ott <ao@rsbac.org>         */
 /* API: Data types for attributes    */
 /*      and standard module calls    */
-/* Last modified: 14/Dec/2023        */
+/* Last modified: 29/Jul/2024        */
 /*********************************** */
 
 #ifndef __RSBAC_TYPES_H
@@ -419,7 +419,6 @@ typedef rsbac_enum_t rsbac_auth_may_setuid_int_t;
 /**** CAP ****/
 enum    rsbac_cap_process_hiding_t {PH_off, PH_from_other_users, PH_full,
                               PH_none};
-typedef rsbac_enum_t rsbac_cap_process_hiding_int_t;
 
 enum rsbac_cap_ld_env_t { LD_deny, LD_allow, LD_keep, LD_inherit };
 typedef rsbac_enum_t rsbac_cap_ld_env_int_t;
@@ -752,6 +751,7 @@ enum rsbac_attribute_t
     A_udf_checked,
     A_udf_checker,
     A_udf_do_check,
+    A_cap_fd_hiding,
     /* adf-request helpers */
     A_owner,
     A_group,
@@ -799,7 +799,7 @@ enum rsbac_attribute_t
     A_memfd_keep,
     A_none};
 
-#define A_last_user A_udf_do_check
+#define A_last_user A_cap_fd_hiding
 
 union rsbac_attribute_value_t
   {
@@ -844,7 +844,8 @@ union rsbac_attribute_value_t
          rsbac_cap_vector_t          max_caps;
          rsbac_cap_vector_t          max_caps_user;
          rsbac_cap_vector_t          max_caps_program;
-         rsbac_cap_process_hiding_int_t cap_process_hiding;
+         rsbac_enum_t                cap_process_hiding;
+         rsbac_enum_t                cap_fd_hiding;
          rsbac_cap_ld_env_int_t      cap_ld_env;
 #endif
 #if defined(CONFIG_RSBAC_JAIL)

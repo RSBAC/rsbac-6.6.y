@@ -204,6 +204,10 @@ int vfs_getattr(const struct path *path, struct kstat *stat,
 		return retval;
 
 #ifdef CONFIG_RSBAC
+#if defined(CONFIG_RSBAC_CAP_FD_HIDE)
+	if (rsbac_cap_hide_fd(path->dentry))
+		return -ENOENT;
+#endif
 	if (path->dentry && path->dentry->d_inode && path->dentry->d_inode->i_sb) {
 		rsbac_pr_debug(aef, "[sys_stat() etc.]: calling ADF\n");
 		rsbac_target_id.file.device = path->dentry->d_inode->i_sb->s_dev;
@@ -234,6 +238,16 @@ int vfs_getattr(const struct path *path, struct kstat *stat,
 		} else
 			rsbac_target = T_FILE;
 		rsbac_attribute_value.dummy = 0;
+#ifdef CONFIG_RSBAC_FSOBJ_HIDE
+		if (!rsbac_adf_request(R_SEARCH,
+					task_pid(current),
+					rsbac_target,
+					rsbac_target_id,
+					A_none,
+					rsbac_attribute_value)) {
+			return -ENOENT;
+		}
+#endif
 		if (!rsbac_adf_request(R_GET_STATUS_DATA,
 					task_pid(current),
 					rsbac_target,
@@ -581,11 +595,28 @@ retry:
 			if (!error) {
 
 #ifdef CONFIG_RSBAC
+#if defined(CONFIG_RSBAC_CAP_FD_HIDE)
+				if (rsbac_cap_hide_fd(path.dentry)) {
+					path_put(&path);
+					return -ENOENT;
+				}
+#endif
 				rsbac_pr_debug(aef, "calling ADF\n");
 				rsbac_target_id.file.device = path.dentry->d_sb->s_dev;
 				rsbac_target_id.file.inode  = inode->i_ino;
 				rsbac_target_id.file.dentry_p = path.dentry;
 				rsbac_attribute_value.dummy = 0;
+#ifdef CONFIG_RSBAC_FSOBJ_HIDE
+				if (!rsbac_adf_request(R_SEARCH,
+							task_pid(current),
+							T_SYMLINK,
+							rsbac_target_id,
+							A_none,
+							rsbac_attribute_value)) {
+					path_put(&path);
+					return -ENOENT;
+				}
+#endif
 				if (!rsbac_adf_request(R_GET_STATUS_DATA,
 							task_pid(current),
 							T_SYMLINK,
