@@ -1,6 +1,6 @@
 #
 # RSBAC configuration
-# (c) 1999-2020 Amon Ott <ao@rsbac.org>
+# (c) 1999-2024 Amon Ott <ao@rsbac.org>
 #
 
 menuconfig RSBAC
@@ -1261,17 +1261,28 @@ config RSBAC_CAP_PROC_HIDE
 	help
 	  If enabled, you can hide the process properties shown in /proc from
 	  other users, e.g. command line and current state. The hiding level is
-	  set with the cap_process_hiding process attribute. There are three
-	  possible values:
+	  set with the kernel command line switch rsbac_cap_process_hiding or
+	  rsbac_cap_process_hiding=number or through the RSBAC proc interface.
+	  There are three possible values:
 	  0 / off: no hiding.
 	  1 / from other users: only processes running for the same user, a CAP
 	      security officer or a CAP system admin may read the properties.
+	      Thus, every normal user can only see her own process properties.
 	  2 / full: only this process and CAP security officers may read the
 	      properties.
 
-	  The kernel command line switch rsbac_cap_process_hiding changes the
-	  default value from 0 to 1. Thus, every normal user can only see her
-	  own process properties.
+config RSBAC_CAP_FD_HIDE
+	bool 'Support CAP filesystem object hiding'
+	default n
+	help
+	  If enabled, you can hide filesystem objects from users without
+	  Linux read rights on them, set with the kernel command line switch
+	  rsbac_cap_fd_hiding or through the RSBAC proc interface.
+	  There are two possible values:
+	  0 / off: no hiding.
+	  1 / on: only processes with Linux read right to a filesystem object,
+	    Linux capability DAC_OVERRIDE or DAC_READ_SEARCH or with CAP role
+	    security officer or system admin may see this object.
 
 config RSBAC_CAP_AUTH_PROT
     depends on RSBAC_AUTH
