@@ -1680,6 +1680,10 @@ static struct dentry *lookup_fast(struct nameidata *nd)
 	}
 
 #ifdef CONFIG_RSBAC
+#if defined(CONFIG_RSBAC_CAP_FD_HIDE)
+	if (rsbac_cap_hide_fd(dentry))
+		return ERR_PTR(-ENOENT);
+#endif
 	if (   dentry
 	    && dentry->d_inode
 	    && dentry->d_inode->i_sb
@@ -1846,6 +1850,10 @@ static const char *pick_link(struct nameidata *nd, struct path *link,
 		return ERR_PTR(error);
 
 #ifdef CONFIG_RSBAC
+#if defined(CONFIG_RSBAC_CAP_FD_HIDE)
+	if (rsbac_cap_hide_fd(link->dentry))
+		return ERR_PTR(-ENOENT);
+#endif
 	if (link->dentry->d_sb && link->dentry->d_inode) {
 		rsbac_target_id.symlink.device = link->dentry->d_sb->s_dev;
 		rsbac_target_id.symlink.inode  = link->dentry->d_inode->i_ino;
@@ -2381,6 +2389,10 @@ static int link_path_walk(const char *name, struct nameidata *nd)
 			return err;
 
 #ifdef CONFIG_RSBAC
+#if defined(CONFIG_RSBAC_CAP_FD_HIDE)
+		if (rsbac_cap_hide_fd(nd->path.dentry))
+			return -ENOENT;
+#endif
 		if (nd->inode->i_sb) {
 			rsbac_target_id.dir.device = nd->inode->i_sb->s_dev;
 			rsbac_target_id.dir.inode  = nd->inode->i_ino;
@@ -2472,6 +2484,10 @@ OK:
 			}
 			return -ENOTDIR;
 		}
+#if defined(CONFIG_RSBAC_CAP_FD_HIDE)
+		if (rsbac_cap_hide_fd(nd->path.dentry))
+			return -ENOENT;
+#endif
 #ifdef CONFIG_RSBAC_FSOBJ_HIDE
 		if (nd->inode->i_sb) {
 			rsbac_target_id.dir.device = nd->inode->i_sb->s_dev;
@@ -3950,6 +3966,16 @@ static int do_open(struct nameidata *nd,
 		if (error)
 			return error;
 	}
+
+#if defined(CONFIG_RSBAC_CAP_FD_HIDE)
+	if (   nd->path.dentry
+	    && nd->path.dentry->d_inode
+	    && !S_ISBLK(nd->path.dentry->d_inode->i_mode)
+	    && !S_ISCHR(nd->path.dentry->d_inode->i_mode)
+	    && rsbac_cap_hide_fd(nd->path.dentry))
+		return -ENOENT;
+#endif
+
 	if (!(file->f_mode & FMODE_CREATED))
 		audit_inode(nd->name, nd->path.dentry, 0);
 	idmap = mnt_idmap(nd->path.mnt);
@@ -4034,6 +4060,17 @@ static int do_open(struct nameidata *nd,
 						rsbac_adf_req = R_READ_OPEN;
 		if ((rsbac_adf_req != R_NONE) && (rsbac_target != T_NONE)) {
 			rsbac_attribute_value.open_flag = open_flag;
+#ifdef CONFIG_RSBAC_FSOBJ_HIDE
+			if (   rsbac_target != T_DEV && rsbac_target != T_IPC
+			    && !rsbac_adf_request(R_SEARCH,
+						task_pid(current),
+						rsbac_target,
+						rsbac_target_id,
+						A_open_flag,
+						rsbac_attribute_value)) {
+				error = -ENOENT;
+			} else
+#endif
 			if (!rsbac_adf_request(rsbac_adf_req,
 						task_pid(current),
 						rsbac_target,
