@@ -3,7 +3,7 @@
 /* Implementation of RSBAC general system calls      */
 /* Author and (C) 1999-2024: Amon Ott <ao@rsbac.org> */
 /*                                                   */
-/* Last modified: 16/Jan/2024                        */
+/* Last modified: 29/Jul/2024                        */
 /*************************************************** */
 
 #include <rsbac/types.h>
@@ -3839,8 +3839,8 @@ int sys_rsbac_acl(
                     struct rsbac_acl_group_entry_t entry;
                            rsbac_uid_t caller;
 
+                    rsbac_get_owner(&caller);
                     if(   rsbac_acl_get_group_entry(ta_number, k_arg.subj_id, &entry)
-                       || rsbac_get_owner(&caller)
                        || (   (entry.owner != caller)
                            && (entry.type != ACLG_GLOBAL)
                           )
@@ -4000,8 +4000,8 @@ int sys_rsbac_acl_n(
                     struct rsbac_acl_group_entry_t entry;
                            rsbac_uid_t caller;
 
+                    rsbac_get_owner(&caller);
                     if(   rsbac_acl_get_group_entry(ta_number, k_arg.subj_id, &entry)
-                       || rsbac_get_owner(&caller)
                        || (   (entry.owner != caller)
                            && (entry.type != ACLG_GLOBAL)
                           )
@@ -4296,8 +4296,8 @@ int sys_rsbac_acl_get_rights(
                 struct rsbac_acl_group_entry_t entry;
                        rsbac_uid_t caller;
 
+                rsbac_get_owner(&caller);
                 if(   rsbac_acl_get_group_entry(ta_number, k_arg.subj_id, &entry)
-                   || rsbac_get_owner(&caller)
                    || (   (entry.owner != caller)
                        && (entry.type != ACLG_GLOBAL)
                       )
@@ -4373,8 +4373,8 @@ int sys_rsbac_acl_get_rights_n(
                 struct rsbac_acl_group_entry_t entry;
                        rsbac_uid_t caller;
 
+                rsbac_get_owner(&caller);
                 if(   rsbac_acl_get_group_entry(ta_number, k_arg.subj_id, &entry)
-                   || rsbac_get_owner(&caller)
                    || (   (entry.owner != caller)
                        && (entry.type != ACLG_GLOBAL)
                       )

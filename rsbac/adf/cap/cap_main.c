@@ -4,9 +4,9 @@
 /* Facility (ADF) - Linux Capabilities (CAP)          */
 /* File: rsbac/adf/cap/main.c                         */
 /*                                                    */
-/* Author and (c) 1999-2023: Amon Ott <ao@rsbac.org>  */
+/* Author and (c) 1999-2024: Amon Ott <ao@rsbac.org>  */
 /*                                                    */
-/* Last modified: 14/Dec/2023                         */
+/* Last modified: 29/Jul/2024                         */
 /**************************************************** */
 
 #include <linux/string.h>
@@ -56,6 +56,7 @@ inline enum rsbac_adf_req_ret_t
                 case A_max_caps_user:
                 case A_max_caps_program:
                 case A_cap_process_hiding:
+                case A_cap_fd_hiding:
                 case A_cap_learn:
                 #ifdef CONFIG_RSBAC_CAP_AUTH_PROT
                 case A_auth_may_setuid:
@@ -104,6 +105,7 @@ inline enum rsbac_adf_req_ret_t
                 case A_max_caps_user:
                 case A_max_caps_program:
                 case A_cap_process_hiding:
+                case A_cap_fd_hiding:
                 /* All attributes (remove target!) */
                 case A_none:
                   /* Security Officer or Admin? */
@@ -213,17 +215,7 @@ inline enum rsbac_adf_req_ret_t
               case T_PROCESS:
                 if(caller_pid == tid.process)
                   return GRANTED;
-                if (rsbac_get_attr(SW_CAP,
-                                   target,
-                                   tid,
-                                   A_cap_process_hiding,
-                                   &i_attr_val1,
-                                   FALSE))
-                  {
-                    rsbac_ds_get_error("rsbac_adf_request_cap()", A_cap_process_hiding);
-                    return(NOT_GRANTED);  /* something weird happened */
-                  }
-                switch(i_attr_val1.cap_process_hiding)
+                switch(rsbac_cap_process_hiding)
                   {
                     case PH_full:
                         /* Security Officer or Admin? */
@@ -505,33 +497,6 @@ inline int rsbac_adf_set_attr_cap(
 							 A_cap_ld_env);
 						   }
 			}
-#ifdef CONFIG_RSBAC_CAP_PROC_HIDE
-                  /* get process hiding from old process */
-                  if (rsbac_get_attr(SW_CAP,
-                                     target,
-                                     tid,
-                                     A_cap_process_hiding,
-                                     &i_attr_val1,
-                                     FALSE))
-                    {
-                      rsbac_ds_get_error("rsbac_adf_set_attr_cap()", A_cap_process_hiding);
-                    }
-                  else
-                    { /* only set, of not default value 0 */
-                      if(i_attr_val1.cap_process_hiding)
-                        {
-                          /* set program based log for new process */
-                          if (rsbac_set_attr(SW_CAP,
-                                             new_target,
-                                             new_tid,
-                                             A_cap_process_hiding,
-                                             i_attr_val1))
-                            {
-                              rsbac_ds_set_error("rsbac_adf_set_attr_cap()", A_cap_process_hiding);
-                            }
-                        }
-                    }
-#endif
 #ifdef CONFIG_RSBAC_CAP_LOG_MISSING
                   /* get max_caps_user from old process */
                   if (rsbac_get_attr(SW_CAP,

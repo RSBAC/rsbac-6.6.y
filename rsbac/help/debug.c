@@ -1,12 +1,12 @@
 /******************************************* */
 /* Rule Set Based Access Control             */
 /*                                           */
-/* Author and (c) 1999-2021:                 */
+/* Author and (c) 1999-2024:                 */
 /*   Amon Ott <ao@rsbac.org>                 */
 /*                                           */
 /* Debug and logging functions for all parts */
 /*                                           */
-/* Last modified: 03/Dec/2021                */
+/* Last modified: 29/Jul/2024                */
 /******************************************* */
  
 #include <linux/uaccess.h>
@@ -230,6 +230,9 @@ int rsbac_freeze = 0;
 
 #if defined(CONFIG_RSBAC_CAP_PROC_HIDE)
 int rsbac_cap_process_hiding = 0;
+#endif
+#if defined(CONFIG_RSBAC_CAP_FD_HIDE)
+int rsbac_cap_fd_hiding = 0;
 #endif
 #ifdef CONFIG_RSBAC_CAP_LOG_MISSING
 int rsbac_cap_log_missing = 0;
@@ -551,13 +554,30 @@ __setup("rsbac_no_defaults", no_defaults_setup);
 
     #if defined(CONFIG_RSBAC_CAP_PROC_HIDE)
     /* RSBAC: hide processes? */
-//    module_param(rsbac_cap_process_hiding, bool, S_IRUGO);
+  static int R_INIT cap_process_hiding_setup2(char *line)
+    {
+      rsbac_cap_process_hiding = simple_strtoul(line, NULL, 0);
+      if (rsbac_cap_process_hiding > 2)
+        rsbac_cap_process_hiding = 2;
+      return 1;
+    }
+  __setup("rsbac_cap_process_hiding=", cap_process_hiding_setup2);
   static int R_INIT cap_process_hiding_setup(char *line)
     {
       rsbac_cap_process_hiding = 1;
       return 1;
     }
   __setup("rsbac_cap_process_hiding", cap_process_hiding_setup);
+    #endif
+    #if defined(CONFIG_RSBAC_CAP_FD_HIDE)
+    /* RSBAC: hide filesystem objects? */
+//    module_param(rsbac_cap_fd_hiding, bool, S_IRUGO);
+  static int R_INIT cap_fd_hiding_setup(char *line)
+    {
+      rsbac_cap_fd_hiding = 1;
+      return 1;
+    }
+  __setup("rsbac_cap_fd_hiding", cap_fd_hiding_setup);
     #endif
     #ifdef CONFIG_RSBAC_CAP_LOG_MISSING
     /* RSBAC: log missing caps? */
@@ -1795,6 +1815,10 @@ debug_proc_show(struct seq_file *m, void *v)
 #ifdef CONFIG_RSBAC_CAP_PROC_HIDE
   seq_printf(m, "rsbac_cap_process_hiding is %i\n",
                  rsbac_cap_process_hiding);
+#endif
+#ifdef CONFIG_RSBAC_CAP_FD_HIDE
+  seq_printf(m, "rsbac_cap_fd_hiding is %i\n",
+                 rsbac_cap_fd_hiding);
 #endif
 #ifdef CONFIG_RSBAC_CAP_LOG_MISSING
   seq_printf(m, "rsbac_cap_log_missing is %i\n",
@@ -3221,6 +3245,94 @@ static ssize_t debug_proc_write(struct file * file, const char __user * buf, siz
                    "debug_proc_write(): changing rsbac_auth_learn to %u\n",
                    debug_level);
             rsbac_auth_learn = debug_level;
+            err = count;
+            goto out;
+          }
+        else
+          {
+            goto out_inv;
+          }
+      }
+#endif
+
+#if defined(CONFIG_RSBAC_CAP_PROC_HIDE)
+/* Boolean switch for CAP process hiding */
+    /*
+     * Usage: echo "debug cap_process_hiding #N" > /proc/rsbac_info/debug
+     *   to set rsbac_cap_process_hiding to given value
+     */
+    if(!strncmp("cap_process_hiding", k_buf + 6, 18))
+      {
+	p += 19;
+
+        if( *p == '\0' )
+            goto out;
+
+        debug_level = simple_strtoul(p, NULL, 0);
+        /* only accept 0, 1 or 2 */
+        if(!debug_level || (debug_level == 1) || (debug_level == 2))
+          {
+            rsbac_target_id.dummy = 0;
+            rsbac_attribute_value.cap_process_hiding = debug_level;
+            if (!rsbac_adf_request(R_MODIFY_ATTRIBUTE,
+                                   task_pid(current),
+                                   T_NONE,
+                                   rsbac_target_id,
+                                   A_cap_process_hiding,
+                                   rsbac_attribute_value))
+              {
+                err = -EPERM;
+                goto out;
+              }
+            if (rsbac_cap_process_hiding != debug_level)
+              rsbac_printk(KERN_INFO
+                   "debug_proc_write(): changing rsbac_cap_process_hiding to %u\n",
+                   debug_level);
+            rsbac_cap_process_hiding = debug_level;
+            err = count;
+            goto out;
+          }
+        else
+          {
+            goto out_inv;
+          }
+      }
+#endif
+
+#if defined(CONFIG_RSBAC_CAP_FD_HIDE)
+/* Boolean switch for CAP FD hiding */
+    /*
+     * Usage: echo "debug cap_fd_hiding #N" > /proc/rsbac_info/debug
+     *   to set rsbac_cap_fd_hiding to given value
+     */
+    if(!strncmp("cap_fd_hiding", k_buf + 6, 13))
+      {
+	p += 14;
+
+        if( *p == '\0' )
+            goto out;
+
+        debug_level = simple_strtoul(p, NULL, 0);
+        /* only accept 0 or 1 */
+        if(!debug_level || (debug_level == 1))
+          {
+            rsbac_target_id.dummy = 0;
+            rsbac_attribute_value.cap_fd_hiding = debug_level;
+            if (!rsbac_adf_request(R_MODIFY_ATTRIBUTE,
+                                   task_pid(current),
+                                   T_NONE,
+                                   rsbac_target_id,
+                                   A_cap_fd_hiding,
+                                   rsbac_attribute_value))
+              {
+                err = -EPERM;
+                goto out;
+              }
+            if (rsbac_cap_fd_hiding != debug_level)
+              rsbac_printk(KERN_INFO
+                   "debug_proc_write(): changing rsbac_cap_fd_hiding to %u\n",
+                   debug_level);
+            rsbac_cap_fd_hiding = debug_level;
             err = count;
             goto out;
           }
@@ -4910,7 +5022,11 @@ inline void __init rsbac_init_debug(void)
     #endif
     #ifdef CONFIG_RSBAC_CAP_PROC_HIDE
     if(rsbac_cap_process_hiding)
-      rsbac_printk(KERN_DEBUG "rsbac_cap_process_hiding is set\n");
+      rsbac_printk(KERN_DEBUG "rsbac_cap_process_hiding is %u\n", rsbac_cap_process_hiding);
+    #endif
+    #ifdef CONFIG_RSBAC_CAP_FD_HIDE
+    if(rsbac_cap_fd_hiding)
+      rsbac_printk(KERN_DEBUG "rsbac_cap_fd_hiding is set\n");
     #endif
     #ifdef CONFIG_RSBAC_CAP_LOG_MISSING
     if(rsbac_cap_log_missing)
