@@ -1,9 +1,9 @@
 /******************************* */
 /* Rule Set Based Access Control */
-/* Author and (c) 1999-2021:     */
+/* Author and (c) 1999-2024:     */
 /*   Amon Ott <ao@rsbac.org>     */
 /* debug definitions             */
-/* Last modified: 19/Nov/2021    */
+/* Last modified: 26/Jul/2024    */
 /******************************* */
 
 #ifndef __RSBAC_DEBUG_H
@@ -96,6 +96,9 @@ extern rsbac_time_t rsbac_list_check_interval;
 
 #if defined(CONFIG_RSBAC_CAP_PROC_HIDE)
 extern int rsbac_cap_process_hiding;
+#endif
+#if defined(CONFIG_RSBAC_CAP_FD_HIDE)
+extern int rsbac_cap_fd_hiding;
 #endif
 #ifdef CONFIG_RSBAC_CAP_LOG_MISSING
 extern int rsbac_cap_log_missing;
