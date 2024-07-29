@@ -6,7 +6,7 @@
 /*                                                   */
 /* Author and (c) 1999-2024: Amon Ott <ao@rsbac.org> */
 /*                                                   */
-/* Last modified: 08/Jan/2024                        */
+/* Last modified: 29/Jul/2024                        */
 /*************************************************** */
 
 #include <linux/string.h>
@@ -263,8 +263,7 @@ int rsbac_acl_sys_set_acl_entry(
       {
         rsbac_uid_t user;
 
-        if(rsbac_get_owner(&user))
-          return -RSBAC_EREADFAILED;
+        rsbac_get_owner(&user);
         /* first try access control right (SUPERVISOR try is included) */
         if(!rsbac_acl_check_right(target, tid, user, task_pid(current), (enum rsbac_adf_request_t) ACLR_ACCESS_CONTROL))
           {
@@ -399,8 +398,7 @@ int rsbac_acl_sys_remove_acl_entry(
         rsbac_uid_t user;
         rsbac_acl_rights_vector_t res_rights = 0;
 
-        if(rsbac_get_owner(&user))
-          return -RSBAC_EREADFAILED;
+        rsbac_get_owner(&user);
         /* first try access control right (SUPERVISOR is included) */
         if(!rsbac_acl_check_right(target, tid, user, task_pid(current), (enum rsbac_adf_request_t) ACLR_ACCESS_CONTROL))
           {
@@ -521,8 +519,7 @@ int rsbac_acl_sys_remove_acl(
       {
         rsbac_uid_t user;
 
-        if(rsbac_get_owner(&user))
-          return -RSBAC_EREADFAILED;
+        rsbac_get_owner(&user);
         /* check SUPERVISOR */
         if(!rsbac_acl_check_super(target, tid, user))
           {
@@ -603,8 +600,7 @@ int rsbac_acl_sys_add_to_acl_entry(
       {
         rsbac_uid_t user;
 
-        if(rsbac_get_owner(&user))
-          return -RSBAC_EREADFAILED;
+        rsbac_get_owner(&user);
         /* first try access control right (SUPERVISOR is included) */
         if(!rsbac_acl_check_right(target, tid, user, task_pid(current), (enum rsbac_adf_request_t) ACLR_ACCESS_CONTROL))
           {
@@ -738,8 +734,7 @@ int rsbac_acl_sys_remove_from_acl_entry(
       {
         rsbac_uid_t user;
 
-        if(rsbac_get_owner(&user))
-          return -RSBAC_EREADFAILED;
+        rsbac_get_owner(&user);
         /* first try access control right (SUPERVISOR is included) */
         if(!rsbac_acl_check_right(target, tid, user, task_pid(current), (enum rsbac_adf_request_t) ACLR_ACCESS_CONTROL))
           {
@@ -846,8 +841,7 @@ int rsbac_acl_sys_set_mask(
 
     rsbac_uid_t user;
 
-    if(rsbac_get_owner(&user))
-      return -RSBAC_EREADFAILED;
+    rsbac_get_owner(&user);
 
 #ifdef CONFIG_RSBAC_ACL_NET_OBJ_PROT
       /* sanity check before using pointer */
@@ -951,8 +945,7 @@ int rsbac_acl_sys_remove_user(
         rsbac_uid_t user;
         union rsbac_target_id_t tid;
 
-        if(rsbac_get_owner(&user))
-          return -RSBAC_EREADFAILED;
+        rsbac_get_owner(&user);
         tid.user = uid;
         /* first try access control right (SUPERVISOR is included) */
         if(!rsbac_acl_check_right(T_USER, tid, user, task_pid(current), R_DELETE))
@@ -1266,8 +1259,7 @@ int rsbac_acl_sys_group(
 
     if(call >= ACLGS_none)
       return -RSBAC_EINVALIDREQUEST;
-    if(rsbac_get_owner(&caller))
-      return -RSBAC_EREADFAILED;
+    rsbac_get_owner(&caller);
 
 #ifdef CONFIG_RSBAC_DEBUG
     if(rsbac_debug_aef_acl)
