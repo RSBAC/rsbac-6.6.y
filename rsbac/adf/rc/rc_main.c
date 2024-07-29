@@ -234,10 +234,10 @@ check_comp_rc(enum rsbac_target_t target,
 #endif
 #ifdef CONFIG_RSBAC_RC_FORCE_LOG
 		if (rsbac_rc_check_log(i_attr_val1.rc_role,
-					i_rc_subtid.type, i_rc_item, request, RL_ALWAYS))
+					i_rc_subtid.type, i_rc_item, (enum rsbac_rc_special_rights_t) request, RL_ALWAYS))
 			return GRANTED_ALWAYS_LOG;
 		if (rsbac_rc_check_log(i_attr_val1.rc_role,
-					i_rc_subtid.type, i_rc_item, request, RL_NEVER))
+					i_rc_subtid.type, i_rc_item, (enum rsbac_rc_special_rights_t) request, RL_NEVER))
 			return GRANTED_NEVER_LOG;
 #endif
 		return GRANTED;
@@ -299,8 +299,7 @@ check_comp_rc(enum rsbac_target_t target,
 										     get_target_name_only
 										     (tmp, target),
 										     i_attr_val2.rc_type,
-										     get_rc_special_right_name
-											     (tmp2, request),
+										     get_rc_special_right_name (tmp2, (enum rsbac_rc_special_rights_t) request),
 										     rc_learn_ta);
 								} else
 #endif
@@ -312,8 +311,7 @@ check_comp_rc(enum rsbac_target_t target,
 									     get_target_name_only
 										     (tmp, target),
 									     i_attr_val2.rc_type,
-									     get_rc_special_right_name
-										     (tmp2, request),
+									     get_rc_special_right_name (tmp2, (enum rsbac_rc_special_rights_t) request),
 									     rc_learn_ta);
 								rsbac_kfree(tmp2);
 								rsbac_kfree(tmp);
@@ -364,10 +362,10 @@ check_comp_rc(enum rsbac_target_t target,
 #endif
 #ifdef CONFIG_RSBAC_RC_FORCE_LOG
 		if (rsbac_rc_check_log(i_attr_val1.rc_role,
-					i_rc_subtid.type, i_rc_item, request, RL_ALWAYS))
+					i_rc_subtid.type, i_rc_item, (enum rsbac_rc_special_rights_t) request, RL_ALWAYS))
 			return NOT_GRANTED_ALWAYS_LOG;
 		if (rsbac_rc_check_log(i_attr_val1.rc_role,
-					i_rc_subtid.type, i_rc_item, request, RL_NEVER))
+					i_rc_subtid.type, i_rc_item, (enum rsbac_rc_special_rights_t) request, RL_NEVER))
 			return NOT_GRANTED_NEVER_LOG;
 #endif
 		return NOT_GRANTED;
@@ -399,10 +397,10 @@ check_comp_rc_scd(enum rsbac_rc_scd_type_t scd_type,
 				i_rc_subtid, RI_type_comp_scd, (enum rsbac_rc_special_rights_t) request)) {
 #ifdef CONFIG_RSBAC_RC_FORCE_LOG
 		if (rsbac_rc_check_log(i_attr_val1.rc_role,
-					i_rc_subtid.type, RI_type_comp_scd, request, RL_ALWAYS))
+					i_rc_subtid.type, RI_type_comp_scd, (enum rsbac_rc_special_rights_t) request, RL_ALWAYS))
 			return GRANTED_ALWAYS_LOG;
 		if (rsbac_rc_check_log(i_attr_val1.rc_role,
-					i_rc_subtid.type, RI_type_comp_scd, request, RL_NEVER))
+					i_rc_subtid.type, RI_type_comp_scd, (enum rsbac_rc_special_rights_t) request, RL_NEVER))
 			return GRANTED_NEVER_LOG;
 #endif
 		return GRANTED;
@@ -495,10 +493,10 @@ check_comp_rc_scd(enum rsbac_rc_scd_type_t scd_type,
 #endif
 #ifdef CONFIG_RSBAC_RC_FORCE_LOG
 		if (rsbac_rc_check_log(i_attr_val1.rc_role,
-					i_rc_subtid.type, RI_type_comp_scd, request, RL_ALWAYS))
+					i_rc_subtid.type, RI_type_comp_scd, (enum rsbac_rc_special_rights_t) request, RL_ALWAYS))
 			return NOT_GRANTED_ALWAYS_LOG;
 		if (rsbac_rc_check_log(i_attr_val1.rc_role,
-					i_rc_subtid.type, RI_type_comp_scd, request, RL_NEVER))
+					i_rc_subtid.type, RI_type_comp_scd, (enum rsbac_rc_special_rights_t) request, RL_NEVER))
 			return NOT_GRANTED_NEVER_LOG;
 #endif
 		return NOT_GRANTED;
@@ -516,10 +514,10 @@ rc_check_create(
 	if (rsbac_rc_check_comp(tid.role, subtid, item, (enum rsbac_rc_special_rights_t) R_CREATE)) {
 #ifdef CONFIG_RSBAC_RC_FORCE_LOG
 		if (rsbac_rc_check_log(tid.role,
-					subtid.type, item, R_CREATE, RL_ALWAYS))
+					subtid.type, item, (enum rsbac_rc_special_rights_t) R_CREATE, RL_ALWAYS))
 			return GRANTED_ALWAYS_LOG;
 		if (rsbac_rc_check_log(tid.role,
-					subtid.type, item, R_CREATE, RL_NEVER))
+					subtid.type, item, (enum rsbac_rc_special_rights_t) R_CREATE, RL_NEVER))
 			return GRANTED_NEVER_LOG;
 #endif
 		return GRANTED;
@@ -598,10 +596,10 @@ rc_check_create(
 			     subtid.type);
 #ifdef CONFIG_RSBAC_RC_FORCE_LOG
 		if (rsbac_rc_check_log(tid.role,
-					subtid.type, item, R_CREATE, RL_ALWAYS))
+					subtid.type, item, (enum rsbac_rc_special_rights_t) R_CREATE, RL_ALWAYS))
 			return NOT_GRANTED_ALWAYS_LOG;
 		if (rsbac_rc_check_log(tid.role,
-					subtid.type, item, R_CREATE, RL_NEVER))
+					subtid.type, item, (enum rsbac_rc_special_rights_t) R_CREATE, RL_NEVER))
 			return NOT_GRANTED_NEVER_LOG;
 #endif
 		return NOT_GRANTED;

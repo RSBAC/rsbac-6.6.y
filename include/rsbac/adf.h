@@ -1,10 +1,10 @@
 /******************************* */
 /* Rule Set Based Access Control */
-/* Author and (c) 1999-2017:     */
+/* Author and (c) 1999-2024:     */
 /*   Amon Ott <ao@rsbac.org>     */
 /* API: for Access Control       */
 /* Decision Facility             */
-/* Last modified: 11/Jul/2017    */
+/* Last modified: 26/Jul/2024    */
 /******************************* */
 
 #ifndef __RSBAC_ADF_H
@@ -103,9 +103,13 @@ extern rsbac_uid_t rsbac_fake_euid(void);
 extern int rsbac_uid_faked(void);
 #endif
 
-int rsbac_cap_check_envp(struct linux_binprm *bprm);
+#if defined(CONFIG_RSBAC_CAP_FD_HIDE)
+extern rsbac_boolean_t rsbac_cap_hide_fd(struct dentry * target_dentry);
+#endif
 
+#if defined(CONFIG_RSBAC_FSOBJ_HIDE) || defined(CONFIG_RSBAC_CAP_FD_HIDE)
 extern int rsbac_handle_filldir(const struct file *file, const char *name, const unsigned int namlen, const ino_t ino);
+#endif
 
 int rsbac_set_audit_uid(rsbac_uid_t uid);
 
