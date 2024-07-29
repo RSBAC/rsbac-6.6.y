@@ -5,7 +5,7 @@
 /*                                                   */
 /* Author and (c) 1999-2024: Amon Ott <ao@rsbac.org> */
 /*                                                   */
-/* Last modified: 24/Jun/2024                        */
+/* Last modified: 29/Jun/2024                        */
 /*************************************************** */
 
 #include <linux/string.h>
@@ -262,20 +262,9 @@ enum rsbac_adf_req_ret_t
 
     /* only useful for real process, not idle or init */
     if (pid_nr(caller_pid) > 1)
-      {
-        tmperr = rsbac_get_owner(&owner);
-        if(tmperr)
-          {
-            rsbac_printk(KERN_DEBUG
-                   "rsbac_adf_request_int(): caller_pid %i, RSBAC not initialized, returning DO_NOT_CARE\n",
-                   pid_nr(caller_pid));
-            return DO_NOT_CARE;      /* Startup-Sequence (see above) */
-          }
-      }
+      rsbac_get_owner(&owner);
     else  /* caller_pid = 1 -> init, always owned by root */
-    {
       owner = 0;
-    }
 
 #ifdef CONFIG_RSBAC_UM_VIRTUAL
     if ((attr == A_owner) && (RSBAC_UID_SET(attr_val_p->owner) > RSBAC_UM_VIRTUAL_MAX))
@@ -1539,16 +1528,7 @@ int  rsbac_adf_set_attr(
     owner = RSBAC_NO_USER;
     /* only useful for real process, not idle or init */
     if (pid_nr(caller_pid) > 1)
-      {
-        error = rsbac_get_owner(&owner);
-        if(error)
-          {
-            rsbac_printk(KERN_DEBUG
-                   "rsbac_adf_set_attr(): caller_pid %i, RSBAC not initialized, returning 0",
-                   pid_nr(caller_pid));
-            return 0;      /* Startup-Sequence (see above) */
-          }
-      }
+      rsbac_get_owner(&owner);
     else /* caller_pid = 1  -> init -> owner = root */
       owner = 0;
 
@@ -2928,49 +2908,44 @@ char * rsbac_symlink_redirect(
     if(i_attr_val.symlink_add_uid)
       {
         rsbac_uid_t user;
+        u_int len;
+        u_int room = 20;
+        char * new_name;
 
-        if(!rsbac_get_owner(&user))
-          {
-            u_int len;
-            u_int room = 20;
-            char * new_name;
-
+        rsbac_get_owner(&user);
 #ifdef CONFIG_RSBAC_UM_VIRTUAL
-            if (RSBAC_UID_SET(user))
-              room = 40;
+        if (RSBAC_UID_SET(user))
+          room = 40;
 #endif
-            len = strlen(name);
-            while(   len
-                  && (   (   (name[len-1] >= '0')
-                          && (name[len-1] <= '9')
-                         )
-#ifdef CONFIG_RSBAC_UM_VIRTUAL
-                      || (name[len-1] == '-')
-#endif
+        len = strlen(name);
+        while(   len
+              && (   (   (name[len-1] >= '0')
+                      && (name[len-1] <= '9')
                      )
-                 )
-              len--;
-            new_name = kmalloc(len + room, kmalloc_gfp);
-            if(!new_name)
-              {
-                rsbac_printk(KERN_DEBUG
-                   "rsbac_symlink_redirect(): cannot allocate memory for symlink redir uid inode %lu on dev %02u:%02u!\n",
-                   inode_p->i_ino,
-                   RSBAC_MAJOR(inode_p->i_sb->s_dev), RSBAC_MINOR(inode_p->i_sb->s_dev) );
-                return NULL;
-              }
-            strcpy(new_name, name);
 #ifdef CONFIG_RSBAC_UM_VIRTUAL
-            if (RSBAC_UID_SET(user))
-              sprintf(new_name+len, "%u-%u",
-                      RSBAC_UID_SET(user), RSBAC_UID_NUM(user));
-            else
+                  || (name[len-1] == '-')
 #endif
-            sprintf(new_name+len, "%u", RSBAC_UID_NUM(user));
-            return new_name;
+                 )
+             )
+          len--;
+        new_name = kmalloc(len + room, kmalloc_gfp);
+        if(!new_name)
+          {
+            rsbac_printk(KERN_DEBUG
+               "rsbac_symlink_redirect(): cannot allocate memory for symlink redir uid inode %lu on dev %02u:%02u!\n",
+               inode_p->i_ino,
+               RSBAC_MAJOR(inode_p->i_sb->s_dev), RSBAC_MINOR(inode_p->i_sb->s_dev) );
+            return NULL;
           }
+        strcpy(new_name, name);
+#ifdef CONFIG_RSBAC_UM_VIRTUAL
+        if (RSBAC_UID_SET(user))
+          sprintf(new_name+len, "%u-%u",
+                  RSBAC_UID_SET(user), RSBAC_UID_NUM(user));
         else
-          return NULL;
+#endif
+        sprintf(new_name+len, "%u", RSBAC_UID_NUM(user));
+        return new_name;
       }
 #endif
 
