@@ -576,6 +576,12 @@ retry:
 		goto out;
 
 #ifdef CONFIG_RSBAC
+#if defined(CONFIG_RSBAC_CAP_FD_HIDE)
+	if (rsbac_cap_hide_fd(path.dentry)) {
+		res = -ENOENT;
+		goto out_path_release;
+	}
+#endif
 	rsbac_pr_debug(aef, "calling ADF\n");
 	rsbac_target = T_FILE;
 	if (S_ISDIR(path.dentry->d_inode->i_mode))
@@ -675,6 +681,13 @@ retry:
 	if (error)
 		goto out;
 
+#if defined(CONFIG_RSBAC_CAP_FD_HIDE)
+	if (rsbac_cap_hide_fd(path.dentry)) {
+		error = -ENOENT;
+		goto dput_and_out;
+	}
+#endif
+
 	error = path_permission(&path, MAY_EXEC | MAY_CHDIR);
 	if (error)
 		goto dput_and_out;
@@ -770,6 +783,13 @@ retry:
 	if (error)
 		goto out;
 
+#if defined(CONFIG_RSBAC_CAP_FD_HIDE)
+	if (rsbac_cap_hide_fd(path.dentry)) {
+		error = -ENOENT;
+		goto dput_and_out;
+	}
+#endif
+
 	error = path_permission(&path, MAY_EXEC | MAY_CHDIR);
 	if (error)
 		goto dput_and_out;
@@ -821,6 +841,12 @@ int chmod_common(const struct path *path, umode_t mode)
 	enum  rsbac_target_t rsbac_target;
 	union rsbac_target_id_t rsbac_target_id;
 	union rsbac_attribute_value_t rsbac_attribute_value;
+#endif
+
+#if defined(CONFIG_RSBAC_CAP_FD_HIDE)
+	if (rsbac_cap_hide_fd(path->dentry)) {
+		return -ENOENT;
+	}
 #endif
 
 	error = mnt_want_write(path->mnt);
@@ -1073,6 +1099,14 @@ retry:
 	error = user_path_at(dfd, filename, lookup_flags, &path);
 	if (error)
 		goto out;
+
+#if defined(CONFIG_RSBAC_CAP_FD_HIDE)
+	if (rsbac_cap_hide_fd(path.dentry)) {
+		error = -ENOENT;
+		goto out_release;
+	}
+#endif
+
 	error = mnt_want_write(path.mnt);
 	if (error)
 		goto out_release;
