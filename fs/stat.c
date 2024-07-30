@@ -239,7 +239,7 @@ int vfs_getattr(const struct path *path, struct kstat *stat,
 			rsbac_target = T_FILE;
 		rsbac_attribute_value.dummy = 0;
 #ifdef CONFIG_RSBAC_FSOBJ_HIDE
-		if (!rsbac_adf_request(R_SEARCH,
+		if (rsbac_target != T_IPC && !rsbac_adf_request(R_SEARCH,
 					task_pid(current),
 					rsbac_target,
 					rsbac_target_id,
