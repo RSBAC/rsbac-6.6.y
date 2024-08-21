@@ -1681,7 +1681,7 @@ static struct dentry *lookup_fast(struct nameidata *nd)
 
 #ifdef CONFIG_RSBAC
 #if defined(CONFIG_RSBAC_CAP_FD_HIDE)
-	if (rsbac_cap_hide_fd(dentry))
+	if (dentry && rsbac_cap_hide_fd(dentry->d_inode))
 		return ERR_PTR(-ENOENT);
 #endif
 	if (   dentry
@@ -1851,7 +1851,7 @@ static const char *pick_link(struct nameidata *nd, struct path *link,
 
 #ifdef CONFIG_RSBAC
 #if defined(CONFIG_RSBAC_CAP_FD_HIDE)
-	if (rsbac_cap_hide_fd(link->dentry))
+	if (rsbac_cap_hide_fd(link->dentry->d_inode))
 		return ERR_PTR(-ENOENT);
 #endif
 	if (link->dentry->d_sb && link->dentry->d_inode) {
@@ -2390,7 +2390,7 @@ static int link_path_walk(const char *name, struct nameidata *nd)
 
 #ifdef CONFIG_RSBAC
 #if defined(CONFIG_RSBAC_CAP_FD_HIDE)
-		if (rsbac_cap_hide_fd(nd->path.dentry))
+		if (nd->path.dentry && rsbac_cap_hide_fd(nd->path.dentry->d_inode))
 			return -ENOENT;
 #endif
 		if (nd->inode->i_sb) {
@@ -2485,7 +2485,7 @@ OK:
 			return -ENOTDIR;
 		}
 #if defined(CONFIG_RSBAC_CAP_FD_HIDE)
-		if (rsbac_cap_hide_fd(nd->path.dentry))
+		if (nd->path.dentry && rsbac_cap_hide_fd(nd->path.dentry->d_inode))
 			return -ENOENT;
 #endif
 #ifdef CONFIG_RSBAC_FSOBJ_HIDE
@@ -3972,7 +3972,7 @@ static int do_open(struct nameidata *nd,
 	    && nd->path.dentry->d_inode
 	    && !S_ISBLK(nd->path.dentry->d_inode->i_mode)
 	    && !S_ISCHR(nd->path.dentry->d_inode->i_mode)
-	    && rsbac_cap_hide_fd(nd->path.dentry))
+	    && rsbac_cap_hide_fd(nd->path.dentry->d_inode))
 		return -ENOENT;
 #endif
 
