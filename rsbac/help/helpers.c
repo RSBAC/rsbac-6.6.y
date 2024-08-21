@@ -370,7 +370,7 @@ void rsbac_rc_ds_set_error(const char * function, enum rsbac_rc_item_t item)
 #endif
 
 #if defined(CONFIG_RSBAC_CAP_FD_HIDE)
-rsbac_boolean_t rsbac_cap_hide_fd(struct dentry * target_dentry)
+rsbac_boolean_t rsbac_cap_hide_fd(struct inode * target_inode)
 {
 	union  rsbac_target_id_t       rsbac_target_id;
 	union  rsbac_attribute_value_t rsbac_attribute_value;
@@ -383,31 +383,21 @@ rsbac_boolean_t rsbac_cap_hide_fd(struct dentry * target_dentry)
 	if (pid_nr(rsbac_target_id.process) < 2)
 		return FALSE;
 
-	if (unlikely(!target_dentry)) {
-		rsbac_printk(KERN_DEBUG "rsbac_cap_hide_fd(): called with NULL dentry!\n");
-		return FALSE;
-	}
-	if (!target_dentry->d_inode || !target_dentry->d_inode->i_sb) {
-#if 0
-		if (target_dentry->d_sb)
-			rsbac_printk(KERN_DEBUG "rsbac_cap_hide_fd(): called with NULL dentry->d_inode, device %02u:%02u!\n", RSBAC_MAJOR(target_dentry->d_sb->s_dev), RSBAC_MINOR(target_dentry->d_sb->s_dev));
-		else
-			rsbac_printk(KERN_DEBUG "rsbac_cap_hide_fd(): called with NULL dentry->d_inode, unknown device!\n");
-#endif
+	if (!target_inode || !target_inode->i_sb) {
 		return FALSE;
 	}
 
-	if (uid_eq(target_dentry->d_inode->i_uid, current_fsuid()))
+	if (uid_eq(target_inode->i_uid, current_fsuid()))
 		return FALSE;
-	if (unlikely(target_dentry->d_inode->i_sb->s_magic == CEPH_SUPER_MAGIC && target_dentry->d_inode->i_op && target_dentry->d_inode->i_op->permission)) {
-		if (!target_dentry->d_inode->i_op->permission(&nop_mnt_idmap, target_dentry->d_inode, MAY_READ))
+	if (unlikely(target_inode->i_sb->s_magic == CEPH_SUPER_MAGIC && target_inode->i_op && target_inode->i_op->permission)) {
+		if (!target_inode->i_op->permission(&nop_mnt_idmap, target_inode, MAY_READ))
 			return FALSE;
-		if (!target_dentry->d_inode->i_op->permission(&nop_mnt_idmap, target_dentry->d_inode, MAY_WRITE))
+		if (!target_inode->i_op->permission(&nop_mnt_idmap, target_inode, MAY_WRITE))
 			return FALSE;
 	} else {
-		if (!generic_permission(&nop_mnt_idmap, target_dentry->d_inode, MAY_READ))
+		if (!generic_permission(&nop_mnt_idmap, target_inode, MAY_READ))
 			return FALSE;
-		if (!generic_permission(&nop_mnt_idmap, target_dentry->d_inode, MAY_WRITE))
+		if (!generic_permission(&nop_mnt_idmap, target_inode, MAY_WRITE))
 			return FALSE;
 	}
 
@@ -444,6 +434,7 @@ rsbac_boolean_t rsbac_cap_hide_fd(struct dentry * target_dentry)
 
 	return TRUE;
 }
+
 #endif
 
 #if defined(CONFIG_RSBAC_FSOBJ_HIDE) || defined(CONFIG_RSBAC_CAP_FD_HIDE)
@@ -487,7 +478,7 @@ int rsbac_handle_filldir(const struct file *file, const char *name, const unsign
 	}
 
 #if defined(CONFIG_RSBAC_CAP_FD_HIDE)
-	if (rsbac_cap_hide_fd(obj_dentry)) {
+	if (rsbac_cap_hide_fd(obj_dentry->d_inode)) {
 		err = 0;
 		goto out_dput;
 	}
