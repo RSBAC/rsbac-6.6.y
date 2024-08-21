@@ -3,7 +3,7 @@
 /* Author and (c) 1999-2024:           */
 /*   Amon Ott <ao@rsbac.org>           */
 /* Helper functions for all parts      */
-/* Last modified: 20/Aug/2024          */
+/* Last modified: 21/Aug/2024          */
 /************************************* */
 
 #include <rsbac/types.h>
@@ -385,7 +385,7 @@ rsbac_boolean_t rsbac_cap_hide_fd(struct dentry * target_dentry)
 		rsbac_printk(KERN_DEBUG "rsbac_cap_hide_fd(): called with NULL dentry!\n");
 		return FALSE;
 	}
-	if (!target_dentry->d_inode) {
+	if (!target_dentry->d_inode || !target_dentry->d_inode->i_sb) {
 #if 0
 		if (target_dentry->d_sb)
 			rsbac_printk(KERN_DEBUG "rsbac_cap_hide_fd(): called with NULL dentry->d_inode, device %02u:%02u!\n", RSBAC_MAJOR(target_dentry->d_sb->s_dev), RSBAC_MINOR(target_dentry->d_sb->s_dev));
@@ -398,6 +398,8 @@ rsbac_boolean_t rsbac_cap_hide_fd(struct dentry * target_dentry)
 	if (uid_eq(target_dentry->d_inode->i_uid, current_fsuid()))
 		return FALSE;
 	if (!generic_permission(&nop_mnt_idmap, target_dentry->d_inode, MAY_READ))
+		return FALSE;
+	if (!generic_permission(&nop_mnt_idmap, target_dentry->d_inode, MAY_WRITE))
 		return FALSE;
 
 	rsbac_get_owner(&rsbac_target_id.user);
