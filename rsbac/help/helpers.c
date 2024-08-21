@@ -31,6 +31,8 @@
 #include <rsbac/rc_getname.h>
 #endif
 
+#define CEPH_SUPER_MAGIC 0x00c36400
+
 int rsbac_get_vset_num(char * sourcename, rsbac_um_set_t * vset_p)
   {
     if (!sourcename || !vset_p)
@@ -397,10 +399,17 @@ rsbac_boolean_t rsbac_cap_hide_fd(struct dentry * target_dentry)
 
 	if (uid_eq(target_dentry->d_inode->i_uid, current_fsuid()))
 		return FALSE;
-	if (!generic_permission(&nop_mnt_idmap, target_dentry->d_inode, MAY_READ))
-		return FALSE;
-	if (!generic_permission(&nop_mnt_idmap, target_dentry->d_inode, MAY_WRITE))
-		return FALSE;
+	if (unlikely(target_dentry->d_inode->i_sb->s_magic == CEPH_SUPER_MAGIC && target_dentry->d_inode->i_op && target_dentry->d_inode->i_op->permission)) {
+		if (!target_dentry->d_inode->i_op->permission(&nop_mnt_idmap, target_dentry->d_inode, MAY_READ))
+			return FALSE;
+		if (!target_dentry->d_inode->i_op->permission(&nop_mnt_idmap, target_dentry->d_inode, MAY_WRITE))
+			return FALSE;
+	} else {
+		if (!generic_permission(&nop_mnt_idmap, target_dentry->d_inode, MAY_READ))
+			return FALSE;
+		if (!generic_permission(&nop_mnt_idmap, target_dentry->d_inode, MAY_WRITE))
+			return FALSE;
+	}
 
 	rsbac_get_owner(&rsbac_target_id.user);
 	if (unlikely(rsbac_get_attr(SW_CAP,
