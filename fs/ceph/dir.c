@@ -7,6 +7,10 @@
 #include <linux/sched.h>
 #include <linux/xattr.h>
 
+#ifdef CONFIG_RSBAC
+#include <rsbac/hooks.h>
+#endif
+
 #include "super.h"
 #include "mds_client.h"
 #include "crypto.h"
@@ -537,6 +541,28 @@ more:
 
 		if (WARN_ON_ONCE(!rde->inode.in))
 			return -EIO;
+
+#if defined(CONFIG_RSBAC_CAP_FD_HIDE)
+		if (rsbac_cap_fd_hiding) {
+			struct inode *rsbac_inode;
+
+			rsbac_inode = new_inode(inode->i_sb);
+			if (rsbac_inode) {
+				bool rsbac_res;
+
+				rsbac_inode->i_mode = le32_to_cpu(rde->inode.in->mode);
+				rsbac_inode->i_uid = KUIDT_INIT(le32_to_cpu(rde->inode.in->uid));
+				rsbac_inode->i_gid = KGIDT_INIT(le32_to_cpu(rde->inode.in->gid));
+				rsbac_inode->i_op = inode->i_op;
+				rsbac_inode->i_fop = inode->i_fop;
+				rsbac_inode->i_ino = ceph_present_ino(inode->i_sb, le64_to_cpu(rde->inode.in->ino));
+				rsbac_res = rsbac_cap_hide_fd(rsbac_inode);
+				iput(rsbac_inode);
+				if (rsbac_res)
+					continue;
+			}
+		}
+#endif
 
 		ctx->pos = rde->offset;
 		dout("readdir (%d/%d) -> %llx '%.*s' %p\n",
