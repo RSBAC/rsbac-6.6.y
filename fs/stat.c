@@ -205,7 +205,7 @@ int vfs_getattr(const struct path *path, struct kstat *stat,
 
 #ifdef CONFIG_RSBAC
 #if defined(CONFIG_RSBAC_CAP_FD_HIDE)
-	if (rsbac_cap_hide_fd(path->dentry))
+	if (path->dentry && rsbac_cap_hide_fd(path->dentry->d_inode))
 		return -ENOENT;
 #endif
 	if (path->dentry && path->dentry->d_inode && path->dentry->d_inode->i_sb) {
@@ -596,7 +596,7 @@ retry:
 
 #ifdef CONFIG_RSBAC
 #if defined(CONFIG_RSBAC_CAP_FD_HIDE)
-				if (rsbac_cap_hide_fd(path.dentry)) {
+				if (rsbac_cap_hide_fd(path.dentry->d_inode)) {
 					path_put(&path);
 					return -ENOENT;
 				}
