@@ -2293,7 +2293,7 @@ int fcntl_getlk(struct file *filp, unsigned int cmd, struct flock *flock)
 
 #ifdef CONFIG_RSBAC
 #if defined(CONFIG_RSBAC_CAP_FD_HIDE)
-	if (rsbac_cap_hide_fd(filp->f_path.dentry)) {
+	if (rsbac_cap_hide_fd(filp->f_path.dentry->d_inode)) {
 		error = -ENOENT;
 		goto out;
 	}
@@ -2581,7 +2581,7 @@ int fcntl_getlk64(struct file *filp, unsigned int cmd, struct flock64 *flock)
 
 #ifdef CONFIG_RSBAC
 #if defined(CONFIG_RSBAC_CAP_FD_HIDE)
-	if (rsbac_cap_hide_fd(filp->f_path.dentry)) {
+	if (rsbac_cap_hide_fd(filp->f_path.dentry->d_inode)) {
 		error = -ENOENT;
 		goto out;
 	}
