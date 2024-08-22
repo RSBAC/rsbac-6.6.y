@@ -261,6 +261,11 @@ static int __dcache_readdir(struct file *file,  struct dir_context *ctx,
 		spin_unlock(&dentry->d_lock);
 
 		if (emit_dentry) {
+
+#if defined(CONFIG_RSBAC_CAP_FD_HIDE)
+			if(!rsbac_cap_hide_fd(d_inode(dentry))) {
+#endif
+
 			dout(" %llx dentry %p %pd %p\n", di->offset,
 			     dentry, dentry, d_inode(dentry));
 			ctx->pos = di->offset;
@@ -272,6 +277,10 @@ static int __dcache_readdir(struct file *file,  struct dir_context *ctx,
 				break;
 			}
 			ctx->pos++;
+
+#if defined(CONFIG_RSBAC_CAP_FD_HIDE)
+			}
+#endif
 
 			if (last)
 				dput(last);

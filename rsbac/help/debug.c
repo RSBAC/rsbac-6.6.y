@@ -6,7 +6,7 @@
 /*                                           */
 /* Debug and logging functions for all parts */
 /*                                           */
-/* Last modified: 29/Jul/2024                */
+/* Last modified: 22/Aug/2024                */
 /******************************************* */
  
 #include <linux/uaccess.h>
@@ -233,6 +233,7 @@ int rsbac_cap_process_hiding = 0;
 #endif
 #if defined(CONFIG_RSBAC_CAP_FD_HIDE)
 int rsbac_cap_fd_hiding = 0;
+EXPORT_SYMBOL(rsbac_cap_fd_hiding);
 #endif
 #ifdef CONFIG_RSBAC_CAP_LOG_MISSING
 int rsbac_cap_log_missing = 0;
