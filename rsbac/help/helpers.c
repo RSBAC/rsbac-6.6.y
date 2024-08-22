@@ -3,7 +3,7 @@
 /* Author and (c) 1999-2024:           */
 /*   Amon Ott <ao@rsbac.org>           */
 /* Helper functions for all parts      */
-/* Last modified: 21/Aug/2024          */
+/* Last modified: 22/Aug/2024          */
 /************************************* */
 
 #include <rsbac/types.h>
@@ -370,6 +370,7 @@ void rsbac_rc_ds_set_error(const char * function, enum rsbac_rc_item_t item)
 #endif
 
 #if defined(CONFIG_RSBAC_CAP_FD_HIDE)
+EXPORT_SYMBOL(rsbac_cap_hide_fd);
 rsbac_boolean_t rsbac_cap_hide_fd(struct inode * target_inode)
 {
 	union  rsbac_target_id_t       rsbac_target_id;
