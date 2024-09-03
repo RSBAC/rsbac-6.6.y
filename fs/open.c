@@ -596,6 +596,17 @@ retry:
 	rsbac_target_id.file.inode  = path.dentry->d_inode->i_ino;
 	rsbac_target_id.file.dentry_p = path.dentry;
 	rsbac_attribute_value.dummy = 0;
+#if defined(CONFIG_RSBAC_FSOBJ_HIDE)
+	if (!rsbac_adf_request(R_SEARCH,
+				task_pid(current),
+				rsbac_target,
+				rsbac_target_id,
+				A_none,
+				rsbac_attribute_value)) {
+		res = -ENOENT;
+		goto out_path_release;
+	}
+#endif
 	if (!rsbac_adf_request(R_GET_PERMISSIONS_DATA,
 				task_pid(current),
 				rsbac_target,
@@ -698,6 +709,17 @@ retry:
 	rsbac_target_id.dir.inode  = path.dentry->d_inode->i_ino;
 	rsbac_target_id.dir.dentry_p = path.dentry;
 	rsbac_attribute_value.dummy = 0;
+#if defined(CONFIG_RSBAC_FSOBJ_HIDE)
+	if (!rsbac_adf_request(R_SEARCH,
+				task_pid(current),
+				T_DIR,
+				rsbac_target_id,
+				A_none,
+				rsbac_attribute_value)) {
+		error = -ENOENT;
+		goto dput_and_out;
+	}
+#endif
 	if (!rsbac_adf_request(R_CHDIR,
 				task_pid(current),
 				T_DIR,
@@ -807,6 +829,17 @@ retry:
 	rsbac_target_id.dir.inode  = path.dentry->d_inode->i_ino;
 	rsbac_target_id.dir.dentry_p = path.dentry;
 	rsbac_attribute_value.dummy = 0;
+#if defined(CONFIG_RSBAC_FSOBJ_HIDE)
+	if (!rsbac_adf_request(R_SEARCH,
+				task_pid(current),
+				T_DIR,
+				rsbac_target_id,
+				A_none,
+				rsbac_attribute_value)) {
+		error = -ENOENT;
+		goto dput_and_out;
+	}
+#endif
 	if (!rsbac_adf_request(R_CHDIR,
 				task_pid(current),
 				T_DIR,
@@ -859,33 +892,44 @@ retry_deleg:
 		goto out_unlock;
 
 #ifdef CONFIG_RSBAC
-	if ( (mode & S_IALLUGO) != (inode->i_mode & S_IALLUGO) ) {
-		rsbac_pr_debug(aef, "calling ADF\n");
-		rsbac_target = T_FILE;
-		rsbac_target_id.file.device = inode->i_sb->s_dev;
-		rsbac_target_id.file.inode  = inode->i_ino;
-		rsbac_target_id.file.dentry_p = path->dentry;
-		if (S_ISDIR(inode->i_mode))
-			rsbac_target = T_DIR;
-		else if (S_ISFIFO(inode->i_mode))
-			rsbac_target = T_FIFO;
-		else if (S_ISLNK(inode->i_mode))
-			rsbac_target = T_SYMLINK;
-		else if (inode->i_rsbac_memfd) {
+	rsbac_pr_debug(aef, "calling ADF\n");
+	rsbac_target = T_FILE;
+	rsbac_target_id.file.device = inode->i_sb->s_dev;
+	rsbac_target_id.file.inode  = inode->i_ino;
+	rsbac_target_id.file.dentry_p = path->dentry;
+	if (S_ISDIR(inode->i_mode))
+		rsbac_target = T_DIR;
+	else if (S_ISFIFO(inode->i_mode))
+		rsbac_target = T_FIFO;
+	else if (S_ISLNK(inode->i_mode))
+		rsbac_target = T_SYMLINK;
+	else if (inode->i_rsbac_memfd) {
+		rsbac_target = T_IPC;
+		rsbac_target_id.ipc.type = I_memfd;
+		rsbac_target_id.ipc.id.id_nr = (u_long) inode;
+	}
+	else if (S_ISSOCK(inode->i_mode)) {
+		if(inode->i_sb->s_magic == SOCKFS_MAGIC) {
 			rsbac_target = T_IPC;
-			rsbac_target_id.ipc.type = I_memfd;
-			rsbac_target_id.ipc.id.id_nr = (u_long) inode;
+			rsbac_target_id.ipc.type = I_anonunix;
+			rsbac_target_id.ipc.id.id_nr = inode->i_ino;
+		} else {
+			rsbac_target = T_UNIXSOCK;
 		}
-		else if (S_ISSOCK(inode->i_mode)) {
-			if(inode->i_sb->s_magic == SOCKFS_MAGIC) {
-				rsbac_target = T_IPC;
-				rsbac_target_id.ipc.type = I_anonunix;
-				rsbac_target_id.ipc.id.id_nr = inode->i_ino;
-			} else {
-				rsbac_target = T_UNIXSOCK;
-			}
-		}
-		rsbac_attribute_value.mode = mode;
+	}
+	rsbac_attribute_value.mode = mode;
+#if defined(CONFIG_RSBAC_FSOBJ_HIDE)
+	if (rsbac_target != T_IPC && !rsbac_adf_request(R_SEARCH,
+				task_pid(current),
+				rsbac_target,
+				rsbac_target_id,
+				A_mode,
+				rsbac_attribute_value)) {
+		error = -ENOENT;
+		goto out_unlock;
+	}
+#endif
+	if ( (mode & S_IALLUGO) != (inode->i_mode & S_IALLUGO) ) {
 		if (!rsbac_adf_request(R_MODIFY_PERMISSIONS_DATA,
 					task_pid(current),
 					rsbac_target,
@@ -1089,6 +1133,12 @@ int do_fchownat(int dfd, const char __user *filename, uid_t user, gid_t group,
 	int error = -EINVAL;
 	int lookup_flags;
 
+#if defined(CONFIG_RSBAC_FSOBJ_HIDE)
+	enum  rsbac_target_t          rsbac_target;
+	union rsbac_target_id_t       rsbac_target_id;
+	union rsbac_attribute_value_t rsbac_attribute_value;
+#endif
+
 	if ((flag & ~(AT_SYMLINK_NOFOLLOW | AT_EMPTY_PATH)) != 0)
 		goto out;
 
@@ -1102,6 +1152,30 @@ retry:
 
 #if defined(CONFIG_RSBAC_CAP_FD_HIDE)
 	if (rsbac_cap_hide_fd(path.dentry->d_inode)) {
+		error = -ENOENT;
+		goto out_release;
+	}
+#endif
+#if defined(CONFIG_RSBAC_FSOBJ_HIDE)
+	rsbac_target = T_FILE;
+	if (S_ISDIR(path.dentry->d_inode->i_mode))
+		rsbac_target = T_DIR;
+	else if (S_ISFIFO(path.dentry->d_inode->i_mode))
+		rsbac_target = T_FIFO;
+	else if (S_ISLNK(path.dentry->d_inode->i_mode))
+		rsbac_target = T_SYMLINK;
+	else if (S_ISSOCK(path.dentry->d_inode->i_mode))
+		rsbac_target = T_UNIXSOCK;
+	rsbac_target_id.file.device = path.dentry->d_inode->i_sb->s_dev;
+	rsbac_target_id.file.inode  = path.dentry->d_inode->i_ino;
+	rsbac_target_id.file.dentry_p = path.dentry;
+	rsbac_attribute_value.dummy = 0;
+	if (!rsbac_adf_request(R_SEARCH,
+				task_pid(current),
+				rsbac_target,
+				rsbac_target_id,
+				A_none,
+				rsbac_attribute_value)) {
 		error = -ENOENT;
 		goto out_release;
 	}
