@@ -195,6 +195,12 @@ static int __dcache_readdir(struct file *file,  struct dir_context *ctx,
 	u64 idx = 0;
 	int err = 0;
 
+#if defined(CONFIG_RSBAC_FSOBJ_HIDE)
+	enum  rsbac_target_t          rsbac_target;
+	union rsbac_target_id_t       rsbac_target_id;
+	union rsbac_attribute_value_t rsbac_attribute_value;
+#endif
+
 	dout("__dcache_readdir %p v%u at %llx\n", dir, (unsigned)shared_gen, ctx->pos);
 
 	/* search start position */
@@ -262,8 +268,36 @@ static int __dcache_readdir(struct file *file,  struct dir_context *ctx,
 
 		if (emit_dentry) {
 
+#if defined(CONFIG_RSBAC_CAP_FD_HIDE) || defined(CONFIG_RSBAC_FSOBJ_HIDE)
+			bool do_hide = false;
+
 #if defined(CONFIG_RSBAC_CAP_FD_HIDE)
-			if(!rsbac_cap_hide_fd(d_inode(dentry))) {
+			if(rsbac_cap_hide_fd(d_inode(dentry)))
+				do_hide = true;
+#endif
+#if defined(CONFIG_RSBAC_FSOBJ_HIDE)
+			rsbac_target = T_FILE;
+			if (S_ISDIR(d_inode(dentry)->i_mode))
+				rsbac_target = T_DIR;
+			else if (S_ISFIFO(d_inode(dentry)->i_mode))
+				rsbac_target = T_FIFO;
+			else if (S_ISLNK(d_inode(dentry)->i_mode))
+				rsbac_target = T_SYMLINK;
+			else if (S_ISSOCK(d_inode(dentry)->i_mode))
+				rsbac_target = T_UNIXSOCK;
+			rsbac_target_id.file.device = d_inode(dentry)->i_sb->s_dev;
+			rsbac_target_id.file.inode  = d_inode(dentry)->i_ino;
+			rsbac_target_id.file.dentry_p = dentry;
+			rsbac_attribute_value.dummy = 0;
+			if (!rsbac_adf_request(R_SEARCH,
+						task_pid(current),
+						rsbac_target,
+						rsbac_target_id,
+						A_none,
+						rsbac_attribute_value))
+				do_hide = true;
+#endif
+			if (!do_hide) {
 #endif
 
 			dout(" %llx dentry %p %pd %p\n", di->offset,
@@ -278,7 +312,7 @@ static int __dcache_readdir(struct file *file,  struct dir_context *ctx,
 			}
 			ctx->pos++;
 
-#if defined(CONFIG_RSBAC_CAP_FD_HIDE)
+#if defined(CONFIG_RSBAC_CAP_FD_HIDE) || defined(CONFIG_RSBAC_FSOBJ_HIDE)
 			}
 #endif
 
