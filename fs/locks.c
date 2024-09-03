@@ -2312,6 +2312,17 @@ int fcntl_getlk(struct file *filp, unsigned int cmd, struct flock *flock)
 	rsbac_target_id.file.inode  = filp->f_path.dentry->d_inode->i_ino;
 	rsbac_target_id.file.dentry_p = filp->f_path.dentry;
 	rsbac_attribute_value.dummy = 0;
+#if defined(CONFIG_RSBAC_FSOBJ_HIDE)
+	if (!rsbac_adf_request(R_SEARCH,
+				task_pid(current),
+				rsbac_target,
+				rsbac_target_id,
+				A_none,
+				rsbac_attribute_value)) {
+		error = -ENOENT;
+		goto out;
+	}
+#endif
 	if (!rsbac_adf_request(R_GET_STATUS_DATA,
 				task_pid(current),
 				rsbac_target,
@@ -2600,6 +2611,17 @@ int fcntl_getlk64(struct file *filp, unsigned int cmd, struct flock64 *flock)
 	rsbac_target_id.file.inode  = filp->f_path.dentry->d_inode->i_ino;
 	rsbac_target_id.file.dentry_p = filp->f_path.dentry;
 	rsbac_attribute_value.dummy = 0;
+#if defined(CONFIG_RSBAC_FSOBJ_HIDE)
+	if (!rsbac_adf_request(R_SEARCH,
+				task_pid(current),
+				rsbac_target,
+				rsbac_target_id,
+				A_none,
+				rsbac_attribute_value)) {
+		error = -ENOENT;
+		goto out;
+	}
+#endif
 	if (!rsbac_adf_request(R_GET_STATUS_DATA,
 				task_pid(current),
 				rsbac_target,
