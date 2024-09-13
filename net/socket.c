@@ -3148,9 +3148,6 @@ int __sys_getsockopt(int fd, int level, int optname, char __user *optval,
 	if (!sock)
 		return err;
 
-	compat = in_compat_syscall();
-	err = do_sock_getsockopt(sock, compat, level, optname,
-				 USER_SOCKPTR(optval), USER_SOCKPTR(optlen));
 #if defined(CONFIG_RSBAC)
 	rsbac_pr_debug(aef, "calling ADF\n");
 	if (sock->ops->family == AF_UNIX) {
@@ -3190,11 +3187,14 @@ int __sys_getsockopt(int fd, int level, int optname, char __user *optval,
 				rsbac_target_id,
 				A_sock_type,
 				rsbac_attribute_value)) {
-		err = -EPERM;
-		goto out_put;
+		fput_light(sock->file, fput_needed);
+		return -EPERM;
 	}
 #endif
 
+	compat = in_compat_syscall();
+	err = do_sock_getsockopt(sock, compat, level, optname,
+				 USER_SOCKPTR(optval), USER_SOCKPTR(optlen));
 
 	fput_light(sock->file, fput_needed);
 	return err;
