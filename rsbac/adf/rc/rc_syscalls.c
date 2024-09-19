@@ -6,7 +6,7 @@
 /*                                                   */
 /* Author and (c) 1999-2024: Amon Ott <ao@rsbac.org> */
 /*                                                   */
-/* Last modified: 29/Jul/2024                        */
+/* Last modified: 19/Sep/2024                        */
 /*************************************************** */
 
 #include <linux/string.h>
@@ -341,6 +341,14 @@ int rsbac_rc_sys_set_item(
             case RI_type_fd_remove:
               if(target != RT_TYPE)
                 return -RSBAC_EINVALIDTARGET;
+              /* you cannot have rights to not existing types and we do not care for them anyway */
+              if (item == RI_type_fd_remove && !rsbac_rc_type_exists(ta_number, T_FILE, tid.type)) {
+                rsbac_pr_debug(adf_rc, "pid %u(%s), owner %u, try to remove not existing FD type %u ignored!\n",
+                               current->pid, current->comm,
+                               __kuid_val(current_uid()),
+                               tid.type);
+                return 0;
+              }
               if(   (rsbac_rc_check_type_comp(T_FILE, tid.type, (enum rsbac_adf_request_t) RCR_ADMIN, 0) == NOT_GRANTED)
                  && (err=rsbac_rc_test_role_admin(TRUE))
                 )
@@ -372,6 +380,14 @@ int rsbac_rc_sys_set_item(
             case RI_type_dev_remove:
               if(target != RT_TYPE)
                 return -RSBAC_EINVALIDTARGET;
+              /* you cannot have rights to not existing types and we do not care for them anyway */
+              if (item == RI_type_dev_remove && !rsbac_rc_type_exists(ta_number, T_DEV, tid.type)) {
+                rsbac_pr_debug(adf_rc, "pid %u(%s), owner %u, try to remove not existing DEV type %u ignored!\n",
+                               current->pid, current->comm,
+                               __kuid_val(current_uid()),
+                               tid.type);
+                return 0;
+              }
               if(   (rsbac_rc_check_type_comp(T_DEV, tid.type, (enum rsbac_adf_request_t) RCR_ADMIN, 0) == NOT_GRANTED)
                  && (err=rsbac_rc_test_role_admin(TRUE))
                 )
@@ -401,6 +417,14 @@ int rsbac_rc_sys_set_item(
             case RI_type_ipc_remove:
               if(target != RT_TYPE)
                 return -RSBAC_EINVALIDTARGET;
+              /* you cannot have rights to not existing types and we do not care for them anyway */
+              if (item == RI_type_ipc_remove && !rsbac_rc_type_exists(ta_number, T_IPC, tid.type)) {
+                rsbac_pr_debug(adf_rc, "pid %u(%s), owner %u, try to remove not existing IPC type %u ignored!\n",
+                               current->pid, current->comm,
+                               __kuid_val(current_uid()),
+                               tid.type);
+                return 0;
+              }
               if(   (rsbac_rc_check_type_comp(T_IPC, tid.type, (enum rsbac_adf_request_t) RCR_ADMIN, 0) == NOT_GRANTED)
                  && (err=rsbac_rc_test_role_admin(TRUE))
                 )
@@ -430,6 +454,14 @@ int rsbac_rc_sys_set_item(
             case RI_type_user_remove:
               if(target != RT_TYPE)
                 return -RSBAC_EINVALIDTARGET;
+              /* you cannot have rights to not existing types and we do not care for them anyway */
+              if (item == RI_type_user_remove && !rsbac_rc_type_exists(ta_number, T_USER, tid.type)) {
+                rsbac_pr_debug(adf_rc, "pid %u(%s), owner %u, try to remove not existing USER type %u ignored!\n",
+                               current->pid, current->comm,
+                               __kuid_val(current_uid()),
+                               tid.type);
+                return 0;
+              }
               if(   (rsbac_rc_check_type_comp(T_USER, tid.type, (enum rsbac_adf_request_t) RCR_ADMIN, 0) == NOT_GRANTED)
                  && (err=rsbac_rc_test_role_admin(TRUE))
                 )
@@ -459,6 +491,14 @@ int rsbac_rc_sys_set_item(
             case RI_type_process_remove:
               if(target != RT_TYPE)
                 return -RSBAC_EINVALIDTARGET;
+              /* you cannot have rights to not existing types and we do not care for them anyway */
+              if (item == RI_type_process_remove && !rsbac_rc_type_exists(ta_number, T_PROCESS, tid.type)) {
+                rsbac_pr_debug(adf_rc, "pid %u(%s), owner %u, try to remove not existing PROCESS type %u ignored!\n",
+                               current->pid, current->comm,
+                               __kuid_val(current_uid()),
+                               tid.type);
+                return 0;
+              }
               if(   (rsbac_rc_check_type_comp(T_PROCESS, tid.type, (enum rsbac_adf_request_t) RCR_ADMIN, 0) == NOT_GRANTED)
                  && (err=rsbac_rc_test_role_admin(TRUE))
                 )
@@ -516,6 +556,14 @@ int rsbac_rc_sys_set_item(
             case RI_type_group_remove:
               if(target != RT_TYPE)
                 return -RSBAC_EINVALIDTARGET;
+              /* you cannot have rights to not existing types and we do not care for them anyway */
+              if (item == RI_type_group_remove && !rsbac_rc_type_exists(ta_number, T_GROUP, tid.type)) {
+                rsbac_pr_debug(adf_rc, "pid %u(%s), owner %u, try to remove not existing GROUP type %u ignored!\n",
+                               current->pid, current->comm,
+                               __kuid_val(current_uid()),
+                               tid.type);
+                return 0;
+              }
               if(   (rsbac_rc_check_type_comp(T_GROUP, tid.type, (enum rsbac_adf_request_t) RCR_ADMIN, 0) == NOT_GRANTED)
                  && (err=rsbac_rc_test_role_admin(TRUE))
                 )
@@ -545,6 +593,14 @@ int rsbac_rc_sys_set_item(
             case RI_type_netdev_remove:
               if(target != RT_TYPE)
                 return -RSBAC_EINVALIDTARGET;
+              /* you cannot have rights to not existing types and we do not care for them anyway */
+              if (item == RI_type_netdev_remove && !rsbac_rc_type_exists(ta_number, T_NETDEV, tid.type)) {
+                rsbac_pr_debug(adf_rc, "pid %u(%s), owner %u, try to remove not existing NETDEV type %u ignored!\n",
+                               current->pid, current->comm,
+                               __kuid_val(current_uid()),
+                               tid.type);
+                return 0;
+              }
               if(   (rsbac_rc_check_type_comp(T_NETDEV, tid.type, (enum rsbac_adf_request_t) RCR_ADMIN, 0) == NOT_GRANTED)
                  && (err=rsbac_rc_test_role_admin(TRUE))
                 )
@@ -574,6 +630,14 @@ int rsbac_rc_sys_set_item(
             case RI_type_nettemp_remove:
               if(target != RT_TYPE)
                 return -RSBAC_EINVALIDTARGET;
+              /* you cannot have rights to not existing types and we do not care for them anyway */
+              if (item == RI_type_nettemp_remove && !rsbac_rc_type_exists(ta_number, T_NETTEMP, tid.type)) {
+                rsbac_pr_debug(adf_rc, "pid %u(%s), owner %u, try to remove not existing NETTEMP type %u ignored!\n",
+                               current->pid, current->comm,
+                               __kuid_val(current_uid()),
+                               tid.type);
+                return 0;
+              }
               if(   (rsbac_rc_check_type_comp(T_NETTEMP, tid.type, (enum rsbac_adf_request_t) RCR_ADMIN, 0) == NOT_GRANTED)
                  && (err=rsbac_rc_test_role_admin(TRUE))
                 )
@@ -603,6 +667,14 @@ int rsbac_rc_sys_set_item(
             case RI_type_netobj_remove:
               if(target != RT_TYPE)
                 return -RSBAC_EINVALIDTARGET;
+              /* you cannot have rights to not existing types and we do not care for them anyway */
+              if (item == RI_type_netobj_remove && !rsbac_rc_type_exists(ta_number, T_NETOBJ, tid.type)) {
+                rsbac_pr_debug(adf_rc, "pid %u(%s), owner %u, try to remove not existing NETOBJ type %u ignored!\n",
+                               current->pid, current->comm,
+                               __kuid_val(current_uid()),
+                               tid.type);
+                return 0;
+              }
               if(   (rsbac_rc_check_type_comp(T_NETOBJ, tid.type, (enum rsbac_adf_request_t) RCR_ADMIN, 0) == NOT_GRANTED)
                  && (err=rsbac_rc_test_role_admin(TRUE))
                 )
