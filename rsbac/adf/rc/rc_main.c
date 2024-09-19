@@ -6,7 +6,7 @@
 /*                                                   */
 /* Author and (c) 1999-2024: Amon Ott <ao@rsbac.org> */
 /*                                                   */
-/* Last modified: 08/Jan/2024                        */
+/* Last modified: 19/Sep/2024                        */
 /*************************************************** */
 
 #include <linux/string.h>
@@ -182,7 +182,8 @@ check_comp_rc(enum rsbac_target_t target,
 		}
 	}
 
-	/* get type_comp_xxx of role */
+restart:
+	/* check type_comp_xxx of role */
 	i_rc_subtid.type = i_attr_val2.rc_type;
 	if (rsbac_rc_check_comp(i_attr_val1.rc_role,
 				i_rc_subtid, i_rc_item, (enum rsbac_rc_special_rights_t) request)) {
@@ -242,6 +243,44 @@ check_comp_rc(enum rsbac_target_t target,
 #endif
 		return GRANTED;
 	} else {
+		if (unlikely(i_attr_val1.rc_role != RSBAC_RC_GENERAL_ROLE && !rsbac_rc_role_exists(0, i_attr_val1.rc_role))) {
+			rsbac_printk(KERN_INFO "check_comp_rc(): pid %u(%s): invalid rc_role %u, adjusting to default %u!\n",
+				     pid_nr(caller_pid),
+				     current->comm,
+				     i_attr_val1.rc_role,
+				     RSBAC_RC_GENERAL_ROLE);
+			i_attr_val1.rc_role = RSBAC_RC_GENERAL_ROLE;
+			goto restart;
+		}
+		if (unlikely(i_rc_subtid.type != RSBAC_RC_GENERAL_TYPE && !rsbac_rc_type_exists(0, target, i_rc_subtid.type))) {
+			char * target_type_name = rsbac_kmalloc(RSBAC_MAXNAMELEN);
+			#ifdef CONFIG_RSBAC_LOG_FULL_PATH
+			char * target_id_name = rsbac_kmalloc(CONFIG_RSBAC_MAX_PATH_LEN + RSBAC_MAXNAMELEN);
+			/* max. path name len + some extra */
+			#else
+			char * target_id_name = rsbac_kmalloc(2 * RSBAC_MAXNAMELEN);
+			/* max. file name len + some extra */
+			#endif
+
+			if (target_type_name && target_id_name) {
+			        target_type_name[0] = (char) 0;
+			        target_id_name[0] = (char) 0;
+			        get_target_name(target_type_name, target, target_id_name, tid);
+				rsbac_printk(KERN_INFO "check_comp_rc(): pid %u(%s): invalid rc_type %u for target_type %s, tid %s, adjusting to default %u!\n",
+					pid_nr(caller_pid),
+					current->comm,
+					i_rc_subtid.type,
+					target_type_name,
+					target_id_name,
+					RSBAC_RC_GENERAL_TYPE);
+			}
+			if (target_type_name)
+				rsbac_kfree(target_type_name);
+			if (target_id_name)
+				rsbac_kfree(target_id_name);
+			i_attr_val2.rc_type = RSBAC_RC_GENERAL_TYPE;
+			goto restart;
+		}
 #ifdef CONFIG_RSBAC_DEBUG
 		if (rsbac_debug_adf_rc && ( (request > R_NONE) || (rsbac_log_levels[request][target] != LL_none) ) ) {
 			char *tmp = rsbac_kmalloc(RSBAC_MAXNAMELEN);
