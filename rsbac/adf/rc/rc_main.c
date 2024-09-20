@@ -6,7 +6,7 @@
 /*                                                   */
 /* Author and (c) 1999-2024: Amon Ott <ao@rsbac.org> */
 /*                                                   */
-/* Last modified: 19/Sep/2024                        */
+/* Last modified: 20/Sep/2024                        */
 /*************************************************** */
 
 #include <linux/string.h>
@@ -282,7 +282,13 @@ restart:
 			goto restart;
 		}
 #ifdef CONFIG_RSBAC_DEBUG
-		if (rsbac_debug_adf_rc && ( (request > R_NONE) || (rsbac_log_levels[request][target] != LL_none) ) ) {
+		if (   (   (rsbac_debug_adf_rc == 1 && !rsbac_rc_check_log(i_attr_val1.rc_role, i_rc_subtid.type, i_rc_item, (enum rsbac_rc_special_rights_t) request, RL_NEVER) )
+		        || rsbac_debug_adf_rc == 2
+		       )
+		    && (   request > R_NONE
+		        || rsbac_log_levels[request][target] != LL_none
+		       )
+		   ) {
 			char *tmp = rsbac_kmalloc(RSBAC_MAXNAMELEN);
 
 			if (tmp) {
@@ -507,7 +513,13 @@ check_comp_rc_scd(enum rsbac_rc_scd_type_t scd_type,
 		}
 #endif
 #ifdef CONFIG_RSBAC_DEBUG
-		if (rsbac_debug_adf_rc && ( (request > R_NONE) || (rsbac_log_levels[request][T_SCD] != LL_none) ) ) {
+		if (   (   (rsbac_debug_adf_rc == 1 && !rsbac_rc_check_log(i_attr_val1.rc_role, i_rc_subtid.type, RI_type_comp_scd, (enum rsbac_rc_special_rights_t) request, RL_NEVER) )
+		        || rsbac_debug_adf_rc == 2
+		       )
+		    && (   request > R_NONE
+		        || rsbac_log_levels[request][T_SCD] != LL_none
+		       )
+		   ) {
 #ifdef CONFIG_RSBAC_LOG_PSEUDO
 			u_int pseudo = 0;
 			union rsbac_attribute_value_t i_attr_val3;
@@ -902,7 +914,13 @@ rsbac_rc_check_type_comp(enum rsbac_target_t target,
 		return GRANTED;
 	} else {
 #ifdef CONFIG_RSBAC_DEBUG
-		if (rsbac_debug_adf_rc && ( ((u_int) request > R_NONE) || (rsbac_log_levels[request][target] != LL_none) ) ) {
+		if (   (   (rsbac_debug_adf_rc == 1 && !rsbac_rc_check_log(i_attr_val1.rc_role, i_rc_subtid.type, i_rc_item, request, RL_NEVER) )
+		        || rsbac_debug_adf_rc == 2
+		       )
+		    && (   (u_int) request > R_NONE
+		        || rsbac_log_levels[request][target] != LL_none
+		       )
+		   ) {
 			char tmp[50];
 			char tmp2[RSBAC_MAXNAMELEN];
 
