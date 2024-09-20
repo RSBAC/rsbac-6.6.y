@@ -282,7 +282,11 @@ restart:
 			goto restart;
 		}
 #ifdef CONFIG_RSBAC_DEBUG
-		if (   (   (rsbac_debug_adf_rc == 1 && !rsbac_rc_check_log(i_attr_val1.rc_role, i_rc_subtid.type, i_rc_item, (enum rsbac_rc_special_rights_t) request, RL_NEVER) )
+		if (   (   (   rsbac_debug_adf_rc == 1
+#ifdef CONFIG_RSBAC_RC_FORCE_LOG
+		            && !rsbac_rc_check_log(i_attr_val1.rc_role, i_rc_subtid.type, i_rc_item, (enum rsbac_rc_special_rights_t) request, RL_NEVER)
+#endif
+		           )
 		        || rsbac_debug_adf_rc == 2
 		       )
 		    && (   request > R_NONE
@@ -513,7 +517,11 @@ check_comp_rc_scd(enum rsbac_rc_scd_type_t scd_type,
 		}
 #endif
 #ifdef CONFIG_RSBAC_DEBUG
-		if (   (   (rsbac_debug_adf_rc == 1 && !rsbac_rc_check_log(i_attr_val1.rc_role, i_rc_subtid.type, RI_type_comp_scd, (enum rsbac_rc_special_rights_t) request, RL_NEVER) )
+		if (   (   (   rsbac_debug_adf_rc == 1
+#ifdef CONFIG_RSBAC_RC_FORCE_LOG
+		            && !rsbac_rc_check_log(i_attr_val1.rc_role, i_rc_subtid.type, RI_type_comp_scd, (enum rsbac_rc_special_rights_t) request, RL_NEVER)
+#endif
+		           )
 		        || rsbac_debug_adf_rc == 2
 		       )
 		    && (   request > R_NONE
@@ -914,7 +922,11 @@ rsbac_rc_check_type_comp(enum rsbac_target_t target,
 		return GRANTED;
 	} else {
 #ifdef CONFIG_RSBAC_DEBUG
-		if (   (   (rsbac_debug_adf_rc == 1 && !rsbac_rc_check_log(i_attr_val1.rc_role, i_rc_subtid.type, i_rc_item, request, RL_NEVER) )
+		if (   (   (   rsbac_debug_adf_rc == 1
+#ifdef CONFIG_RSBAC_RC_FORCE_LOG
+		            && !rsbac_rc_check_log(i_attr_val1.rc_role, i_rc_subtid.type, i_rc_item, request, RL_NEVER)
+#endif
+		           )
 		        || rsbac_debug_adf_rc == 2
 		       )
 		    && (   (u_int) request > R_NONE
