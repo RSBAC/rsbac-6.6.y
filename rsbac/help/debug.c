@@ -6,7 +6,7 @@
 /*                                           */
 /* Debug and logging functions for all parts */
 /*                                           */
-/* Last modified: 22/Aug/2024                */
+/* Last modified: 20/Sep/2024                */
 /******************************************* */
  
 #include <linux/uaccess.h>
@@ -371,7 +371,8 @@ __setup("rsbac_no_defaults", no_defaults_setup);
   static int R_INIT rc_learn_setup(char *line)
     {
       rsbac_rc_learn = 1;
-      rsbac_debug_adf_rc = 1;
+      if (!rsbac_debug_adf_rc)
+        rsbac_debug_adf_rc = 1;
       return 1;
     }
   __setup("rsbac_rc_learn", rc_learn_setup);
@@ -430,7 +431,8 @@ __setup("rsbac_no_defaults", no_defaults_setup);
     {
   #if defined(CONFIG_RSBAC_RC_LEARN)
       rsbac_rc_learn = 1;
-      rsbac_debug_adf_rc = 1;
+      if (!rsbac_debug_adf_rc)
+        rsbac_debug_adf_rc = 1;
   #endif
   #if defined(CONFIG_RSBAC_AUTH_LEARN)
       rsbac_auth_learn = 1;
@@ -555,6 +557,12 @@ __setup("rsbac_no_defaults", no_defaults_setup);
 
     #if defined(CONFIG_RSBAC_CAP_PROC_HIDE)
     /* RSBAC: hide processes? */
+  static int R_INIT cap_process_hiding_setup(char *line)
+    {
+      rsbac_cap_process_hiding = 1;
+      return 1;
+    }
+  __setup("rsbac_cap_process_hiding", cap_process_hiding_setup);
   static int R_INIT cap_process_hiding_setup2(char *line)
     {
       rsbac_cap_process_hiding = simple_strtoul(line, NULL, 0);
@@ -563,12 +571,6 @@ __setup("rsbac_no_defaults", no_defaults_setup);
       return 1;
     }
   __setup("rsbac_cap_process_hiding=", cap_process_hiding_setup2);
-  static int R_INIT cap_process_hiding_setup(char *line)
-    {
-      rsbac_cap_process_hiding = 1;
-      return 1;
-    }
-  __setup("rsbac_cap_process_hiding", cap_process_hiding_setup);
     #endif
     #if defined(CONFIG_RSBAC_CAP_FD_HIDE)
     /* RSBAC: hide filesystem objects? */
@@ -885,6 +887,14 @@ __setup("rsbac_no_defaults", no_defaults_setup);
       return 1;
     }
   __setup("rsbac_debug_adf_rc", debug_adf_rc_setup);
+  static int R_INIT debug_adf_rc_setup2(char *line)
+    {
+      rsbac_debug_adf_rc = simple_strtoul(line, NULL, 0);
+      if (rsbac_debug_adf_rc > 2)
+        rsbac_debug_adf_rc = 2;
+      return 1;
+    }
+  __setup("rsbac_debug_adf_rc=", debug_adf_rc_setup2);
   #if defined(CONFIG_RSBAC_SWITCH_RC) && defined(CONFIG_RSBAC_SWITCH_BOOT_OFF)
 //    module_param(rsbac_switch_off_rc, bool, S_IRUGO);
   static int R_INIT switch_off_rc_setup(char *line)
@@ -3798,8 +3808,8 @@ static ssize_t debug_proc_write(struct file * file, const char __user * buf, siz
             goto out;
 
         debug_level = simple_strtoul(p, NULL, 0);
-        /* only accept 0 or 1 */
-        if(!debug_level || (debug_level == 1))
+        /* only accept 0, 1 or 2 */
+        if(!debug_level || (debug_level == 1) || (debug_level == 2))
           {
             if (rsbac_debug_adf_rc != debug_level) {
               rsbac_printk(KERN_INFO
@@ -5150,7 +5160,7 @@ inline void __init rsbac_init_debug(void)
     if(rsbac_debug_aef_rc)
       rsbac_printk(KERN_DEBUG "rsbac_debug_aef_rc is set\n");
     if(rsbac_debug_adf_rc)
-      rsbac_printk(KERN_DEBUG "rsbac_debug_adf_rc is set\n");
+      rsbac_printk(KERN_DEBUG "rsbac_debug_adf_rc is %u\n", rsbac_debug_adf_rc);
     #endif
 
     #if defined(CONFIG_RSBAC_AUTH)
