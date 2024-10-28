@@ -312,7 +312,7 @@ __vfs_setxattr_locked(struct mnt_idmap *idmap, struct dentry *dentry,
 	rsbac_target_id.file.inode  = inode->i_ino;
 	rsbac_target_id.file.dentry_p = dentry;
 	rsbac_attribute_value.dummy = 0;
-	if (!rsbac_adf_request(R_MODIFY_PERMISSIONS_DATA,
+	if (!rsbac_adf_request(R_MODIFY_XATTR,
 				task_pid(current),
 				rsbac_target,
 				rsbac_target_id,
@@ -495,7 +495,7 @@ vfs_getxattr(struct mnt_idmap *idmap, struct dentry *dentry,
 	rsbac_target_id.file.inode  = inode->i_ino;
 	rsbac_target_id.file.dentry_p = dentry;
 	rsbac_attribute_value.dummy = 0;
-	if (!rsbac_adf_request(R_GET_PERMISSIONS_DATA,
+	if (!rsbac_adf_request(R_GET_XATTR,
 				task_pid(current),
 				rsbac_target,
 				rsbac_target_id,
@@ -576,7 +576,7 @@ vfs_listxattr(struct dentry *dentry, char *list, size_t size)
 	rsbac_target_id.file.inode  = inode->i_ino;
 	rsbac_target_id.file.dentry_p = dentry;
 	rsbac_attribute_value.dummy = 0;
-	if (!rsbac_adf_request(R_GET_PERMISSIONS_DATA,
+	if (!rsbac_adf_request(R_GET_XATTR,
 				task_pid(current),
 				rsbac_target,
 				rsbac_target_id,
@@ -664,7 +664,7 @@ __vfs_removexattr_locked(struct mnt_idmap *idmap,
 	rsbac_target_id.file.inode  = inode->i_ino;
 	rsbac_target_id.file.dentry_p = dentry;
 	rsbac_attribute_value.dummy = 0;
-	if (!rsbac_adf_request(R_MODIFY_PERMISSIONS_DATA,
+	if (!rsbac_adf_request(R_MODIFY_XATTR,
 				task_pid(current),
 				rsbac_target,
 				rsbac_target_id,
