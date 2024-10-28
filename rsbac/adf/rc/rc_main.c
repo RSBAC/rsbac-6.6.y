@@ -2575,6 +2575,33 @@ rsbac_adf_request_rc(enum rsbac_adf_request_t request,
 		default:
 			return DO_NOT_CARE;
 		}
+
+	case R_GET_XATTR:
+		switch (target) {
+		case T_FILE:
+		case T_DIR:
+		case T_FIFO:
+		case T_SYMLINK:
+	        case T_UNIXSOCK:
+			return check_comp_rc (target, tid, request, caller_pid);
+
+		default:
+			return DO_NOT_CARE;
+		};
+
+	case R_MODIFY_XATTR:
+		switch (target) {
+		case T_FILE:
+		case T_DIR:
+		case T_FIFO:
+		case T_SYMLINK:
+	        case T_UNIXSOCK:
+			return check_comp_rc (target, tid, request, caller_pid);
+
+		default:
+			return DO_NOT_CARE;
+		};
+
 	case RCR_SELECT:
 		switch (target) {
 		case T_FILE:

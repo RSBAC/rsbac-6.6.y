@@ -4,11 +4,11 @@
 /* Facility (ADF) - Mandatory Access Control         */
 /* File: rsbac/adf/mac/main.c                        */
 /*                                                   */
-/* Author and (c) 1999-2023: Amon Ott <ao@rsbac.org> */
+/* Author and (c) 1999-2024: Amon Ott <ao@rsbac.org> */
 /* MAC_LIGHT Modifications (c) 2000 Stanislav Ievlev */
 /*                     and (c) 2001 Amon Ott         */
 /*                                                   */
-/* Last modified: 31/Mar/2023                        */
+/* Last modified: 28/Oct/2024                        */
 /*************************************************** */
 
 #include <linux/string.h>
@@ -3428,6 +3428,22 @@ rsbac_adf_request_mac(enum rsbac_adf_request_t request,
 						     FALSE));
 #endif
 			/* all other cases are unknown */
+		default:
+			return DO_NOT_CARE;
+		}
+
+	case R_MODIFY_XATTR:
+		switch (target) {
+		case T_FILE:
+		case T_DIR:
+		case T_FIFO:
+		case T_SYMLINK:
+		case T_UNIXSOCK:
+			/* and perform auto-write without setting attributes */
+			return (auto_write(caller_pid,
+					   target, tid, FALSE));
+			break;
+
 		default:
 			return DO_NOT_CARE;
 		}
