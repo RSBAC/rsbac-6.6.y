@@ -3,7 +3,7 @@
 /* Author and (c) 1999-2024:           */
 /*   Amon Ott <ao@rsbac.org>           */
 /* Helper functions for all parts      */
-/* Last modified: 26/Jul/2024          */
+/* Last modified: 28/Oct/2024          */
 /************************************* */
 
 #include <rsbac/types.h>
@@ -80,6 +80,8 @@ static char request_list[R_NONE + 1][24] = {
 	"LOCK",
 	"AUTHENTICATE",
 	"MOVETO",
+	"GET_XATTR",
+	"MODIFY_XATTR",
 	"NONE"
 };
 
