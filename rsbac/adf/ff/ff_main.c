@@ -4,9 +4,9 @@
 /* Facility (ADF) - File Flags                       */
 /* File: rsbac/adf/ff/main.c                         */
 /*                                                   */
-/* Author and (c) 1999-2021: Amon Ott <ao@rsbac.org> */
+/* Author and (c) 1999-2024: Amon Ott <ao@rsbac.org> */
 /*                                                   */
-/* Last modified: 06/Dec/2021                        */
+/* Last modified: 28/Oct/2024                        */
 /*************************************************** */
 
 #include <linux/types.h>
@@ -670,6 +670,24 @@ inline enum rsbac_adf_req_ret_t
 
                 /* all other cases are undefined */
                 default: return DO_NOT_CARE;
+              }
+
+        case R_MODIFY_XATTR:
+            switch(target)
+              {
+                case T_FILE:
+                case T_FIFO:
+                case T_SYMLINK:
+                case T_UNIXSOCK:
+                  return(check_flags_ff(target,tid,
+                                        FF_read_only | FF_execute_only));
+                case T_DIR:
+                  return(check_flags_ff(target,tid,
+                                        FF_read_only | FF_search_only));
+
+                /* all other cases are undefined */
+                default:
+                  return DO_NOT_CARE;
               }
 
 
