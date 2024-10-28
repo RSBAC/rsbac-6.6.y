@@ -1,9 +1,9 @@
 /************************************ */
 /* Rule Set Based Access Control      */
-/* Author and (c) 1999-2021: Amon Ott */
+/* Author and (c) 1999-2024: Amon Ott */
 /* Groups of ADF request for          */
 /* administration                     */
-/* Last modified: 06/Dec/2021         */
+/* Last modified: 28/Oct/2024         */
 /************************************ */
 
 #ifndef __RSBAC_REQUEST_GROUPS_H
@@ -18,7 +18,8 @@
   ((rsbac_request_vector_t) 1 << R_READ_OPEN) | \
   ((rsbac_request_vector_t) 1 << R_SEARCH) | \
   ((rsbac_request_vector_t) 1 << R_TERMINATE) | \
-  ((rsbac_request_vector_t) 1 << R_AUTHENTICATE) \
+  ((rsbac_request_vector_t) 1 << R_AUTHENTICATE) | \
+  ((rsbac_request_vector_t) 1 << R_GET_XATTR) \
   )
 
 #define RSBAC_WRITE_REQUEST_VECTOR (\
@@ -44,7 +45,8 @@
   ((rsbac_request_vector_t) 1 << R_WRITE_OPEN) | \
   ((rsbac_request_vector_t) 1 << R_IOCTL) | \
   ((rsbac_request_vector_t) 1 << R_LOCK) | \
-  ((rsbac_request_vector_t) 1 << R_MOVETO) \
+  ((rsbac_request_vector_t) 1 << R_MOVETO) | \
+  ((rsbac_request_vector_t) 1 << R_MODIFY_XATTR) \
   )
 
 #define RSBAC_READ_WRITE_REQUEST_VECTOR (\
@@ -80,7 +82,9 @@
   ((rsbac_request_vector_t) 1 << R_NET_SHUTDOWN) | \
   ((rsbac_request_vector_t) 1 << R_IOCTL) | \
   ((rsbac_request_vector_t) 1 << R_LOCK) | \
-  ((rsbac_request_vector_t) 1 << R_MOVETO) \
+  ((rsbac_request_vector_t) 1 << R_MOVETO) | \
+  ((rsbac_request_vector_t) 1 << R_GET_XATTR) | \
+  ((rsbac_request_vector_t) 1 << R_MODIFY_XATTR) \
   )
 
 #define RSBAC_READ_WRITE_OPEN_REQUEST_VECTOR (\
@@ -147,7 +151,9 @@
   ((rsbac_request_vector_t) 1 << R_NET_SHUTDOWN) | \
   ((rsbac_request_vector_t) 1 << R_IOCTL) | \
   ((rsbac_request_vector_t) 1 << R_LOCK) | \
-  ((rsbac_request_vector_t) 1 << R_MOVETO) \
+  ((rsbac_request_vector_t) 1 << R_MOVETO) | \
+  ((rsbac_request_vector_t) 1 << R_GET_XATTR) | \
+  ((rsbac_request_vector_t) 1 << R_MODIFY_XATTR) \
   )
 
 #define RSBAC_DEV_REQUEST_VECTOR (\
@@ -364,7 +370,9 @@
   ((rsbac_request_vector_t) 1 << R_NET_SHUTDOWN) | \
   ((rsbac_request_vector_t) 1 << R_IOCTL) | \
   ((rsbac_request_vector_t) 1 << R_LOCK) | \
-  ((rsbac_request_vector_t) 1 << R_MOVETO) \
+  ((rsbac_request_vector_t) 1 << R_MOVETO) | \
+  ((rsbac_request_vector_t) 1 << R_GET_XATTR) | \
+  ((rsbac_request_vector_t) 1 << R_MODIFY_XATTR) \
   )
 
 /* NW specials */
@@ -411,7 +419,8 @@
   ((rsbac_request_vector_t) 1 << R_GET_PERMISSIONS_DATA) | \
   ((rsbac_request_vector_t) 1 << R_GET_STATUS_DATA) | \
   ((rsbac_request_vector_t) 1 << R_READ) | \
-  ((rsbac_request_vector_t) 1 << R_SEARCH) \
+  ((rsbac_request_vector_t) 1 << R_SEARCH) | \
+  ((rsbac_request_vector_t) 1 << R_GET_XATTR) \
   )
 
 #define RSBAC_NWM_REQUEST_VECTOR (\
@@ -424,7 +433,8 @@
   ((rsbac_request_vector_t) 1 << R_LINK_HARD) | \
   ((rsbac_request_vector_t) 1 << R_MODIFY_ACCESS_DATA) | \
   ((rsbac_request_vector_t) 1 << R_MODIFY_PERMISSIONS_DATA) | \
-  ((rsbac_request_vector_t) 1 << R_RENAME) \
+  ((rsbac_request_vector_t) 1 << R_RENAME) | \
+  ((rsbac_request_vector_t) 1 << R_MODIFY_XATTR) \
   )
 
 #endif
