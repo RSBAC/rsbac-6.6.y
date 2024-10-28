@@ -4,7 +4,7 @@
 /*   Amon Ott <ao@rsbac.org>         */
 /* API: Data types for attributes    */
 /*      and standard module calls    */
-/* Last modified: 29/Jul/2024        */
+/* Last modified: 28/Oct/2024        */
 /*********************************** */
 
 #ifndef __RSBAC_TYPES_H
@@ -575,6 +575,8 @@ enum  rsbac_adf_request_t {
                         R_LOCK,
                         R_AUTHENTICATE,
                         R_MOVETO,
+                        R_GET_XATTR,
+                        R_MODIFY_XATTR,
                         R_NONE
                       };
 
