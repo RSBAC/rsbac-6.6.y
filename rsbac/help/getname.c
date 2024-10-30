@@ -3,7 +3,7 @@
 /* Author and (c) 1999-2024:           */
 /*   Amon Ott <ao@rsbac.org>           */
 /* Helper functions for all parts      */
-/* Last modified: 28/Oct/2024          */
+/* Last modified: 30/Oct/2024          */
 /************************************* */
 
 #include <rsbac/types.h>
@@ -348,6 +348,7 @@ static char attribute_list[A_none + 1][23] = {
 	"memfd_name",
 	"rc_force_ipc_type",
 	"memfd_keep",
+	"xattr_name",
 	"none"
 };
 
@@ -965,6 +966,10 @@ char *get_attribute_value_name(char *attr_val_name,
 			break;
 		case A_memfd_name:
 			snprintf(attr_val_name, RSBAC_MAXNAMELEN - 1, "%s", attr_val_p->memfd_name);
+			attr_val_name[RSBAC_MAXNAMELEN - 1] = 0;
+			break;
+		case A_xattr_name:
+			snprintf(attr_val_name, RSBAC_MAXNAMELEN - 1, "%s", attr_val_p->xattr_name);
 			attr_val_name[RSBAC_MAXNAMELEN - 1] = 0;
 			break;
 		default:
