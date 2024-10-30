@@ -4,7 +4,7 @@
 /*   Amon Ott <ao@rsbac.org>         */
 /* API: Data types for attributes    */
 /*      and standard module calls    */
-/* Last modified: 28/Oct/2024        */
+/* Last modified: 30/Oct/2024        */
 /*********************************** */
 
 #ifndef __RSBAC_TYPES_H
@@ -799,6 +799,7 @@ enum rsbac_attribute_t
     A_memfd_name,
     A_rc_force_ipc_type,
     A_memfd_keep,
+    A_xattr_name,
     A_none};
 
 #define A_last_user A_cap_fd_hiding
@@ -924,6 +925,7 @@ union rsbac_attribute_value_t
          char                      * memfd_name;
          rsbac_boolean_t             rc_force_ipc_type;
          rsbac_boolean_t             memfd_keep;
+         const char                * xattr_name;
          u_char                      u_char_dummy;
          u_short                     u_short_dummy;
          int                         dummy;
