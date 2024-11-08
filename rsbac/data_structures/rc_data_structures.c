@@ -3,7 +3,7 @@
 /* Implementation of RC data structures              */
 /* Author and (C) 1999-2024: Amon Ott <ao@rsbac.org> */
 /*                                                   */
-/* Last modified: 16/Jan/2024                        */
+/* Last modified: 08/Nov/2024                        */
 /*************************************************** */
 
 #include <linux/string.h>
@@ -2731,6 +2731,7 @@ rsbac_boolean_t rsbac_rc_type_exists(rsbac_list_ta_number_t ta_number,
 	case T_DIR:
 	case T_FIFO:
 	case T_SYMLINK:
+	case T_UNIXSOCK:
 	case T_FD:
 		return rsbac_ta_list_exist(ta_number, type_fd_handle,
 					   &type);
