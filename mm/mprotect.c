@@ -822,10 +822,16 @@ static int do_mprotect_pkey(unsigned long start, size_t len,
 		if ((prot & PROT_EXEC) && !(vma->vm_flags & PROT_EXEC)) {
 			rsbac_pr_debug(aef, "calling ADF\n");
 			if (vma->vm_file) {
-		                rsbac_target = T_FILE;
-				rsbac_target_id.file.device = vma->vm_file->f_path.dentry->d_inode->i_sb->s_dev;
-				rsbac_target_id.file.inode = vma->vm_file->f_path.dentry->d_inode->i_ino;
-				rsbac_target_id.file.dentry_p = vma->vm_file->f_path.dentry;
+				if (vma->vm_file->f_path.dentry->d_inode->i_rsbac_memfd) {
+					rsbac_target = T_IPC;
+					rsbac_target_id.ipc.type = I_memfd;
+					rsbac_target_id.ipc.id.id_nr = (u_long) vma->vm_file->f_path.dentry->d_inode;
+				} else {
+			                rsbac_target = T_FILE;
+					rsbac_target_id.file.device = vma->vm_file->f_path.dentry->d_inode->i_sb->s_dev;
+					rsbac_target_id.file.inode = vma->vm_file->f_path.dentry->d_inode->i_ino;
+					rsbac_target_id.file.dentry_p = vma->vm_file->f_path.dentry;
+				}
 			} else {
 				rsbac_target = T_NONE;
 				rsbac_target_id.dummy = 0;
