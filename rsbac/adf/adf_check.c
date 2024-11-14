@@ -6,7 +6,7 @@
 /*                                                   */
 /* Author and (c) 1999-2024: Amon Ott <ao@rsbac.org> */
 /*                                                   */
-/* Last modified: 28/Oct/2024                        */
+/* Last modified: 14/Nov/2024                        */
 /*************************************************** */
 
 #include <linux/string.h>
@@ -41,7 +41,7 @@ rsbac_adf_request_check(enum rsbac_adf_request_t request,
 		case T_FILE:
 		case T_SYMLINK:
 		case T_FIFO:
-                case T_UNIXSOCK:
+		case T_UNIXSOCK:
 		case T_DEV:
 		case T_NETOBJ:
 #if defined(CONFIG_RSBAC_UM)
@@ -139,6 +139,7 @@ rsbac_adf_request_check(enum rsbac_adf_request_t request,
 	case R_MAP_EXEC:
 		switch (target) {
 		case T_FILE:
+		case T_IPC:
 		case T_NONE:
 			return DO_NOT_CARE;
 			/* all other cases are undefined */
@@ -624,6 +625,7 @@ rsbac_adf_request_check(enum rsbac_adf_request_t request,
 		case T_FIFO:
 		case T_SYMLINK:
 		case T_UNIXSOCK:
+		case T_IPC:
 		case T_DEV:
 			return DO_NOT_CARE;
 			/* all other cases are undefined */
@@ -634,6 +636,7 @@ rsbac_adf_request_check(enum rsbac_adf_request_t request,
 	case R_TRUNCATE:
 		switch (target) {
 		case T_FILE:
+		case T_IPC:
 			return DO_NOT_CARE;
 			/* all other cases are undefined */
 		default:
@@ -1014,6 +1017,7 @@ int rsbac_adf_set_attr_check(enum rsbac_adf_request_t request,
 	case R_TRUNCATE:
 		switch (target) {
 		case T_FILE:
+		case T_IPC:
 			return 0;
 			/* all other cases are undefined */
 		default:
@@ -1052,6 +1056,7 @@ int rsbac_adf_set_attr_check(enum rsbac_adf_request_t request,
 	case R_MAP_EXEC:
 		switch (target) {
 		case T_FILE:
+		case T_IPC:
 		case T_NONE:
 			return 0;
 			/* all other cases are undefined */
