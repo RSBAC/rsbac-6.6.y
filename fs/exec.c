@@ -136,6 +136,7 @@ SYSCALL_DEFINE1(uselib, const char __user *, library)
 	};
 
 #ifdef CONFIG_RSBAC
+	enum  rsbac_target_t rsbac_target;
 	union rsbac_target_id_t rsbac_target_id;
 	union rsbac_attribute_value_t rsbac_attribute_value;
 #endif
@@ -159,13 +160,20 @@ SYSCALL_DEFINE1(uselib, const char __user *, library)
 
 #ifdef CONFIG_RSBAC
 	rsbac_pr_debug(aef, "calling ADF\n");
-	rsbac_target_id.file.device = file->f_path.dentry->d_inode->i_sb->s_dev;
-	rsbac_target_id.file.inode  = file->f_path.dentry->d_inode->i_ino;
-	rsbac_target_id.file.dentry_p = file->f_path.dentry;
+	if (file->f_path.dentry->d_inode->i_rsbac_memfd) {
+		rsbac_target = T_IPC;
+		rsbac_target_id.ipc.type = I_memfd;
+		rsbac_target_id.ipc.id.id_nr = (u_long) file->f_path.dentry->d_inode;
+	} else {
+		rsbac_target = T_FILE;
+		rsbac_target_id.file.device = file->f_path.dentry->d_inode->i_sb->s_dev;
+		rsbac_target_id.file.inode  = file->f_path.dentry->d_inode->i_ino;
+		rsbac_target_id.file.dentry_p = file->f_path.dentry;
+	}
 	rsbac_attribute_value.dummy = 0;
 	if (!rsbac_adf_request(R_MAP_EXEC,
 				task_pid(current),
-				T_FILE,
+				rsbac_target,
 				rsbac_target_id,
 				A_none,
 				rsbac_attribute_value))
@@ -204,7 +212,7 @@ exit:
 		rsbac_new_target_id.dummy = 0;
 		if (unlikely(rsbac_adf_set_attr(R_MAP_EXEC,
 					task_pid(current),
-					T_FILE,
+					rsbac_target,
 					rsbac_target_id,
 					T_NONE,
 					rsbac_new_target_id,

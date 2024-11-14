@@ -3,7 +3,7 @@
 /* Author and (c) 1999-2024: Amon Ott */
 /* Groups of ADF request for          */
 /* administration                     */
-/* Last modified: 28/Oct/2024         */
+/* Last modified: 14/Nov/2024         */
 /************************************ */
 
 #ifndef __RSBAC_REQUEST_GROUPS_H
@@ -196,8 +196,11 @@
   ((rsbac_request_vector_t) 1 << R_READ_OPEN) | \
   ((rsbac_request_vector_t) 1 << R_READ_WRITE_OPEN) | \
   ((rsbac_request_vector_t) 1 << R_RENAME) | \
+  ((rsbac_request_vector_t) 1 << R_TRACE) | \
+  ((rsbac_request_vector_t) 1 << R_TRUNCATE) | \
   ((rsbac_request_vector_t) 1 << R_WRITE) | \
   ((rsbac_request_vector_t) 1 << R_WRITE_OPEN) | \
+  ((rsbac_request_vector_t) 1 << R_MAP_EXEC) | \
   ((rsbac_request_vector_t) 1 << R_NET_SHUTDOWN) | \
   ((rsbac_request_vector_t) 1 << R_BIND) | \
   ((rsbac_request_vector_t) 1 << R_LISTEN) | \
