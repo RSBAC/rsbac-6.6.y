@@ -49,6 +49,7 @@ int do_truncate(struct mnt_idmap *idmap, struct dentry *dentry,
 	struct iattr newattrs;
 
 #ifdef CONFIG_RSBAC
+	enum  rsbac_target_t rsbac_target;
 	union rsbac_target_id_t rsbac_target_id;
 	union rsbac_target_id_t rsbac_new_target_id;
 	union rsbac_attribute_value_t rsbac_attribute_value;
@@ -63,13 +64,20 @@ int do_truncate(struct mnt_idmap *idmap, struct dentry *dentry,
 
 #ifdef CONFIG_RSBAC
 	rsbac_pr_debug(aef, "[open_namei(), do_sys_truncate() [sys_truncate()]]: calling ADF\n");
-	rsbac_target_id.file.device = dentry->d_sb->s_dev;
-	rsbac_target_id.file.inode  = dentry->d_inode->i_ino;
-	rsbac_target_id.file.dentry_p = dentry;
+	if (dentry->d_inode->i_rsbac_memfd) {
+		rsbac_target = T_IPC;
+		rsbac_target_id.ipc.type = I_memfd;
+		rsbac_target_id.ipc.id.id_nr = (u_long) dentry->d_inode;
+	} else {
+		rsbac_target = T_FILE;
+		rsbac_target_id.file.device = dentry->d_sb->s_dev;
+		rsbac_target_id.file.inode  = dentry->d_inode->i_ino;
+		rsbac_target_id.file.dentry_p = dentry;
+	}
 	rsbac_attribute_value.dummy = 0;
 	if (!rsbac_adf_request(R_TRUNCATE,
 				task_pid(current),
-				T_FILE,
+				rsbac_target,
 				rsbac_target_id,
 				A_none,
 				rsbac_attribute_value)) {
@@ -107,7 +115,7 @@ int do_truncate(struct mnt_idmap *idmap, struct dentry *dentry,
 		rsbac_new_target_id.dummy = 0;
 		if (unlikely(rsbac_adf_set_attr(R_TRUNCATE,
 					task_pid(current),
-					T_FILE,
+					rsbac_target,
 					rsbac_target_id,
 					T_NONE,
 					rsbac_new_target_id,
@@ -584,6 +592,9 @@ retry:
 #endif
 	rsbac_pr_debug(aef, "calling ADF\n");
 	rsbac_target = T_FILE;
+	rsbac_target_id.file.device = path.dentry->d_sb->s_dev;
+	rsbac_target_id.file.inode  = path.dentry->d_inode->i_ino;
+	rsbac_target_id.file.dentry_p = path.dentry;
 	if (S_ISDIR(path.dentry->d_inode->i_mode))
 		rsbac_target = T_DIR;
 	else if (S_ISFIFO(path.dentry->d_inode->i_mode))
@@ -592,12 +603,14 @@ retry:
 		rsbac_target = T_SYMLINK;
 	else if (S_ISSOCK(path.dentry->d_inode->i_mode))
 		rsbac_target = T_UNIXSOCK;
-	rsbac_target_id.file.device = path.dentry->d_sb->s_dev;
-	rsbac_target_id.file.inode  = path.dentry->d_inode->i_ino;
-	rsbac_target_id.file.dentry_p = path.dentry;
+	else if (path.dentry->d_inode->i_rsbac_memfd) {
+			rsbac_target = T_IPC;
+			rsbac_target_id.ipc.type = I_memfd;
+			rsbac_target_id.ipc.id.id_nr = (u_long) path.dentry->d_inode;
+	}
 	rsbac_attribute_value.dummy = 0;
 #if defined(CONFIG_RSBAC_FSOBJ_HIDE)
-	if (!rsbac_adf_request(R_SEARCH,
+	if (rsbac_target != T_IPC && !rsbac_adf_request(R_SEARCH,
 				task_pid(current),
 				rsbac_target,
 				rsbac_target_id,

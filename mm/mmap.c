@@ -1428,10 +1428,16 @@ unsigned long do_mmap(struct file *file, unsigned long addr,
 	if (prot & PROT_EXEC) {
 		rsbac_pr_debug(aef, "[do_mmap() [sys_mmap()]]: calling ADF\n");
 		if (file) {
-			rsbac_target = T_FILE;
-			rsbac_target_id.file.device = file->f_path.dentry->d_inode->i_sb->s_dev;
-			rsbac_target_id.file.inode  = file->f_path.dentry->d_inode->i_ino;
-			rsbac_target_id.file.dentry_p = file->f_path.dentry;
+			if (file->f_path.dentry->d_inode->i_rsbac_memfd) {
+				rsbac_target = T_IPC;
+				rsbac_target_id.ipc.type = I_memfd;
+				rsbac_target_id.ipc.id.id_nr = (u_long) file->f_path.dentry->d_inode;
+			} else {
+				rsbac_target = T_FILE;
+				rsbac_target_id.file.device = file->f_path.dentry->d_inode->i_sb->s_dev;
+				rsbac_target_id.file.inode  = file->f_path.dentry->d_inode->i_ino;
+				rsbac_target_id.file.dentry_p = file->f_path.dentry;
+			}
 		} else {
 			rsbac_target = T_NONE;
 			rsbac_target_id.dummy = 0;
