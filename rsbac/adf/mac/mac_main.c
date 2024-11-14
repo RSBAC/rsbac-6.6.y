@@ -8,7 +8,7 @@
 /* MAC_LIGHT Modifications (c) 2000 Stanislav Ievlev */
 /*                     and (c) 2001 Amon Ott         */
 /*                                                   */
-/* Last modified: 28/Oct/2024                        */
+/* Last modified: 14/Nov/2024                        */
 /*************************************************** */
 
 #include <linux/string.h>
@@ -2482,6 +2482,7 @@ rsbac_adf_request_mac(enum rsbac_adf_request_t request,
 	case R_MAP_EXEC:
 		switch (target) {
 		case T_FILE:
+		case T_IPC:
 			/* and perform auto-read without setting attributes */
 			return (auto_read(caller_pid, target, tid, FALSE));
 
@@ -3203,6 +3204,7 @@ rsbac_adf_request_mac(enum rsbac_adf_request_t request,
 	case R_TRUNCATE:
 		switch (target) {
 		case T_FILE:
+		case T_IPC:
 			/* and perform auto-write without setting attributes */
 			return (auto_write(caller_pid,
 					   target, tid, FALSE));
