@@ -1919,6 +1919,9 @@ static int do_fanotify_mark(int fanotify_fd, unsigned int flags, __u64 mask,
 #ifdef CONFIG_RSBAC
 			rsbac_pr_debug(aef, "calling ADF\n");
 			rsbac_target = T_FILE;
+			rsbac_target_id.file.device = path.dentry->d_sb->s_dev;
+			rsbac_target_id.file.inode  = inode->i_ino;
+			rsbac_target_id.file.dentry_p = path.dentry;
 			if (S_ISDIR(inode->i_mode))
 				rsbac_target = T_DIR;
 			else if (S_ISFIFO(inode->i_mode))
@@ -1927,9 +1930,11 @@ static int do_fanotify_mark(int fanotify_fd, unsigned int flags, __u64 mask,
 				rsbac_target = T_SYMLINK;
 			else if (S_ISSOCK(inode->i_mode))
 				rsbac_target = T_UNIXSOCK;
-			rsbac_target_id.file.device = path.dentry->d_sb->s_dev;
-			rsbac_target_id.file.inode  = inode->i_ino;
-			rsbac_target_id.file.dentry_p = path.dentry;
+			else if (inode->i_rsbac_memfd) {
+				rsbac_target = T_IPC;
+				rsbac_target_id.ipc.type = I_memfd;
+				rsbac_target_id.ipc.id.id_nr = (u_long) inode;
+			}
 			rsbac_attribute_value.dummy = 0;
 			if (!rsbac_adf_request(R_TRACE,
 						task_pid(current),
