@@ -3,7 +3,7 @@
 /* Author and (c) 1999-2024: Amon Ott */
 /* Groups of ADF request for          */
 /* administration                     */
-/* Last modified: 14/Nov/2024         */
+/* Last modified: 06/Dec/2024         */
 /************************************ */
 
 #ifndef __RSBAC_REQUEST_GROUPS_H
@@ -181,6 +181,7 @@
 
 #define RSBAC_IPC_REQUEST_VECTOR (\
   ((rsbac_request_vector_t) 1 << R_ALTER) | \
+  ((rsbac_request_vector_t) 1 << R_APPEND_OPEN) | \
   ((rsbac_request_vector_t) 1 << R_CHANGE_GROUP) | \
   ((rsbac_request_vector_t) 1 << R_CHANGE_OWNER) | \
   ((rsbac_request_vector_t) 1 << R_CLOSE) | \
