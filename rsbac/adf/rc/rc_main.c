@@ -6,7 +6,7 @@
 /*                                                   */
 /* Author and (c) 1999-2024: Amon Ott <ao@rsbac.org> */
 /*                                                   */
-/* Last modified: 14/Nov/2024                        */
+/* Last modified: 18/Dec/2024                        */
 /*************************************************** */
 
 #include <linux/string.h>
@@ -26,9 +26,9 @@
 
 #if defined(CONFIG_RSBAC_RC_LEARN)
 #ifdef CONFIG_RSBAC_RC_LEARN_TA
-rsbac_list_ta_number_t rc_learn_ta = CONFIG_RSBAC_RC_LEARN_TA;
+static rsbac_list_ta_number_t rc_learn_ta = CONFIG_RSBAC_RC_LEARN_TA;
 #else
-rsbac_list_ta_number_t rc_learn_ta = 0;
+static rsbac_list_ta_number_t rc_learn_ta = 0;
 #endif
 #endif
 
@@ -281,103 +281,110 @@ restart:
 			i_attr_val2.rc_type = RSBAC_RC_GENERAL_TYPE;
 			goto restart;
 		}
+
+#if defined(CONFIG_RSBAC_RC_LEARN)
+		if (rsbac_rc_learn) {
+			union rsbac_rc_target_id_t i_rc_tid;
+			union rsbac_rc_item_value_t i_rc_value;
+
+			i_rc_tid.role = i_attr_val1.rc_role;
+#ifdef CONFIG_RSBAC_RC_LEARN_TA
+			if (!rsbac_list_ta_exist(rc_learn_ta))
+				rsbac_list_ta_begin(CONFIG_RSBAC_LIST_TRANS_MAX_TTL,
+						&rc_learn_ta,
+						RSBAC_ALL_USERS,
+						RSBAC_RC_LEARN_TA_NAME,
+						NULL);
+#endif
+			err = rsbac_rc_get_item(rc_learn_ta,
+						RT_ROLE,
+						i_rc_tid,
+						i_rc_subtid,
+						i_rc_item,
+						&i_rc_value,
+						NULL);
+			if (!err) {
+				i_rc_value.rights |= RSBAC_RC_RIGHTS_VECTOR(request);
+				err = rsbac_rc_set_item (rc_learn_ta,
+							RT_ROLE,
+							i_rc_tid,
+							i_rc_subtid,
+							i_rc_item,
+							i_rc_value,
+							RSBAC_LIST_TTL_KEEP);
+				if (!err) {
+					char *tmp = rsbac_kmalloc(RSBAC_MAXNAMELEN);
+
+					if (tmp) {
+						char *tmp2 = rsbac_kmalloc(RSBAC_MAXNAMELEN);
+
+						if (tmp2) {
+#ifdef CONFIG_RSBAC_LOG_PSEUDO
+							u_int pseudo = 0;
+							union rsbac_attribute_value_t i_attr_val3;
+
+							/* Get owner's logging pseudo */
+							i_tid.user = __kuid_val(current_uid());
+							if (!rsbac_get_attr(SW_GEN,T_USER,i_tid,A_pseudo,&i_attr_val3,FALSE)) {
+									pseudo = i_attr_val3.pseudo;
+							}
+							if (pseudo) {
+								rsbac_printk(KERN_INFO "check_comp_rc(): learning mode: pid %u(%s), pseudo %u, rc_role %u, %s rc_type %u, right %s added to transaction %u!\n",
+									     pid_nr(caller_pid),
+									     current->comm,
+									     pseudo,
+									     i_attr_val1.rc_role,
+									     get_target_name_only(tmp, target),
+									     i_attr_val2.rc_type,
+									     get_rc_special_right_name(tmp2, (enum rsbac_rc_special_rights_t) request),
+									     rc_learn_ta);
+							} else
+#endif
+							rsbac_printk(KERN_INFO "check_comp_rc(): learning mode: pid %u(%s), owner %u, rc_role %u, %s rc_type %u, right %s added to transaction %u!\n",
+								     pid_nr(caller_pid),
+								     current->comm,
+								     __kuid_val(current_uid()),
+								     i_attr_val1.rc_role,
+								     get_target_name_only(tmp, target),
+								     i_attr_val2.rc_type,
+								     get_rc_special_right_name(tmp2, (enum rsbac_rc_special_rights_t) request),
+								     rc_learn_ta);
+							rsbac_kfree(tmp2);
+						}
+						rsbac_kfree(tmp);
+					}
+					return GRANTED;
+				}
+			}
+		}
+#endif
+
 #ifdef CONFIG_RSBAC_DEBUG
 		if (   (   (   rsbac_debug_adf_rc == 1
 #ifdef CONFIG_RSBAC_RC_FORCE_LOG
-		            && !rsbac_rc_check_log(i_attr_val1.rc_role, i_rc_subtid.type, i_rc_item, (enum rsbac_rc_special_rights_t) request, RL_NEVER)
+			    && !rsbac_rc_check_log(i_attr_val1.rc_role, i_rc_subtid.type, i_rc_item, (enum rsbac_rc_special_rights_t) request, RL_NEVER)
 #endif
-		           )
-		        || rsbac_debug_adf_rc == 2
+			   )
+			|| rsbac_debug_adf_rc == 2
 		       )
 		    && (   request > R_NONE
-		        || rsbac_log_levels[request][target] != LL_none
+			|| rsbac_log_levels[request][target] != LL_none
 		       )
 		   ) {
 			char *tmp = rsbac_kmalloc(RSBAC_MAXNAMELEN);
 
 			if (tmp) {
-				char *tmp2 =
-				    rsbac_kmalloc(RSBAC_MAXNAMELEN);
+				char *tmp2 = rsbac_kmalloc(RSBAC_MAXNAMELEN);
 				if (tmp2) {
-#if defined(CONFIG_RSBAC_RC_LEARN)
-					if (rsbac_rc_learn) {
-						union rsbac_rc_target_id_t i_rc_tid;
-						union rsbac_rc_item_value_t i_rc_value;
-
-						i_rc_tid.role = i_attr_val1.rc_role;
-#ifdef CONFIG_RSBAC_RC_LEARN_TA
-						if (!rsbac_list_ta_exist(rc_learn_ta))
-							rsbac_list_ta_begin(CONFIG_RSBAC_LIST_TRANS_MAX_TTL,
-									&rc_learn_ta,
-									RSBAC_ALL_USERS,
-									RSBAC_RC_LEARN_TA_NAME,
-									NULL);
-#endif
-						err = rsbac_rc_get_item (rc_learn_ta,
-									RT_ROLE,
-									i_rc_tid,
-									i_rc_subtid,
-									i_rc_item,
-									&i_rc_value,
-									NULL);
-						if (!err) {
-							i_rc_value.rights |= RSBAC_RC_RIGHTS_VECTOR(request);
-							err = rsbac_rc_set_item (rc_learn_ta,
-										RT_ROLE,
-										i_rc_tid,
-										i_rc_subtid,
-										i_rc_item,
-										i_rc_value,
-										RSBAC_LIST_TTL_KEEP);
-							if (!err) {
-#ifdef CONFIG_RSBAC_LOG_PSEUDO
-								u_int pseudo = 0;
-								union rsbac_attribute_value_t i_attr_val3;
-
-				          /* Get owner's logging pseudo */
-						        	i_tid.user = __kuid_val(current_uid());
-				        			if (!rsbac_get_attr(SW_GEN,T_USER,i_tid,A_pseudo,&i_attr_val3,FALSE)) {
-					        			pseudo = i_attr_val3.pseudo;
-								}
-								if (pseudo) {
-									rsbac_printk(KERN_INFO "check_comp_rc(): learning mode: pid %u(%s), pseudo %u, rc_role %u, %s rc_type %u, right %s added to transaction %u!\n",
-										     pid_nr(caller_pid),
-										     current->comm,
-										     pseudo,
-										     i_attr_val1.rc_role,
-										     get_target_name_only
-										     (tmp, target),
-										     i_attr_val2.rc_type,
-										     get_rc_special_right_name (tmp2, (enum rsbac_rc_special_rights_t) request),
-										     rc_learn_ta);
-								} else
-#endif
-								rsbac_printk(KERN_INFO "check_comp_rc(): learning mode: pid %u(%s), owner %u, rc_role %u, %s rc_type %u, right %s added to transaction %u!\n",
-									     pid_nr(caller_pid),
-									     current->comm,
-									     __kuid_val(current_uid()),
-									     i_attr_val1.rc_role,
-									     get_target_name_only
-										     (tmp, target),
-									     i_attr_val2.rc_type,
-									     get_rc_special_right_name (tmp2, (enum rsbac_rc_special_rights_t) request),
-									     rc_learn_ta);
-								rsbac_kfree(tmp2);
-								rsbac_kfree(tmp);
-								return GRANTED;
-							}
-						}
-					}
-#endif
 					{
 #ifdef CONFIG_RSBAC_LOG_PSEUDO
 						u_int pseudo = 0;
 						union rsbac_attribute_value_t i_attr_val3;
 
-				          /* Get owner's logging pseudo */
-				        	i_tid.user = __kuid_val(current_uid());
-				        	if (!rsbac_get_attr(SW_GEN,T_USER,i_tid,A_pseudo,&i_attr_val3,FALSE)) {
-					        	pseudo = i_attr_val3.pseudo;
+						/* Get owner's logging pseudo */
+						i_tid.user = __kuid_val(current_uid());
+						if (!rsbac_get_attr(SW_GEN,T_USER,i_tid,A_pseudo,&i_attr_val3,FALSE)) {
+							pseudo = i_attr_val3.pseudo;
 						}
 						if (pseudo) {
 							rsbac_pr_debug(adf_rc, "pid %u(%s), pseudo %u, rc_role %u, %s rc_type %u, request %s -> NOT_GRANTED!\n",
@@ -493,10 +500,10 @@ check_comp_rc_scd(enum rsbac_rc_scd_type_t scd_type,
 					u_int pseudo = 0;
 					union rsbac_attribute_value_t i_attr_val3;
 
-	        /* Get owner's logging pseudo */
-				        i_tid.user = __kuid_val(current_uid());
-				        if (!rsbac_get_attr(SW_GEN,T_USER,i_tid,A_pseudo,&i_attr_val3,FALSE)) {
-					        pseudo = i_attr_val3.pseudo;
+					/* Get owner's logging pseudo */
+					i_tid.user = __kuid_val(current_uid());
+					if (!rsbac_get_attr(SW_GEN,T_USER,i_tid,A_pseudo,&i_attr_val3,FALSE)) {
+						pseudo = i_attr_val3.pseudo;
 					}
 					if (pseudo) {
 						rsbac_printk(KERN_INFO "check_comp_rc_scd(): learning mode: pid %u(%s), pseudo %u, rc_role %i, scd_type %i, right %s added to transaction %u!\n",
@@ -516,26 +523,27 @@ check_comp_rc_scd(enum rsbac_rc_scd_type_t scd_type,
 			}
 		}
 #endif
+
 #ifdef CONFIG_RSBAC_DEBUG
 		if (   (   (   rsbac_debug_adf_rc == 1
 #ifdef CONFIG_RSBAC_RC_FORCE_LOG
-		            && !rsbac_rc_check_log(i_attr_val1.rc_role, i_rc_subtid.type, RI_type_comp_scd, (enum rsbac_rc_special_rights_t) request, RL_NEVER)
+			    && !rsbac_rc_check_log(i_attr_val1.rc_role, i_rc_subtid.type, RI_type_comp_scd, (enum rsbac_rc_special_rights_t) request, RL_NEVER)
 #endif
-		           )
-		        || rsbac_debug_adf_rc == 2
+			   )
+			|| rsbac_debug_adf_rc == 2
 		       )
 		    && (   request > R_NONE
-		        || rsbac_log_levels[request][T_SCD] != LL_none
+			|| rsbac_log_levels[request][T_SCD] != LL_none
 		       )
 		   ) {
 #ifdef CONFIG_RSBAC_LOG_PSEUDO
 			u_int pseudo = 0;
 			union rsbac_attribute_value_t i_attr_val3;
 
-		        /* Get owner's logging pseudo */
-		        i_tid.user = __kuid_val(current_uid());
-		        if (!rsbac_get_attr(SW_GEN,T_USER,i_tid,A_pseudo,&i_attr_val3,FALSE)) {
-			        pseudo = i_attr_val3.pseudo;
+			/* Get owner's logging pseudo */
+			i_tid.user = __kuid_val(current_uid());
+			if (!rsbac_get_attr(SW_GEN,T_USER,i_tid,A_pseudo,&i_attr_val3,FALSE)) {
+				pseudo = i_attr_val3.pseudo;
 			}
 			if (pseudo) {
 				rsbac_pr_debug(adf_rc, "pid %u(%s), pseudo %u, rc_role %i, scd_type %i, request %s -> NOT_GRANTED!\n",
@@ -618,10 +626,10 @@ rc_check_create(
 					union rsbac_target_id_t i_tid;
 					union rsbac_attribute_value_t i_attr_val3;
 
-				          /* Get owner's logging pseudo */
-			        	i_tid.user = __kuid_val(current_uid());
-	        			if (!rsbac_get_attr(SW_GEN,T_USER,i_tid,A_pseudo,&i_attr_val3,FALSE)) {
-		        			pseudo = i_attr_val3.pseudo;
+					  /* Get owner's logging pseudo */
+					i_tid.user = __kuid_val(current_uid());
+					if (!rsbac_get_attr(SW_GEN,T_USER,i_tid,A_pseudo,&i_attr_val3,FALSE)) {
+						pseudo = i_attr_val3.pseudo;
 					}
 					if (pseudo) {
 						rsbac_printk(KERN_INFO "rc_check_create(): learning mode: pid %u(%s), pseudo %u, rc_role %u, %s rc_type %u, right CREATE added to transaction %u!\n",
@@ -697,8 +705,8 @@ int rsbac_rc_test_admin_roles(rsbac_rc_role_id_t t_role,
 				i_rc_subtid, RI_admin_roles, (enum rsbac_rc_special_rights_t) R_NONE))
 		return 0;
 
-        if (t_role <= RC_role_max_value)
-	        rsbac_pr_debug(adf_rc,
+	if (t_role <= RC_role_max_value)
+		rsbac_pr_debug(adf_rc,
 			"rsbac_rc_test_admin_roles(): role %u not in admin roles of role %u, pid %u, user %u!\n",
 			t_role,
 			i_attr_val1.rc_role,
@@ -770,13 +778,13 @@ static int rsbac_rc_test_assign_roles(enum rsbac_target_t target,
 	if (   i_rc_subtid.role != RC_role_inherit_parent
 	    && !rsbac_rc_check_comp(i_attr_val1.rc_role,
 				 i_rc_subtid, RI_assign_roles, (enum rsbac_rc_special_rights_t) R_NONE)) {
-                if (i_attr_val2.rc_role <= RC_role_max_value)
-                        rsbac_pr_debug(adf_rc,
-                               "rsbac_rc_test_assign_roles(): old role %u not in assign roles of role %u, pid %u, user %u!\n",
-                               i_attr_val2.rc_role,
-                               i_attr_val1.rc_role,
-                               current->pid,
-                               __kuid_val(current_uid()));
+		if (i_attr_val2.rc_role <= RC_role_max_value)
+			rsbac_pr_debug(adf_rc,
+			       "rsbac_rc_test_assign_roles(): old role %u not in assign roles of role %u, pid %u, user %u!\n",
+			       i_attr_val2.rc_role,
+			       i_attr_val1.rc_role,
+			       current->pid,
+			       __kuid_val(current_uid()));
 		return -EPERM;
 	}
 	if (target == T_FILE || target == T_DIR) {
@@ -815,13 +823,13 @@ static int rsbac_rc_test_assign_roles(enum rsbac_target_t target,
 	    && !rsbac_rc_check_comp(i_attr_val1.rc_role,
 				 i_rc_subtid,
 				 RI_assign_roles, (enum rsbac_rc_special_rights_t) R_NONE)) {
-                if (t_role <= RC_role_max_value)
-                        rsbac_pr_debug(adf_rc,
-       	                       "rsbac_rc_test_assign_roles(): new role %u not in assign roles of role %u, pid %u, user %u!\n",
-               	               t_role,
-                       	       i_attr_val1.rc_role,
-                               current->pid,
-       	                       __kuid_val(current_uid()));
+		if (t_role <= RC_role_max_value)
+			rsbac_pr_debug(adf_rc,
+       			       "rsbac_rc_test_assign_roles(): new role %u not in assign roles of role %u, pid %u, user %u!\n",
+	       		       t_role,
+		       	       i_attr_val1.rc_role,
+			       current->pid,
+       			       __kuid_val(current_uid()));
 		return -EPERM;
 	}
 	return 0;
@@ -924,13 +932,13 @@ rsbac_rc_check_type_comp(enum rsbac_target_t target,
 #ifdef CONFIG_RSBAC_DEBUG
 		if (   (   (   rsbac_debug_adf_rc == 1
 #ifdef CONFIG_RSBAC_RC_FORCE_LOG
-		            && !rsbac_rc_check_log(i_attr_val1.rc_role, i_rc_subtid.type, i_rc_item, request, RL_NEVER)
+			    && !rsbac_rc_check_log(i_attr_val1.rc_role, i_rc_subtid.type, i_rc_item, request, RL_NEVER)
 #endif
-		           )
-		        || rsbac_debug_adf_rc == 2
+			   )
+			|| rsbac_debug_adf_rc == 2
 		       )
 		    && (   (u_int) request > R_NONE
-		        || rsbac_log_levels[request][target] != LL_none
+			|| rsbac_log_levels[request][target] != LL_none
 		       )
 		   ) {
 			char tmp[50];
