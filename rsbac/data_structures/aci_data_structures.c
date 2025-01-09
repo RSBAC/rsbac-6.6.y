@@ -2832,7 +2832,7 @@ devices_proc_show(struct seq_file *m, void *v)
 
 	for (i = 0; i < BIT(CONFIG_RSBAC_DEVICE_LIST_HASH_BITS); i++)
 		count += device_head_p[i]->count;
-	seq_printf(m, "%u RSBAC Devices\n---------------\nHash size is %lu, item size is %lu\n",
+	seq_printf(m, "%u RSBAC Devices\n---------------\nHash size is %lu, item size is %zu\n",
 		       count, BIT(CONFIG_RSBAC_DEVICE_LIST_HASH_BITS), sizeof(*device_p));
 #if defined(CONFIG_RSBAC_AUTO_WRITE)
 	seq_printf(m, "write_blocked is %u\n", write_blocked);
@@ -3885,7 +3885,7 @@ xstats_proc_show(struct seq_file *m, void *v)
 	seq_printf(m, "\n%u delayed_kfree items in use, %lu delayed_kfree calls counted\n",
 		delayed_kfree_used, delayed_kfree_count);
 #endif
-	seq_printf(m, "\nunion rsbac_attribute_value_t size is %lu\n",
+	seq_printf(m, "\nunion rsbac_attribute_value_t size is %zu\n",
 		sizeof(union rsbac_attribute_value_t));
 	return 0;
 }
