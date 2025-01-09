@@ -1924,7 +1924,7 @@ static int filp_flush(struct file *filp, fl_owner_t id)
 	}
 
 #ifdef CONFIG_RSBAC
-	if (current->files && filp && filp->f_path.dentry && filp->f_path.dentry->d_sb && filp->f_path.dentry->d_inode) {
+	if (current->files && !IS_ERR(current->files) && filp && !IS_ERR(filp) && filp->f_path.dentry && !IS_ERR(filp->f_path.dentry) && filp->f_path.dentry->d_sb && filp->f_path.dentry->d_inode && !IS_ERR(filp->f_path.dentry->d_inode)) {
 		rsbac_pr_debug(aef, "[sys_close]: calling ADF\n");
 		if (   S_ISBLK(filp->f_path.dentry->d_inode->i_mode)
 		    || S_ISCHR(filp->f_path.dentry->d_inode->i_mode) ) {
@@ -2009,8 +2009,11 @@ static int filp_flush(struct file *filp, fl_owner_t id)
 		locks_remove_posix(filp, id);
 	}
 
-#ifdef CONFIG_RSBAC
-	if (rsbac_target != T_NONE) {
+#if defined(CONFIG_RSBAC_NET_OBJ) || defined(CONFIG_RSBAC_UDF)
+	/* Only UDF uses CLOSE here, and it only uses T_FILE. */
+	/* We might run into use after free here for other targets. */
+	/* REG might have a module interested, but we ignore that for now. */
+	if (rsbac_target == T_FILE || rsbac_target == T_NETOBJ) {
 		rsbac_pr_debug(aef, "[sys_close]: notifying ADF\n");
 		rsbac_new_target_id.dummy = 0;
 		if (unlikely(rsbac_adf_set_attr(R_CLOSE,
