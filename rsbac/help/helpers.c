@@ -458,7 +458,7 @@ int rsbac_handle_filldir(const struct file *file, const char *name, const unsign
 	}
 
 	if(!name || !file || !file->f_path.dentry || !file->f_path.dentry->d_sb
-		 || !MAJOR(file->f_path.dentry->d_sb->s_dev))
+		 || !MAJOR(file->f_path.dentry->d_sb->s_dev) || file->f_path.dentry->d_sb->s_magic == MSDOS_SUPER_MAGIC)
 		goto old_func;
 
         if (in_interrupt())
