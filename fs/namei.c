@@ -1681,8 +1681,10 @@ static struct dentry *lookup_fast(struct nameidata *nd)
 
 #ifdef CONFIG_RSBAC
 #if defined(CONFIG_RSBAC_CAP_FD_HIDE)
-	if (dentry && rsbac_cap_hide_fd(dentry->d_inode))
+	if (dentry && rsbac_cap_hide_fd(dentry->d_inode)) {
+		dput(dentry);
 		return ERR_PTR(-ENOENT);
+	}
 #endif
 	if (   dentry
 	    && dentry->d_inode
