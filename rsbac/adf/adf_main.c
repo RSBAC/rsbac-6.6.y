@@ -3,9 +3,9 @@
 /* Implementation of the Access Control Decision     */
 /* Facility (ADF) - Main file main.c                 */
 /*                                                   */
-/* Author and (c) 1999-2024: Amon Ott <ao@rsbac.org> */
+/* Author and (c) 1999-2025: Amon Ott <ao@rsbac.org> */
 /*                                                   */
-/* Last modified: 29/Jun/2024                        */
+/* Last modified: 21/Mar/2025                        */
 /*************************************************** */
 
 #include <linux/string.h>
@@ -319,6 +319,7 @@ enum rsbac_adf_req_ret_t
               case R_READ:
               case R_CLOSE:
               case R_CHDIR:
+              case R_GET_XATTR:
 #endif
                 break;
 
