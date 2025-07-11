@@ -1,9 +1,9 @@
 /******************************* */
 /* Rule Set Based Access Control */
-/* Author and (c) 1999-2024:     */
+/* Author and (c) 1999-2025:     */
 /*   Amon Ott <ao@rsbac.org>     */
 /* debug definitions             */
-/* Last modified: 26/Jul/2024    */
+/* Last modified: 10/Jul/2025    */
 /******************************* */
 
 #ifndef __RSBAC_DEBUG_H
@@ -230,6 +230,10 @@ extern int rsbac_debug_reg;
 extern int rsbac_debug_ds_acl;
 extern int rsbac_debug_aef_acl;
 extern int rsbac_debug_adf_acl;
+#endif
+
+#if defined(CONFIG_RSBAC_CAP)
+extern int rsbac_debug_adf_cap;
 #endif
 
 #if defined(CONFIG_RSBAC_JAIL)
