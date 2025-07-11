@@ -1,9 +1,9 @@
 /*************************************************** */
 /* Rule Set Based Access Control                     */
 /* Implementation of MAC data structures            */
-/* Author and (c) 1999-2020: Amon Ott <ao@rsbac.org> */
+/* Author and (c) 1999-2025: Amon Ott <ao@rsbac.org> */
 /*                                                   */
-/* Last modified: 29/Dec/2020                        */
+/* Last modified: 08/Jul/2025                        */
 /*************************************************** */
 
 #include <linux/types.h>
@@ -802,7 +802,6 @@ int rsbac_mount_mac(__u32 major, __u32 minor)
 	if (!new_device_p)
 		return -RSBAC_ECOULDNOTADDDEVICE;
 
-	rsbac_mount_pid = task_pid(current);
 	/* register lists */
 	if ((err = mac_register_fd_lists(new_device_p, major, minor))) {
 		char tmp[RSBAC_MAXNAMELEN];
@@ -811,7 +810,6 @@ int rsbac_mount_mac(__u32 major, __u32 minor)
 			     major, minor,
 			     get_error_name(tmp, err));
 	}
-	rsbac_mount_pid = NULL;
 
 	srcu_idx = srcu_read_lock(&device_list_srcu);
 	/* make sure to only add, if this device item has not been added in the meantime */
