@@ -1,9 +1,9 @@
 /************************************* */
 /* Rule Set Based Access Control       */
-/* Author and (c) 1999-2024:           */
+/* Author and (c) 1999-2025:           */
 /*   Amon Ott <ao@rsbac.org>           */
 /* Helper functions for all parts      */
-/* Last modified: 17/Sep/2024          */
+/* Last modified: 10/Jul/2025          */
 /************************************* */
 
 #include <rsbac/types.h>
@@ -387,6 +387,9 @@ rsbac_boolean_t rsbac_cap_hide_fd(struct inode * target_inode)
 	if (!target_inode || !target_inode->i_sb) {
 		return FALSE;
 	}
+	/* special case: procfs has misleading owner/mode values, e.g for fd dir */
+	if (target_inode->i_sb->s_magic == PROC_SUPER_MAGIC)
+		return FALSE;
 
 	if (uid_eq(target_inode->i_uid, current_uid()))
 		return FALSE;
