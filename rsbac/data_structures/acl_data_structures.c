@@ -1,9 +1,9 @@
 /*************************************************** */
 /* Rule Set Based Access Control                     */
 /* Implementation of ACL data structures             */
-/* Author and (c) 1999-2024: Amon Ott <ao@rsbac.org> */
+/* Author and (c) 1999-2025: Amon Ott <ao@rsbac.org> */
 /*                                                   */
-/* Last modified: 25/Jul/2024                        */
+/* Last modified: 08/Jul/2025                        */
 /*************************************************** */
 
 #include <linux/types.h>
@@ -3258,7 +3258,6 @@ int rsbac_mount_acl(__u32 major, __u32 minor)
 	if (!new_device_p)
 		return -RSBAC_ECOULDNOTADDDEVICE;
 
-	rsbac_mount_pid = task_pid(current);
 	if ((err = acl_register_fd_lists(new_device_p, major, minor))) {
 		char *tmp;
 
@@ -3270,7 +3269,7 @@ int rsbac_mount_acl(__u32 major, __u32 minor)
 			rsbac_kfree(tmp);
 		}
 	}
-	rsbac_mount_pid = NULL;
+
 	srcu_idx = srcu_read_lock(&device_list_srcu);
 	/* make sure to only add, if this device item has not been added in the meantime */
 	device_p = acl_lookup_device(major, minor);
