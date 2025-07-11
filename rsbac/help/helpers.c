@@ -388,6 +388,10 @@ rsbac_boolean_t rsbac_cap_hide_fd(struct inode * target_inode)
 		return FALSE;
 	}
 
+	if (uid_eq(target_inode->i_uid, current_uid()))
+		return FALSE;
+	if (uid_eq(target_inode->i_uid, current_euid()))
+		return FALSE;
 	if (uid_eq(target_inode->i_uid, current_fsuid()))
 		return FALSE;
 	if (unlikely(target_inode->i_sb->s_magic == CEPH_SUPER_MAGIC && target_inode->i_op && target_inode->i_op->permission)) {
@@ -437,6 +441,15 @@ rsbac_boolean_t rsbac_cap_hide_fd(struct inode * target_inode)
 	}
 #endif
 
+	rsbac_pr_debug(adf_cap, "FD hiding: process %u(%s), process uid %u, dev %02u:%02u, inode %u, owner %u, mode %o!\n",
+			pid_nr(task_pid(current)),
+			current->comm,
+			current_uid(),
+			target_inode->i_sb ? RSBAC_MAJOR(target_inode->i_sb->s_dev) : RSBAC_AUTO_DEV_NUM,
+			target_inode->i_sb ? RSBAC_MINOR(target_inode->i_sb->s_dev) : RSBAC_AUTO_DEV_NUM,
+			target_inode->i_ino,
+			target_inode->i_uid,
+			target_inode->i_mode);
 	return TRUE;
 }
 
