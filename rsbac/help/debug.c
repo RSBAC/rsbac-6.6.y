@@ -1,12 +1,12 @@
 /******************************************* */
 /* Rule Set Based Access Control             */
 /*                                           */
-/* Author and (c) 1999-2024:                 */
+/* Author and (c) 1999-2025:                 */
 /*   Amon Ott <ao@rsbac.org>                 */
 /*                                           */
 /* Debug and logging functions for all parts */
 /*                                           */
-/* Last modified: 20/Sep/2024                */
+/* Last modified: 10/Jul/2025                */
 /******************************************* */
  
 #include <linux/uaccess.h>
@@ -140,6 +140,11 @@ int  rsbac_debug_adf_acl = 0;
 #if defined(CONFIG_RSBAC_RES)
 /* Boolean debug switch for RES decisions / ADF */
 int  rsbac_debug_adf_res = 0;
+#endif
+
+#if defined(CONFIG_RSBAC_CAP)
+/* Boolean debug switch for CAP decisions / ADF */
+int  rsbac_debug_adf_cap = 0;
 #endif
 
 #if defined(CONFIG_RSBAC_JAIL)
@@ -1030,6 +1035,14 @@ __setup("rsbac_no_defaults", no_defaults_setup);
   __setup("rsbac_switch_off_res", switch_off_res_setup);
   #endif
   #endif
+    #if defined(CONFIG_RSBAC_CAP)
+//    module_param(rsbac_debug_adf_cap, bool, S_IRUGO);
+  static int R_INIT debug_adf_cap_setup(char *line)
+    {
+      rsbac_debug_adf_cap = 1;
+      return 1;
+    }
+  __setup("rsbac_debug_adf_cap", debug_adf_cap_setup);
   #if defined(CONFIG_RSBAC_SWITCH_CAP) && defined(CONFIG_RSBAC_SWITCH_BOOT_OFF)
 //    module_param(rsbac_switch_off_cap, bool, S_IRUGO);
   static int R_INIT switch_off_cap_setup(char *line)
@@ -1039,6 +1052,7 @@ __setup("rsbac_no_defaults", no_defaults_setup);
     }
   __setup("rsbac_switch_off_cap", switch_off_cap_setup);
   #endif
+    #endif
   #if defined(CONFIG_RSBAC_SWITCH_MPROTECT) && defined(CONFIG_RSBAC_SWITCH_BOOT_OFF)
 //    module_param(rsbac_switch_off_mprotect, bool, S_IRUGO);
   static int R_INIT switch_off_mprotect_setup(char *line)
@@ -2026,6 +2040,11 @@ debug_proc_show(struct seq_file *m, void *v)
                  rsbac_debug_adf_acl);
 #endif
 
+#if defined(CONFIG_RSBAC_CAP)
+/* Boolean debug switch for CAP decisions / ADF */
+  seq_printf(m, "rsbac_debug_adf_cap is %i\n",
+                 rsbac_debug_adf_cap);
+#endif
 #if defined(CONFIG_RSBAC_JAIL)
 /* Boolean debug switch for JAIL syscalls / AEF */
   seq_printf(m, "rsbac_debug_aef_jail is %i\n",
@@ -4046,6 +4065,38 @@ static ssize_t debug_proc_write(struct file * file, const char __user * buf, siz
       }
 #endif
 
+#if defined(CONFIG_RSBAC_CAP)
+/* Boolean debug switch for CAP decisions / ADF */
+    /*
+     * Usage: echo "debug adf_cap #N" > /proc/rsbac_info/debug
+     *   to set rsbac_debug_adf_cap to given value
+     */
+    if(!strncmp("adf_cap", k_buf + 6, 7))
+      {
+	p += 8;
+
+        if( *p == '\0' )
+            goto out;
+
+        debug_level = simple_strtoul(p, NULL, 0);
+        /* only accept 0 or 1 */
+        if(!debug_level || (debug_level == 1))
+          {
+            if (rsbac_debug_adf_cap != debug_level)
+              rsbac_printk(KERN_INFO
+                   "debug_proc_write(): changing rsbac_debug_adf_cap to %u\n",
+                   debug_level);
+            rsbac_debug_adf_cap = debug_level;
+            err = count;
+            goto out;
+          }
+        else
+          {
+            goto out_inv;
+          }
+      }
+#endif
+
 #if defined(CONFIG_RSBAC_JAIL)
 /* Boolean debug switch for JAIL syscalls / AEF */
     /*
@@ -5179,6 +5230,11 @@ inline void __init rsbac_init_debug(void)
       rsbac_printk(KERN_DEBUG "rsbac_debug_aef_acl is set\n");
     if(rsbac_debug_adf_acl)
       rsbac_printk(KERN_DEBUG "rsbac_debug_adf_acl is set\n");
+    #endif
+
+    #if defined(CONFIG_RSBAC_CAP)
+    if(rsbac_debug_adf_cap)
+      rsbac_printk(KERN_DEBUG "rsbac_debug_adf_cap is set\n");
     #endif
 
     #if defined(CONFIG_RSBAC_JAIL)
