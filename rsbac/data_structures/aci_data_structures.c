@@ -7205,7 +7205,6 @@ static int rsbac_automount(__u32 major, __u32 minor)
 			rsbac_kfree(tmp);
 		}
 	}
-	rsbac_mount_pid = NULL;
 
 /* call other mount functions */
 #if defined(CONFIG_RSBAC_MAC)
@@ -7220,6 +7219,8 @@ static int rsbac_automount(__u32 major, __u32 minor)
 #if defined(CONFIG_RSBAC_REG)
 	rsbac_mount_reg(major, minor);
 #endif
+
+	rsbac_mount_pid = NULL;
 
 	return 0;
 }
@@ -7461,7 +7462,6 @@ int rsbac_mount(struct vfsmount * vfsmount_p, struct vfsmount * vfsmount_parent_
 #endif
 
 	}
-	rsbac_mount_pid = NULL;
 
 /* call other mount functions */
 #if defined(CONFIG_RSBAC_MAC)
@@ -7484,6 +7484,8 @@ int rsbac_mount(struct vfsmount * vfsmount_p, struct vfsmount * vfsmount_parent_
 	rsbac_pr_debug(stack, "after mount_reg: free stack: %lu\n",
 		       rsbac_stack_free_space());
 #endif				/* REG */
+
+	rsbac_mount_pid = NULL;
 
 	return err;
 }
