@@ -1,9 +1,9 @@
 /*************************************************** */
 /* Rule Set Based Access Control                     */
 /* Implementation of User Management data structures */
-/* Author and (c) 1999-2021: Amon Ott <ao@rsbac.org> */
+/* Author and (c) 1999-2025: Amon Ott <ao@rsbac.org> */
 /*                                                   */
-/* Last modified: 07/Jan/2021                        */
+/* Last modified: 16/Jul/2025                        */
 /*************************************************** */
 
 #include <linux/types.h>
@@ -1406,8 +1406,7 @@ int rsbac_um_mod_user(rsbac_list_ta_number_t ta_number,
 	entry_p = rsbac_kmalloc_unlocked(sizeof(*entry_p));
 	if (!entry_p)
 		return -RSBAC_ENOMEM;
-	err =
-	    rsbac_ta_list_lol_get_data_ttl(ta_number,
+	err = rsbac_ta_list_lol_get_data_ttl(ta_number,
 					   user_handle,
 					   NULL, &user, entry_p);
 	if (err) {
@@ -1426,14 +1425,10 @@ int rsbac_um_mod_user(rsbac_list_ta_number_t ta_number,
 #endif
 #endif
 
-			if (!rsbac_um_get_uid
-			    (ta_number, data_p->string, &tmp_user)
+			if (   !rsbac_um_get_uid(ta_number, data_p->string, &tmp_user)
 			    && (tmp_user != user)
 			    )
 				return -RSBAC_EEXISTS;
-			strncpy(entry_p->name, data_p->string,
-				RSBAC_UM_NAME_LEN);
-			entry_p->name[RSBAC_UM_NAME_LEN - 1] = 0;
 #ifdef CONFIG_RSBAC_UM_NAME_CACHE
 #ifdef CONFIG_RSBAC_UM_VIRTUAL
 			cache_desc.vset = RSBAC_UID_SET(user);
@@ -1447,6 +1442,9 @@ int rsbac_um_mod_user(rsbac_list_ta_number_t ta_number,
 					    entry_p->name);
 #endif
 #endif
+			strncpy(entry_p->name, data_p->string,
+				RSBAC_UM_NAME_LEN);
+			entry_p->name[RSBAC_UM_NAME_LEN - 1] = 0;
 		}
 		break;
 
