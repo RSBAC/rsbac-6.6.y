@@ -1273,7 +1273,7 @@ config RSBAC_CAP_PROC_HIDE
 
 config RSBAC_CAP_FD_HIDE
 	bool 'Support CAP filesystem object hiding'
-	default n
+	default y
 	help
 	  If enabled, you can hide filesystem objects from users without
 	  Linux read rights on them, set with the kernel command line switch
