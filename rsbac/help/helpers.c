@@ -31,8 +31,6 @@
 #include <rsbac/rc_getname.h>
 #endif
 
-#define CEPH_SUPER_MAGIC 0x00c36400
-
 int rsbac_get_vset_num(char * sourcename, rsbac_um_set_t * vset_p)
   {
     if (!sourcename || !vset_p)
@@ -397,21 +395,14 @@ rsbac_boolean_t rsbac_cap_hide_fd(struct inode * target_inode)
 		return FALSE;
 	if (uid_eq(target_inode->i_uid, current_fsuid()))
 		return FALSE;
-	if (unlikely(target_inode->i_sb->s_magic == CEPH_SUPER_MAGIC && target_inode->i_op && target_inode->i_op->permission)) {
-		if (!target_inode->i_op->permission(&nop_mnt_idmap, target_inode, MAY_READ))
-			return FALSE;
-		if (!target_inode->i_op->permission(&nop_mnt_idmap, target_inode, MAY_EXEC))
-			return FALSE;
-		if (!target_inode->i_op->permission(&nop_mnt_idmap, target_inode, MAY_WRITE))
-			return FALSE;
-	} else {
-		if (!generic_permission(&nop_mnt_idmap, target_inode, MAY_READ))
-			return FALSE;
-		if (!generic_permission(&nop_mnt_idmap, target_inode, MAY_EXEC))
-			return FALSE;
-		if (!generic_permission(&nop_mnt_idmap, target_inode, MAY_WRITE))
-			return FALSE;
-	}
+	/* always take the fast track, Ceph was the only special case and
+	   it does not handle too many requests well */
+	if (!generic_permission(&nop_mnt_idmap, target_inode, MAY_READ))
+		return FALSE;
+	if (!generic_permission(&nop_mnt_idmap, target_inode, MAY_EXEC))
+		return FALSE;
+	if (!generic_permission(&nop_mnt_idmap, target_inode, MAY_WRITE))
+		return FALSE;
 
 	rsbac_get_owner(&rsbac_target_id.user);
 	if (unlikely(rsbac_get_attr(SW_CAP,
