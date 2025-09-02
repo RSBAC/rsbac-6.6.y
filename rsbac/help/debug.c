@@ -6,7 +6,7 @@
 /*                                           */
 /* Debug and logging functions for all parts */
 /*                                           */
-/* Last modified: 10/Jul/2025                */
+/* Last modified: 08/Aug/2025                */
 /******************************************* */
  
 #include <linux/uaccess.h>
@@ -50,7 +50,7 @@ static rsbac_boolean_t debug_initialized = FALSE;
 rsbac_time_t rsbac_fd_cache_ttl = CONFIG_RSBAC_FD_CACHE_TTL;
 u_int rsbac_fd_cache_disable = 0;
 u_int rsbac_fd_cache_fuse = 0;
-u_int rsbac_fd_cache_ceph = 0;
+u_int rsbac_fd_cache_ceph = 1;
 #endif
 
 #ifdef CONFIG_RSBAC_UM
@@ -768,13 +768,13 @@ __setup("rsbac_no_defaults", no_defaults_setup);
       return 1;
     }
   __setup("rsbac_fd_cache_fuse", fd_cache_fuse_setup);
-//    module_param(rsbac_fd_cache_ceph, bool, S_IRUGO);
-  static int R_INIT fd_cache_ceph_setup(char *line)
+//    module_param(rsbac_no_fd_cache_ceph, bool, S_IRUGO);
+  static int R_INIT no_fd_cache_ceph_setup(char *line)
     {
-      rsbac_fd_cache_ceph = 1;
+      rsbac_fd_cache_ceph = 0;
       return 1;
     }
-  __setup("rsbac_fd_cache_ceph", fd_cache_ceph_setup);
+  __setup("rsbac_no_fd_cache_ceph", no_fd_cache_ceph_setup);
 #endif
 #ifdef CONFIG_RSBAC_UM
   static int R_INIT um_old_pw_unset_days_setup(char *line)
@@ -5124,7 +5124,7 @@ inline void __init rsbac_init_debug(void)
       rsbac_printk(KERN_DEBUG "rsbac_fd_cache_fuse is %u\n",
                    rsbac_fd_cache_fuse);
     }
-    if(rsbac_fd_cache_ceph) {
+    if(!rsbac_fd_cache_ceph) {
       rsbac_printk(KERN_DEBUG "rsbac_fd_cache_ceph is %u\n",
                    rsbac_fd_cache_ceph);
     }
