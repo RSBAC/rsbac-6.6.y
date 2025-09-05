@@ -4,9 +4,9 @@
 /* Facility (ADF) - System Resources (RES)            */
 /* File: rsbac/adf/res/main.c                         */
 /*                                                    */
-/* Author and (c) 2002-2019: Amon Ott <ao@rsbac.org>  */
+/* Author and (c) 2002-2025: Amon Ott <ao@rsbac.org>  */
 /*                                                    */
-/* Last modified: 10/Dec/2019                         */
+/* Last modified: 04/Sep/2025                         */
 /**************************************************** */
 
 #include <linux/string.h>
@@ -67,16 +67,16 @@ enum rsbac_adf_req_ret_t
                                      TRUE))
                     {
                       rsbac_ds_get_error("rsbac_adf_request_res()", A_res_role);
-                      return(NOT_GRANTED);
+                      return NOT_GRANTED;
                     }
                   /* if sec_officer, then grant */
                   if (i_attr_val1.system_role == SR_security_officer)
-                    return(GRANTED);
+                    return GRANTED;
                   else
-                    return(NOT_GRANTED);
+                    return NOT_GRANTED;
 
                 default:
-                  return(DO_NOT_CARE);
+                  return DO_NOT_CARE;
               }
 
         case R_READ_ATTRIBUTE:
@@ -88,6 +88,12 @@ enum rsbac_adf_req_ret_t
                 case A_res_max:
                 /* All attributes (remove target!) */
                 case A_none:
+                  /* read own res_min and res_max */
+                  if (   target == T_USER
+                      && tid.user == owner
+                      && (attr == A_res_min || attr == A_res_max)
+                     )
+                    return GRANTED;
                   /* Security Officer or Admin? */
                   i_tid.user = owner;
                   if (rsbac_get_attr(SW_RES,
@@ -98,18 +104,18 @@ enum rsbac_adf_req_ret_t
                                      TRUE))
                     {
                       rsbac_ds_get_error("rsbac_adf_request_res()", A_res_role);
-                      return(NOT_GRANTED);
+                      return NOT_GRANTED;
                     }
                   /* if sec_officer, then grant */
                   if(   (i_attr_val1.system_role == SR_security_officer)
                      || (i_attr_val1.system_role == SR_administrator)
                     )
-                    return(GRANTED);
+                    return GRANTED;
                   else
-                    return(NOT_GRANTED);
+                    return NOT_GRANTED;
 
                 default:
-                  return(DO_NOT_CARE);
+                  return DO_NOT_CARE;
               }
 
         case R_SWITCH_LOG:
@@ -126,16 +132,17 @@ enum rsbac_adf_req_ret_t
                                      TRUE))
                     {
                       rsbac_ds_get_error("rsbac_adf_request_res()", A_res_role);
-                      return(NOT_GRANTED);
+                      return NOT_GRANTED;
                     }
                   /* security officer? -> grant  */
                   if (i_attr_val1.system_role == SR_security_officer)
-                    return(GRANTED);
+                    return GRANTED;
                   else
-                    return(NOT_GRANTED);
+                    return NOT_GRANTED;
 
                 /* all other cases are unknown */
-                default: return(DO_NOT_CARE);
+                default:
+                  return DO_NOT_CARE;
               }
 
         case R_SWITCH_MODULE:
@@ -157,7 +164,7 @@ enum rsbac_adf_req_ret_t
                      && (attr_val.switch_target != SW_MPROTECT)
                      #endif
                     )
-                    return(DO_NOT_CARE);
+                    return DO_NOT_CARE;
                   /* test owner's res_role */
                   i_tid.user = owner;
                   if (rsbac_get_attr(SW_RES,
@@ -168,21 +175,23 @@ enum rsbac_adf_req_ret_t
                                      TRUE))
                     {
                       rsbac_ds_get_error("rsbac_adf_request_res()", A_res_role);
-                      return(NOT_GRANTED);
+                      return NOT_GRANTED;
                     }
                   /* security officer? -> grant  */
                   if (i_attr_val1.system_role == SR_security_officer)
-                    return(GRANTED);
+                    return GRANTED;
                   else
-                    return(NOT_GRANTED);
+                    return NOT_GRANTED;
 
                 /* all other cases are unknown */
-                default: return(DO_NOT_CARE);
+                default:
+                  return DO_NOT_CARE;
               }
 
 
 /*********************/
-        default: return DO_NOT_CARE;
+        default:
+          return DO_NOT_CARE;
       }
 
     return DO_NOT_CARE;
