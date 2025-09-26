@@ -5,7 +5,7 @@
 /* (some smaller parts copied from fs/namei.c        */
 /*  and others)                                      */
 /*                                                   */
-/* Last modified: 02/Sep/2025                        */
+/* Last modified: 25/Sep/2025                        */
 /*************************************************** */
 
 #include <linux/types.h>
@@ -7150,7 +7150,9 @@ static int rsbac_automount(__u32 major, __u32 minor)
 	spin_lock(&rsbac_mount_lock);
 	while (rsbac_mount_pid != NULL) {
 		spin_unlock(&rsbac_mount_lock);
-		msleep_interruptible(100);
+		/* we may not sleep in preempted RCU, so just spin here then */
+		if (rcu_preempt_depth() == 0)
+			msleep_interruptible(100);
 		spin_lock(&rsbac_mount_lock);
 	}
 	rsbac_mount_pid = task_pid(current);
@@ -7167,13 +7169,6 @@ static int rsbac_automount(__u32 major, __u32 minor)
 		rsbac_printk(KERN_INFO "rsbac_automount: device %02u:%02u is already mounted!\n",
 			     major, minor);
 		return 0;
-	}
-	/* reject if in RCU */
-	if (rcu_preempt_depth() > 0) {
-		rsbac_mount_pid = NULL;
-		rsbac_printk(KERN_INFO "rsbac_automount: cannot auto-mount device %02u:%02u in RCU context!\n",
-			     major, minor);
-		return -RSBAC_ECOULDNOTADDDEVICE;
 	}
 	/* OK, go on */
 	new_device_p = create_device_item(NULL, major, minor, TRUE);
