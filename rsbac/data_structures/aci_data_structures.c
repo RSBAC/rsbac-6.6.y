@@ -5,7 +5,7 @@
 /* (some smaller parts copied from fs/namei.c        */
 /*  and others)                                      */
 /*                                                   */
-/* Last modified: 25/Sep/2025                        */
+/* Last modified: 26/Sep/2025                        */
 /*************************************************** */
 
 #include <linux/types.h>
@@ -8145,15 +8145,27 @@ static int get_attr_fd(rsbac_list_ta_number_t ta_number,
 		device_p = lookup_device(major, minor, hash);
 		if (!device_p) {
 			srcu_read_unlock(&device_list_srcu[hash], srcu_idx);
-			if (!RSBAC_MAJOR(tid_p->file.device) || (tid_p->file.dentry_p && tid_p->file.dentry_p->d_sb && !rsbac_type_writable(tid_p->file.dentry_p->d_sb) ) ) {
-				rsbac_printk(KERN_WARNING "rsbac_get_attr(): unknown device %02u:%02u, auto mounting!\n",
-					     major, minor);
+			if (!major || (tid_p->file.dentry_p && tid_p->file.dentry_p->d_sb && !rsbac_type_writable(tid_p->file.dentry_p->d_sb) ) ) {
+				if (   tid_p->file.dentry_p->d_sb->s_type
+				    && tid_p->file.dentry_p->d_sb->s_type->name)
+					rsbac_printk(KERN_WARNING "rsbac_get_attr(): unknown device %02u:%02u (type %s), auto mounting!\n",
+						major, minor, tid_p->file.dentry_p->d_sb->s_type->name);
+				else
+					rsbac_printk(KERN_WARNING "rsbac_get_attr(): unknown device %02u:%02u, auto mounting!\n",
+						major, minor);
 				err = rsbac_automount(major, minor);
 				if (err)
 					return err;
 			} else {
-				rsbac_printk(KERN_WARNING "rsbac_get_attr(): unknown device %02u:%02u, cannot auto mount!\n",
-					     major, minor);
+				if (   tid_p->file.dentry_p
+				    && tid_p->file.dentry_p->d_sb
+				    && tid_p->file.dentry_p->d_sb->s_type
+				    && tid_p->file.dentry_p->d_sb->s_type->name)
+					rsbac_printk(KERN_WARNING "rsbac_get_attr(): unknown device %02u:%02u (type %s), cannot auto mount!\n",
+						major, minor, tid_p->file.dentry_p->d_sb->s_type->name);
+				else
+					rsbac_printk(KERN_WARNING "rsbac_get_attr(): unknown device %02u:%02u, cannot auto mount!\n",
+						major, minor);
 				return -RSBAC_EINVALIDDEV;
 			}
 			continue;
@@ -10902,15 +10914,27 @@ static int set_attr_fd_ttl(rsbac_list_ta_number_t ta_number,
 	device_p = lookup_device(major, minor, hash);
 	if (!device_p) {
 		srcu_read_unlock(&device_list_srcu[hash], srcu_idx);
-		if (!RSBAC_MAJOR(tid_p->file.device) || (tid_p->file.dentry_p && tid_p->file.dentry_p->d_sb && !rsbac_type_writable(tid_p->file.dentry_p->d_sb) ) ) {
-			rsbac_printk(KERN_WARNING "rsbac_set_attr(): unknown device %02u:%02u, auto mounting!\n",
-				     major, minor);
+		if (!major || (tid_p->file.dentry_p && tid_p->file.dentry_p->d_sb && !rsbac_type_writable(tid_p->file.dentry_p->d_sb) ) ) {
+			if (   tid_p->file.dentry_p->d_sb->s_type
+			    && tid_p->file.dentry_p->d_sb->s_type->name)
+				rsbac_printk(KERN_WARNING "rsbac_set_attr(): unknown device %02u:%02u (type %s), auto mounting!\n",
+					major, minor, tid_p->file.dentry_p->d_sb->s_type->name);
+			else
+				rsbac_printk(KERN_WARNING "rsbac_set_attr(): unknown device %02u:%02u, auto mounting!\n",
+					major, minor);
 			err = rsbac_automount(major, minor);
 			if (err)
 				return err;
 		} else {
-			rsbac_printk(KERN_WARNING "rsbac_set_attr(): unknown device %02u:%02u, cannot auto mount!\n",
-				     major, minor);
+			if (   tid_p->file.dentry_p
+			    && tid_p->file.dentry_p->d_sb
+			    && tid_p->file.dentry_p->d_sb->s_type
+			    && tid_p->file.dentry_p->d_sb->s_type->name)
+				rsbac_printk(KERN_WARNING "rsbac_set_attr(): unknown device %02u:%02u (type %s), cannot auto mount!\n",
+					major, minor, tid_p->file.dentry_p->d_sb->s_type->name);
+			else
+				rsbac_printk(KERN_WARNING "rsbac_set_attr(): unknown device %02u:%02u, cannot auto mount!\n",
+					major, minor);
 			return -RSBAC_EINVALIDDEV;
 		}
 		srcu_idx = srcu_read_lock(&device_list_srcu[hash]);
@@ -12836,14 +12860,26 @@ int rsbac_ta_remove_target(rsbac_list_ta_number_t ta_number,
 		if (!device_p) {
 			srcu_read_unlock(&device_list_srcu[hash], srcu_idx);
 			if (!major || (tid_p->file.dentry_p && tid_p->file.dentry_p->d_sb && !rsbac_type_writable(tid_p->file.dentry_p->d_sb) ) ) {
-				rsbac_printk(KERN_WARNING "rsbac_ta_remove_target(): unknown device %02u:%02u, auto mounting!\n",
-					     major, minor);
+				if (   tid_p->file.dentry_p->d_sb->s_type
+				    && tid_p->file.dentry_p->d_sb->s_type->name)
+					rsbac_printk(KERN_WARNING "rsbac_ta_remove_target(): unknown device %02u:%02u (type %s), auto mounting!\n",
+						major, minor, tid_p->file.dentry_p->d_sb->s_type->name);
+				else
+					rsbac_printk(KERN_WARNING "rsbac_ta_remove_target(): unknown device %02u:%02u, auto mounting!\n",
+						major, minor);
 				error = rsbac_automount(major, minor);
 				if (error)
 					return error;
 			} else {
-				rsbac_printk(KERN_WARNING "rsbac_ta_remove_target(): unknown device %02u:%02u, cannot auto mount!\n",
-					     major, minor);
+				if (   tid_p->file.dentry_p
+				    && tid_p->file.dentry_p->d_sb
+				    && tid_p->file.dentry_p->d_sb->s_type
+				    && tid_p->file.dentry_p->d_sb->s_type->name)
+					rsbac_printk(KERN_WARNING "rsbac_ta_remove_target(): unknown device %02u:%02u (type %s), cannot auto mount!\n",
+						major, minor, tid_p->file.dentry_p->d_sb->s_type->name);
+				else
+					rsbac_printk(KERN_WARNING "rsbac_ta_remove_target(): unknown device %02u:%02u, cannot auto mount!\n",
+						major, minor);
 				return -RSBAC_EINVALIDDEV;
 			}
 			srcu_idx = srcu_read_lock(&device_list_srcu[hash]);
