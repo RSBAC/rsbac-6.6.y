@@ -1,10 +1,10 @@
 /*********************************** */
 /* Rule Set Based Access Control     */
-/* Author and (c)1999-2024:          */
+/* Author and (c)1999-2025:          */
 /*   Amon Ott <ao@rsbac.org>         */
 /* API: Data types for attributes    */
 /*      and standard module calls    */
-/* Last modified: 30/Oct/2024        */
+/* Last modified: 26/Sep/2025        */
 /*********************************** */
 
 #ifndef __RSBAC_TYPES_H
@@ -122,6 +122,12 @@ typedef __u32 rsbac_dev_t;
 #else
 #define R_INIT __init
 #endif
+
+#include <linux/err.h>
+static inline bool __must_check RSBAC_IS_INVALID_PTR(__force const void *ptr)
+{
+	return unlikely(!ptr) || IS_ERR_VALUE((unsigned long)ptr) || ((unsigned long)ptr < PAGE_SIZE);
+}
 
 /* General */
 
