@@ -3,7 +3,7 @@
 /* Implementation of ACL data structures             */
 /* Author and (c) 1999-2025: Amon Ott <ao@rsbac.org> */
 /*                                                   */
-/* Last modified: 08/Jul/2025                        */
+/* Last modified: 14/Oct/2025                        */
 /*************************************************** */
 
 #include <linux/types.h>
@@ -4368,10 +4368,14 @@ int rsbac_acl_set_acl_entry(rsbac_list_ta_number_t ta_number,
 		/* lookup device */
 		device_p = acl_lookup_device(RSBAC_MAJOR(tid.file.device), RSBAC_MINOR(tid.file.device));
 		if (!device_p) {
-			rsbac_printk(KERN_WARNING "rsbac_acl_set_acl_entry(): Could not lookup device %02u:%02u!\n", RSBAC_MAJOR(tid.file.device), RSBAC_MINOR(tid.file.device));
+			WARN_ONCE(1, "rsbac_acl_set_acl_entry(): Could not lookup device %02u:%02u!\n", RSBAC_MAJOR(tid.file.device), RSBAC_MINOR(tid.file.device));
 			/* free read lock */
 			srcu_read_unlock(&device_list_srcu, srcu_idx);
-			return -RSBAC_EINVALIDDEV;
+			/* Normally, we would return -RSBAC_EINVALIDDEV here.
+			 * To avoid cascades of further error messages, we just return 0
+			 * to let the calling function assume that all is fine.
+			 */
+			return 0;
 		}
 		if (!rsbac_ta_list_lol_exist
 		    (ta_number, device_p->handle,
@@ -4725,9 +4729,13 @@ int rsbac_acl_remove_acl_entry(rsbac_list_ta_number_t ta_number,
 		/* lookup device */
 		device_p = acl_lookup_device(RSBAC_MAJOR(tid.file.device), RSBAC_MINOR(tid.file.device));
 		if (!device_p) {
-			rsbac_printk(KERN_WARNING "rsbac_acl_remove_acl_entry(): Could not lookup device %02u:%02u!\n", RSBAC_MAJOR(tid.file.device), RSBAC_MINOR(tid.file.device));
+			WARN_ONCE(1, "rsbac_acl_remove_acl_entry(): Could not lookup device %02u:%02u!\n", RSBAC_MAJOR(tid.file.device), RSBAC_MINOR(tid.file.device));
 			srcu_read_unlock(&device_list_srcu, srcu_idx);
-			return -RSBAC_EINVALIDDEV;
+			/* Normally, we would return -RSBAC_EINVALIDDEV here.
+			 * To avoid cascades of further error messages, we just return 0
+			 * to let the calling function assume that all is fine.
+			 */
+			return 0;
 		}
 		err = rsbac_ta_list_lol_subremove(ta_number,
 						device_p->handle,
@@ -5096,9 +5104,13 @@ int rsbac_acl_remove_acl(rsbac_list_ta_number_t ta_number,
 		/* lookup device */
 		device_p = acl_lookup_device(RSBAC_MAJOR(tid_p->file.device), RSBAC_MINOR(tid_p->file.device));
 		if (!device_p) {
-			rsbac_printk(KERN_WARNING "rsbac_acl_remove_acl(): Could not lookup device %02u:%02u!\n", RSBAC_MAJOR(tid_p->file.device), RSBAC_MINOR(tid_p->file.device));
+			WARN_ONCE(1, "rsbac_acl_remove_acl(): Could not lookup device %02u:%02u!\n", RSBAC_MAJOR(tid_p->file.device), RSBAC_MINOR(tid_p->file.device));
 			srcu_read_unlock(&device_list_srcu, srcu_idx);
-			return -RSBAC_EINVALIDDEV;
+			/* Normally, we would return -RSBAC_EINVALIDDEV here.
+			 * To avoid cascades of further error messages, we just return 0
+			 * to let the calling function assume that all is fine.
+			 */
+			return 0;
 		}
 		err = rsbac_ta_list_lol_remove(ta_number,
 					     device_p->handle,
@@ -5275,9 +5287,13 @@ int rsbac_acl_add_to_acl_entry(rsbac_list_ta_number_t ta_number,
 		/* lookup device */
 		device_p = acl_lookup_device(RSBAC_MAJOR(tid.file.device), RSBAC_MINOR(tid.file.device));
 		if (!device_p) {
-			rsbac_printk(KERN_WARNING "rsbac_acl_set_acl_entry(): Could not lookup device %02u:%02u!\n", RSBAC_MAJOR(tid.file.device), RSBAC_MINOR(tid.file.device));
+			WARN_ONCE(1, "rsbac_acl_set_acl_entry(): Could not lookup device %02u:%02u!\n", RSBAC_MAJOR(tid.file.device), RSBAC_MINOR(tid.file.device));
 			srcu_read_unlock(&device_list_srcu, srcu_idx);
-			return -RSBAC_EINVALIDDEV;
+			/* Normally, we would return -RSBAC_EINVALIDDEV here.
+			 * To avoid cascades of further error messages, we just return 0
+			 * to let the calling function assume that all is fine.
+			 */
+			return 0;
 		}
 		/* protect this list */
 		if (!rsbac_ta_list_lol_exist(ta_number, device_p->handle, &inode_nr)) {	/* new acl */
@@ -5721,9 +5737,13 @@ int rsbac_acl_remove_from_acl_entry(rsbac_list_ta_number_t ta_number,
 		/* lookup device */
 		device_p = acl_lookup_device(RSBAC_MAJOR(tid.file.device), RSBAC_MINOR(tid.file.device));
 		if (!device_p) {
-			rsbac_printk(KERN_WARNING "rsbac_acl_remove_from_acl_entry(): Could not lookup device %02u:%02u!\n", RSBAC_MAJOR(tid.file.device), RSBAC_MINOR(tid.file.device));
+			WARN_ONCE(1, "rsbac_acl_remove_from_acl_entry(): Could not lookup device %02u:%02u!\n", RSBAC_MAJOR(tid.file.device), RSBAC_MINOR(tid.file.device));
 			srcu_read_unlock(&device_list_srcu, srcu_idx);
-			return -RSBAC_EINVALIDDEV;
+			/* Normally, we would return -RSBAC_EINVALIDDEV here.
+			 * To avoid cascades of further error messages, we just return 0
+			 * to let the calling function assume that all is fine.
+			 */
+			return 0;
 		}
 		if (!rsbac_ta_list_lol_get_subdata_ttl(ta_number,
 						       device_p->handle,
@@ -6091,9 +6111,13 @@ int rsbac_acl_set_mask(rsbac_list_ta_number_t ta_number,
 		srcu_idx = srcu_read_lock(&device_list_srcu);
 		device_p = acl_lookup_device(RSBAC_MAJOR(tid.file.device), RSBAC_MINOR(tid.file.device));
 		if (!device_p) {
-			rsbac_printk(KERN_WARNING "rsbac_acl_set_mask(): Could not lookup device %02u:%02u!\n", RSBAC_MAJOR(tid.file.device), RSBAC_MINOR(tid.file.device));
+			WARN_ONCE(1, "rsbac_acl_set_mask(): Could not lookup device %02u:%02u!\n", RSBAC_MAJOR(tid.file.device), RSBAC_MINOR(tid.file.device));
 			srcu_read_unlock(&device_list_srcu, srcu_idx);
-			return -RSBAC_EINVALIDDEV;
+			/* Normally, we would return -RSBAC_EINVALIDDEV here.
+			 * To avoid cascades of further error messages, we just return 0
+			 * to let the calling function assume that all is fine.
+			 */
+			return 0;
 		}
 		err = rsbac_ta_list_lol_add_ttl(ta_number,
 					      device_p->handle,
@@ -6259,18 +6283,20 @@ int rsbac_acl_get_mask(rsbac_list_ta_number_t ta_number,
 		/* lookup device */
 		device_p = acl_lookup_device(RSBAC_MAJOR(tid.file.device), RSBAC_MINOR(tid.file.device));
 		if (!device_p) {
-			rsbac_printk(KERN_WARNING "rsbac_acl_get_mask(): Could not lookup device %02u:%02u!\n", RSBAC_MAJOR(tid.file.device), RSBAC_MINOR(tid.file.device));
 			srcu_read_unlock(&device_list_srcu, srcu_idx);
-			return -RSBAC_EINVALIDDEV;
-		}
-		err = rsbac_ta_list_lol_get_data_ttl(ta_number,
-						   device_p->handle, NULL,
-						   &inode_nr,
-						   mask_p);
-		srcu_read_unlock(&device_list_srcu, srcu_idx);
-		if (err == -RSBAC_ENOTFOUND) {
+			WARN_ONCE(1, "rsbac_acl_get_mask(): Could not lookup device %02u:%02u!\n", RSBAC_MAJOR(tid.file.device), RSBAC_MINOR(tid.file.device));
 			*mask_p = RSBAC_ACL_DEFAULT_FD_MASK;
 			err = 0;
+		} else {
+			err = rsbac_ta_list_lol_get_data_ttl(ta_number,
+							   device_p->handle, NULL,
+							   &inode_nr,
+							   mask_p);
+			srcu_read_unlock(&device_list_srcu, srcu_idx);
+			if (err == -RSBAC_ENOTFOUND) {
+				*mask_p = RSBAC_ACL_DEFAULT_FD_MASK;
+				err = 0;
+			}
 		}
 		/* ready. */
 		return err;
@@ -6510,7 +6536,12 @@ int rsbac_acl_get_rights(rsbac_list_ta_number_t ta_number,
 					     RSBAC_MINOR(tid.file.
 							 device));
 				srcu_read_unlock(&device_list_srcu, srcu_idx);
-				return -RSBAC_EINVALIDDEV;
+				/* Normally, we would return -RSBAC_EINVALIDDEV here.
+				 * To avoid cascades of further error messages, we just return 0
+				 * to let the calling function assume that all is fine.
+				 */
+				*rights_p |= default_fd_rights;
+				return 0;
 			}
 			inode_nr = tid.file.inode;
 			if (!rsbac_ta_list_lol_get_subdata_ttl(ta_number,
@@ -7827,9 +7858,13 @@ int rsbac_acl_get_tlist(rsbac_list_ta_number_t ta_number,
 		/* lookup device */
 		device_p = acl_lookup_device(RSBAC_MAJOR(tid.file.device), RSBAC_MINOR(tid.file.device));
 		if (!device_p) {
-			rsbac_printk(KERN_WARNING "rsbac_acl_get_tlist(): Could not lookup device %02u:%02u!\n", RSBAC_MAJOR(tid.file.device), RSBAC_MINOR(tid.file.device));
+			WARN_ONCE(1, "rsbac_acl_get_tlist(): Could not lookup device %02u:%02u!\n", RSBAC_MAJOR(tid.file.device), RSBAC_MINOR(tid.file.device));
 			srcu_read_unlock(&device_list_srcu, srcu_idx);
-			return -RSBAC_EINVALIDDEV;
+			/* Normally, we would return -RSBAC_EINVALIDDEV here.
+			 * To avoid cascades of further error messages, we just return 0
+			 * to let the calling function assume that all is fine.
+			 */
+			return 0;
 		}
 		/* protect this list */
 		count = rsbac_ta_list_lol_get_all_subitems_ttl(ta_number,
