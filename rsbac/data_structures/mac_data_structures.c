@@ -3,7 +3,7 @@
 /* Implementation of MAC data structures            */
 /* Author and (c) 1999-2025: Amon Ott <ao@rsbac.org> */
 /*                                                   */
-/* Last modified: 08/Jul/2025                        */
+/* Last modified: 14/Oct/2025                        */
 /*************************************************** */
 
 #include <linux/types.h>
@@ -966,10 +966,14 @@ int rsbac_mac_add_to_f_truset(rsbac_list_ta_number_t ta_number,
 	device_p = lookup_device(RSBAC_MAJOR(file.device), RSBAC_MINOR(file.device));
 	if (!device_p) {
 		srcu_read_unlock(&device_list_srcu, srcu_idx);
-		rsbac_printk(KERN_WARNING "rsbac_mac_add_to_f_truset(): invalid device %02u:%02u!\n",
+		WARN_ONCE(1, "rsbac_mac_add_to_f_truset(): invalid device %02u:%02u!\n",
 			     RSBAC_MAJOR(file.device),
 			     RSBAC_MINOR(file.device));
-		return -RSBAC_EINVALIDDEV;
+		/* Normally, we would return -RSBAC_EINVALIDDEV here.
+		 * To avoid cascades of further error messages, we just return 0
+		 * to let the calling function assume that all is fine.
+		 */
+		return 0;
 	}
 
 	err = rsbac_ta_list_lol_subadd_ttl(ta_number,
@@ -1019,11 +1023,15 @@ int rsbac_mac_remove_from_f_truset(rsbac_list_ta_number_t ta_number,
 	srcu_idx = srcu_read_lock(&device_list_srcu);
 	device_p = lookup_device(RSBAC_MAJOR(file.device), RSBAC_MINOR(file.device));
 	if (!device_p) {
-		rsbac_printk(KERN_WARNING "rsbac_mac_remove_from_f_truset(): invalid device %02u:%02u!\n",
+		WARN_ONCE(1, "rsbac_mac_remove_from_f_truset(): invalid device %02u:%02u!\n",
 			     RSBAC_MAJOR(file.device),
 			     RSBAC_MINOR(file.device));
 		srcu_read_unlock(&device_list_srcu, srcu_idx);
-		return -RSBAC_EINVALIDDEV;
+		/* Normally, we would return -RSBAC_EINVALIDDEV here.
+		 * To avoid cascades of further error messages, we just return 0
+		 * to let the calling function assume that all is fine.
+		 */
+		return 0;
 	}
 	err = rsbac_ta_list_lol_subremove(ta_number,
 					  device_p->handle,
@@ -1068,11 +1076,15 @@ int rsbac_mac_clear_f_truset(rsbac_list_ta_number_t ta_number,
 	srcu_idx = srcu_read_lock(&device_list_srcu);
 	device_p = lookup_device(RSBAC_MAJOR(file.device), RSBAC_MINOR(file.device));
 	if (!device_p) {
-		rsbac_printk(KERN_WARNING "rsbac_mac_clear_f_truset(): invalid device %02u:%02u!\n",
+		WARN_ONCE(1, "rsbac_mac_clear_f_truset(): invalid device %02u:%02u!\n",
 			     RSBAC_MAJOR(file.device),
 			     RSBAC_MINOR(file.device));
 		srcu_read_unlock(&device_list_srcu, srcu_idx);
-		return -RSBAC_EINVALIDDEV;
+		/* Normally, we would return -RSBAC_EINVALIDDEV here.
+		 * To avoid cascades of further error messages, we just return 0
+		 * to let the calling function assume that all is fine.
+		 */
+		return 0;
 	}
 	err = rsbac_ta_list_lol_remove(ta_number,
 				     device_p->handle,
@@ -1135,11 +1147,15 @@ int rsbac_mac_copy_fp_truset(rsbac_mac_file_t file,
 	srcu_idx = srcu_read_lock(&device_list_srcu);
 	device_p = lookup_device(RSBAC_MAJOR(file.device), RSBAC_MINOR(file.device));
 	if (!device_p) {
-		rsbac_printk(KERN_WARNING "rsbac_mac_copy_fp_truset(): invalid device %02u:%02u!\n",
+		WARN_ONCE(1, "rsbac_mac_copy_fp_truset(): invalid device %02u:%02u!\n",
 			     RSBAC_MAJOR(file.device),
 			     RSBAC_MINOR(file.device));
 		srcu_read_unlock(&device_list_srcu, srcu_idx);
-		return -RSBAC_EINVALIDDEV;
+		/* Normally, we would return -RSBAC_EINVALIDDEV here.
+		 * To avoid cascades of further error messages, we just return 0
+		 * to let the calling function assume that all is fine.
+		 */
+		return 0;
 	}
 	/* call the copy function */
 	err = copy_fp_tru_set_item(device_p, file, p_tru_set_id);
@@ -1188,11 +1204,15 @@ int rsbac_mac_get_f_trulist(rsbac_list_ta_number_t ta_number,
 	srcu_idx = srcu_read_lock(&device_list_srcu);
 	device_p = lookup_device(RSBAC_MAJOR(file.device), RSBAC_MINOR(file.device));
 	if (!device_p) {
-		rsbac_printk(KERN_WARNING "rsbac_mac_get_f_trulist(): invalid device %02u:%02u!\n",
+		WARN_ONCE(1, "rsbac_mac_get_f_trulist(): invalid device %02u:%02u!\n",
 			     RSBAC_MAJOR(file.device),
 			     RSBAC_MINOR(file.device));
 		srcu_read_unlock(&device_list_srcu, srcu_idx);
-		return -RSBAC_EINVALIDDEV;
+		/* Normally, we would return -RSBAC_EINVALIDDEV here.
+		 * To avoid cascades of further error messages, we just return 0
+		 * to let the calling function assume that all is fine.
+		 */
+		return 0;
 	}
 	count = rsbac_ta_list_lol_get_all_subdesc_ttl(ta_number,
 						      device_p->handle,
