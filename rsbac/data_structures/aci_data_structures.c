@@ -5,7 +5,7 @@
 /* (some smaller parts copied from fs/namei.c        */
 /*  and others)                                      */
 /*                                                   */
-/* Last modified: 26/Sep/2025                        */
+/* Last modified: 14/Oct/2025                        */
 /*************************************************** */
 
 #include <linux/types.h>
@@ -2276,7 +2276,7 @@ static int unregister_fd_cache_lists(struct rsbac_device_list_item_t *device_p)
 
 /* Create a device item without adding to list. No locking needed. */
 static struct rsbac_device_list_item_t
-*create_device_item(struct vfsmount *vfsmount_p, __u32 major, __u32 minor, rsbac_boolean_t automounted)
+*create_device_item(struct vfsmount *vfsmount_p, __u32 major, __u32 minor)
 {
 	struct rsbac_device_list_item_t *new_item_p;
 
@@ -2289,7 +2289,6 @@ static struct rsbac_device_list_item_t
 	new_item_p->vfsmount_p = vfsmount_p;
 	new_item_p->mount_count = 1;
 	new_item_p->persist = FALSE;
-	new_item_p->automounted = automounted;
 
 	return new_item_p;
 }
@@ -2448,7 +2447,7 @@ long rsbac_read_open(char *name, __u32 major, __u32 minor)
 
 	vfsmount_p = rsbac_get_vfsmount(major, minor);
 	if (!vfsmount_p) {
-		rsbac_pr_debug(ds, "device %02u:%02u has no vfsmount_p, probably auto mounted\n",
+		rsbac_pr_debug(ds, "device %02u:%02u has no vfsmount_p!\n",
 				major, minor);
 		return -RSBAC_EINVALIDDEV;
 	}
@@ -2590,7 +2589,7 @@ long rsbac_write_open(char *name, __u32 major, __u32 minor)
 
 	vfsmount_p = rsbac_get_vfsmount(major, minor);
 	if (!vfsmount_p) {
-		rsbac_pr_debug(ds, "device %02u:%02u has no vfsmount_p, probably auto mounted\n",
+		rsbac_pr_debug(ds, "device %02u:%02u has no vfsmount_p!\n",
 				major, minor);
 		return -RSBAC_EINVALIDDEV;
 	}
@@ -2849,7 +2848,7 @@ devices_proc_show(struct seq_file *m, void *v)
 			    && real_mount(device_p->vfsmount_p)->mnt_mountpoint) {
 				parent_dev = real_mount(device_p->vfsmount_p)->mnt_mountpoint->d_sb->s_dev;
 				seq_printf(m,
-					    "%02u:%02u mount_count %u, fs_type %s (%lx), mountpoint %s, parent %02u:%02u, persist %u, automounted %u, rsbac_dir_inode %llu\n",
+					    "%02u:%02u mount_count %u, fs_type %s (%lx), mountpoint %s, parent %02u:%02u, persist %u, rsbac_dir_inode %llu\n",
 					    device_p->major, device_p->minor,
 					    device_p->mount_count,
 					    device_p->vfsmount_p->mnt_sb->s_type->name,
@@ -2858,7 +2857,6 @@ devices_proc_show(struct seq_file *m, void *v)
 					    parent_dev != RSBAC_MKDEV(device_p->major, device_p->minor) ? RSBAC_MAJOR(parent_dev) : 0,
 					    parent_dev != RSBAC_MKDEV(device_p->major, device_p->minor) ? RSBAC_MINOR(parent_dev) : 0,
 					    device_p->persist,
-					    device_p->automounted,
 					    device_p->rsbac_dir_inode);
 			} else
 				    seq_printf(m,
@@ -6311,7 +6309,7 @@ static int __init rsbac_do_init(void)
 		       rsbac_root_dev_major,
 		       rsbac_root_dev_minor);
 	/* create a private device item */
-	new_device_p = create_device_item(vfsmount_p, RSBAC_MAJOR(vfsmount_p->mnt_sb->s_dev), RSBAC_MINOR(vfsmount_p->mnt_sb->s_dev), FALSE);
+	new_device_p = create_device_item(vfsmount_p, RSBAC_MAJOR(vfsmount_p->mnt_sb->s_dev), RSBAC_MINOR(vfsmount_p->mnt_sb->s_dev));
 	if (!new_device_p) {
 		rsbac_printk(KERN_CRIT
 			     "rsbac_do_init(): Could not alloc device item!\n");
@@ -7138,95 +7136,6 @@ int rsbac_kthread_notify(rsbac_pid_t pid)
 	return 0;
 }
 
-static int rsbac_automount(__u32 major, __u32 minor)
-{
-	struct rsbac_device_list_item_t *device_p;
-	struct rsbac_device_list_item_t *new_device_p;
-	u_int hash;
-	int srcu_idx;
-	int err;
-
-	/* serialize mounts */
-	spin_lock(&rsbac_mount_lock);
-	while (rsbac_mount_pid != NULL) {
-		spin_unlock(&rsbac_mount_lock);
-		/* we may not sleep in preempted RCU, so just spin here then */
-		if (rcu_preempt_depth() == 0)
-			msleep_interruptible(100);
-		spin_lock(&rsbac_mount_lock);
-	}
-	rsbac_mount_pid = task_pid(current);
-	spin_unlock(&rsbac_mount_lock);
-
-	hash = device_hash(minor);
-	srcu_idx = srcu_read_lock(&device_list_srcu[hash]);
-
-	/* repeated mount? */
-	device_p = lookup_device(major, minor, hash);
-	srcu_read_unlock(&device_list_srcu[hash], srcu_idx);
-	if (device_p) {
-		rsbac_mount_pid = NULL;
-		rsbac_printk(KERN_INFO "rsbac_automount: device %02u:%02u is already mounted!\n",
-			     major, minor);
-		return 0;
-	}
-	/* OK, go on */
-	new_device_p = create_device_item(NULL, major, minor, TRUE);
-	if (!new_device_p) {
-		rsbac_mount_pid = NULL;
-		return -RSBAC_ECOULDNOTADDDEVICE;
-	}
-
-	srcu_idx = srcu_read_lock(&device_list_srcu[hash]);
-	/* make sure to only add, if this device item has not been added in the meantime */
-	device_p = lookup_device(major, minor, hash);
-	srcu_read_unlock(&device_list_srcu[hash], srcu_idx);
-	if (device_p) {
-		rsbac_mount_pid = NULL;
-		rsbac_printk(KERN_WARNING "rsbac_automount(): mount race for device %02u:%02u detected!\n",
-			     major, minor);
-		clear_device_item(new_device_p);
-		return 0;
-	}
-	device_p = add_device_item(new_device_p, FALSE);
-	if (!device_p) {
-		rsbac_mount_pid = NULL;
-		rsbac_printk(KERN_WARNING "rsbac_automount: adding device %02u:%02u failed!\n",
-			     major, minor);
-		clear_device_item(new_device_p);
-		return -RSBAC_ECOULDNOTADDDEVICE;
-	}
-	if ((err = register_fd_lists(new_device_p, major, minor))) {
-		char *tmp;
-
-		tmp = rsbac_kmalloc(RSBAC_MAXNAMELEN);
-		if (tmp) {
-			rsbac_printk(KERN_WARNING "rsbac_automount(): File/Dir ACI registration failed for dev %02u:%02u, err %s!\n",
-				     major, minor,
-				     get_error_name(tmp, err));
-			rsbac_kfree(tmp);
-		}
-	}
-
-/* call other mount functions */
-#if defined(CONFIG_RSBAC_MAC)
-	rsbac_mount_mac(major, minor);
-#endif
-#if defined(CONFIG_RSBAC_AUTH)
-	rsbac_mount_auth(major, minor);
-#endif
-#if defined(CONFIG_RSBAC_ACL)
-	rsbac_mount_acl(major, minor);
-#endif
-#if defined(CONFIG_RSBAC_REG)
-	rsbac_mount_reg(major, minor);
-#endif
-
-	rsbac_mount_pid = NULL;
-
-	return 0;
-}
-
 /* When mounting a device, its ACI must be read and added to the ACI lists. */
 
 EXPORT_SYMBOL(rsbac_mount);
@@ -7370,19 +7279,11 @@ int rsbac_mount(struct vfsmount * vfsmount_p, struct vfsmount * vfsmount_parent_
 	device_p = lookup_device(major, minor, hash);
 	/* repeated mount? */
 	if (device_p) {
-		if (device_p->automounted) {
-			rsbac_printk(KERN_INFO "rsbac_mount: replacing auto mount of device %02u:%02u with real mount of fs_type %s (%lx)\n",
-				    major, minor,
-				    vfsmount_p->mnt_sb->s_type->name,
-				    vfsmount_p->mnt_sb->s_magic);
-			device_p->automounted = FALSE;
-		} else {
-			rsbac_printk(KERN_INFO "rsbac_mount: repeated mount %u of device %02u:%02u, fs_type %s (%lx)\n",
-				     device_p->mount_count, major, minor,
-				    vfsmount_p->mnt_sb->s_type->name,
-				    vfsmount_p->mnt_sb->s_magic);
-			device_p->mount_count++;
-		}
+		rsbac_printk(KERN_INFO "rsbac_mount: repeated mount %u of device %02u:%02u, fs_type %s (%lx)\n",
+			     device_p->mount_count, major, minor,
+			    vfsmount_p->mnt_sb->s_type->name,
+			    vfsmount_p->mnt_sb->s_magic);
+		device_p->mount_count++;
 		if (!device_p->vfsmount_p)
 			device_p->vfsmount_p = mntget(vfsmount_p);
 		else
@@ -7412,7 +7313,7 @@ int rsbac_mount(struct vfsmount * vfsmount_p, struct vfsmount * vfsmount_parent_
 
 		srcu_read_unlock(&device_list_srcu[hash], srcu_idx);
 		/* OK, go on */
-		new_device_p = create_device_item(vfsmount_p, major, minor, FALSE);
+		new_device_p = create_device_item(vfsmount_p, major, minor);
 		rsbac_pr_debug(stack, "after creating device item: free stack: %lu\n",
 			       rsbac_stack_free_space());
 		if (!new_device_p) {
@@ -8143,36 +8044,22 @@ static int get_attr_fd(rsbac_list_ta_number_t ta_number,
 		hash = device_hash(minor);
 		srcu_idx = srcu_read_lock(&device_list_srcu[hash]);
 		device_p = lookup_device(major, minor, hash);
-		if (!device_p) {
+		if (unlikely(!device_p)) {
 			srcu_read_unlock(&device_list_srcu[hash], srcu_idx);
-			if (!major || (tid_p->file.dentry_p && tid_p->file.dentry_p->d_sb && !rsbac_type_writable(tid_p->file.dentry_p->d_sb) ) ) {
-				if (   tid_p->file.dentry_p->d_sb->s_type
-				    && tid_p->file.dentry_p->d_sb->s_type->name)
-					rsbac_printk(KERN_WARNING "rsbac_get_attr(): unknown device %02u:%02u (type %s), auto mounting!\n",
-						major, minor, tid_p->file.dentry_p->d_sb->s_type->name);
-				else
-					rsbac_printk(KERN_WARNING "rsbac_get_attr(): unknown device %02u:%02u, auto mounting!\n",
-						major, minor);
-				err = rsbac_automount(major, minor);
-				if (err)
-					return err;
-			} else {
-				if (   tid_p->file.dentry_p
-				    && tid_p->file.dentry_p->d_sb
-				    && tid_p->file.dentry_p->d_sb->s_type
-				    && tid_p->file.dentry_p->d_sb->s_type->name)
-					rsbac_printk(KERN_WARNING "rsbac_get_attr(): unknown device %02u:%02u (type %s), cannot auto mount!\n",
-						major, minor, tid_p->file.dentry_p->d_sb->s_type->name);
-				else
-					rsbac_printk(KERN_WARNING "rsbac_get_attr(): unknown device %02u:%02u, cannot auto mount!\n",
-						major, minor);
-				return -RSBAC_EINVALIDDEV;
-			}
-			continue;
+			if (   tid_p->file.dentry_p
+			    && tid_p->file.dentry_p->d_sb
+			    && tid_p->file.dentry_p->d_sb->s_type
+			    && tid_p->file.dentry_p->d_sb->s_type->name
+			   )
+				WARN_ONCE(1, "rsbac_get_attr(): unknown device %02u:%02u (type %s), returning default value!\n",
+					major, minor, tid_p->file.dentry_p->d_sb->s_type->name);
+			else
+				WARN_ONCE(1, "rsbac_get_attr(): unknown device %02u:%02u, returning default value!\n",
+					major, minor);
 		}
 
 #ifdef CONFIG_RSBAC_FD_CACHE
-		if (inherit && !ta_number && device_p->fd_cache_handle[module]) {
+		if (inherit && !ta_number && device_p->fd_cache_handle[module] && likely(device_p)) {
 			rsbac_enum_t cache_attr = attr;
 
 			if (!rsbac_list_lol_get_subdata(device_p->fd_cache_handle[module],
@@ -8274,10 +8161,13 @@ static int get_attr_fd(rsbac_list_ta_number_t ta_number,
 		switch (module) {
 		case SW_GEN:
 			{
-				struct rsbac_gen_fd_aci_t aci =
-				    DEFAULT_GEN_FD_ACI;
+				struct rsbac_gen_fd_aci_t aci = DEFAULT_GEN_FD_ACI;
 
 				if (attr == A_internal) {
+					if (unlikely(!device_p)) {
+						value_p->internal = FALSE;
+						return 0;
+					}
 					if (!device_p->rsbac_dir_inode
 					    || !tid_p->file.inode)
 						value_p->internal = FALSE;
@@ -8293,22 +8183,12 @@ static int get_attr_fd(rsbac_list_ta_number_t ta_number,
 
 						/* inheritance possible? */
 						if (!rsbac_get_parent(target, *tid_p, &parent_target, &parent_tid)) {	/* yes: inherit this single level */
-							if (device_p->
-							    rsbac_dir_inode
-							    ==
-							    parent_tid.
-							    file.inode)
-								value_p->
-								    internal
-								    = TRUE;
+							if (device_p->rsbac_dir_inode == parent_tid.file.inode)
+								value_p->internal = TRUE;
 							else
-								value_p->
-								    internal
-								    =
-								    FALSE;
+								value_p->internal = FALSE;
 						} else {
-							value_p->internal =
-							    FALSE;
+							value_p->internal = FALSE;
 						}
 					} else {
 						value_p->internal = FALSE;
@@ -8318,11 +8198,12 @@ static int get_attr_fd(rsbac_list_ta_number_t ta_number,
 					srcu_read_unlock(&device_list_srcu[hash], srcu_idx);
 					return 0;
 				}
-				rsbac_ta_list_get_data_ttl(ta_number,
-							   device_p->handles.gen,
-							   NULL,
-							   device_p->persist ? (void *)&inode_nr : &tid_p->file.inode,
-							   &aci);
+				if (likely(device_p))
+					rsbac_ta_list_get_data_ttl(ta_number,
+								   device_p->handles.gen,
+								   NULL,
+								   device_p->persist ? (void *)&inode_nr : &tid_p->file.inode,
+								   &aci);
 				switch (attr) {
 				case A_log_array_low:
 					value_p->log_array_low =
@@ -8355,18 +8236,20 @@ static int get_attr_fd(rsbac_list_ta_number_t ta_number,
 				case A_allow_write_exec:
 					value_p->allow_write_exec =
 					    aci.allow_write_exec;
-					if ((value_p->allow_write_exec ==
-					     AWX_inherit) && inherit) {
+					if (   value_p->allow_write_exec == AWX_inherit
+					    && inherit
+					   ) {
 						enum rsbac_target_t
 						    parent_target;
 						union rsbac_target_id_t
 						    parent_tid;
 
 						/* inheritance possible? */
-						if (!rsbac_get_parent
-						    (target, *tid_p,
-						     &parent_target,
-						     &parent_tid)) {
+						if (   likely(device_p)
+						    && !rsbac_get_parent (target,
+									*tid_p,
+									&parent_target,
+									&parent_tid)) {
 #ifdef CONFIG_RSBAC_FD_CACHE
 							if (RSBAC_IS_ZERO_DEV(firstdev_major, firstdev_minor)) {
 								firstdev_major = device_p->major;
@@ -8380,20 +8263,17 @@ static int get_attr_fd(rsbac_list_ta_number_t ta_number,
 							*tid_p = parent_tid;
 							continue;
 						} else {
-							value_p->allow_write_exec =
-							    def_gen_root_dir_aci.allow_write_exec;
+							value_p->allow_write_exec = def_gen_root_dir_aci.allow_write_exec;
 							err = 0;
 							break;
 						}
 					}
 					break;
 				case A_fake_root_uid:
-					value_p->fake_root_uid =
-					    aci.fake_root_uid;
+					value_p->fake_root_uid = aci.fake_root_uid;
 					break;
 				case A_auid_exempt:
-					value_p->auid_exempt =
-					    aci.auid_exempt;
+					value_p->auid_exempt = aci.auid_exempt;
 					break;
 				case A_vset:
 					value_p->vset = aci.vset;
@@ -8410,27 +8290,28 @@ static int get_attr_fd(rsbac_list_ta_number_t ta_number,
 				struct rsbac_mac_fd_aci_t aci =
 				    DEFAULT_MAC_FD_ACI;
 
-				rsbac_ta_list_get_data_ttl(ta_number,
-							   device_p->handles.mac,
-							   NULL,
-							   device_p->persist ? (void *)&inode_nr : &tid_p->file.inode,
-							   &aci);
+				if (likely(device_p))
+					rsbac_ta_list_get_data_ttl(ta_number,
+								   device_p->handles.mac,
+								   NULL,
+								   device_p->persist ? (void *)&inode_nr : &tid_p->file.inode,
+								   &aci);
 				switch (attr) {
 				case A_security_level:
-					value_p->security_level =
-					    aci.sec_level;
-					if ((value_p->security_level ==
-					     SL_inherit) && inherit) {
+					value_p->security_level = aci.sec_level;
+					if ((value_p->security_level == SL_inherit) && inherit) {
 						enum rsbac_target_t
 						    parent_target;
 						union rsbac_target_id_t
 						    parent_tid;
 
 						/* inheritance possible? */
-						if (!rsbac_get_parent
-						    (target, *tid_p,
-						     &parent_target,
-						     &parent_tid)) {
+						if (   likely(device_p)
+						    && !rsbac_get_parent(target,
+									*tid_p,
+									&parent_target,
+									&parent_tid)
+						   ) {
 #ifdef CONFIG_RSBAC_FD_CACHE
 							if (RSBAC_IS_ZERO_DEV(firstdev_major, firstdev_minor)) {
 								firstdev_major = device_p->major;
@@ -8444,11 +8325,7 @@ static int get_attr_fd(rsbac_list_ta_number_t ta_number,
 							*tid_p = parent_tid;
 							continue;
 						} else {
-							value_p->
-							    security_level
-							    =
-							    def_mac_root_dir_aci.
-							    sec_level;
+							value_p->security_level = def_mac_root_dir_aci.sec_level;
 							err = 0;
 							break;
 						}
@@ -8466,10 +8343,12 @@ static int get_attr_fd(rsbac_list_ta_number_t ta_number,
 						    parent_tid;
 
 						/* inheritance possible? */
-						if (!rsbac_get_parent
-						    (target, *tid_p,
-						     &parent_target,
-						     &parent_tid)) {
+						if (   likely(device_p)
+						    && !rsbac_get_parent(target,
+									*tid_p,
+									&parent_target,
+									&parent_tid)
+						   ) {
 #ifdef CONFIG_RSBAC_FD_CACHE
 							if (RSBAC_IS_ZERO_DEV(firstdev_major, firstdev_minor)) {
 								firstdev_major = device_p->major;
@@ -8499,10 +8378,12 @@ static int get_attr_fd(rsbac_list_ta_number_t ta_number,
 						    parent_tid;
 
 						/* inheritance possible? */
-						if (!rsbac_get_parent
-						    (target, *tid_p,
-						     &parent_target,
-						     &parent_tid)) {
+						if (   likely(device_p)
+						    && !rsbac_get_parent(target,
+									*tid_p,
+									&parent_target,
+									&parent_tid)
+						   ) {
 #ifdef CONFIG_RSBAC_FD_CACHE
 							if (RSBAC_IS_ZERO_DEV(firstdev_major, firstdev_minor)) {
 								firstdev_major = device_p->major;
@@ -8544,12 +8425,12 @@ static int get_attr_fd(rsbac_list_ta_number_t ta_number,
 				switch (attr) {
 				case A_ff_flags:
 					ff_tmp_flags = RSBAC_FF_DEF;
-					rsbac_ta_list_get_data_ttl
-					    (ta_number,
-					     device_p->handles.ff,
-					     NULL,
-					     device_p->persist ? (void *)&inode_nr : &tid_p->file.inode,
-					     &ff_tmp_flags);
+					if (likely(device_p))
+						rsbac_ta_list_get_data_ttl(ta_number,
+									device_p->handles.ff,
+									NULL,
+									device_p->persist ? (void *)&inode_nr : &tid_p->file.inode,
+									&ff_tmp_flags);
 					ff_flags |= ff_tmp_flags & ff_mask;
 					value_p->ff_flags = ff_flags;
 					if (   (ff_tmp_flags & FF_add_inherited)
@@ -8558,10 +8439,12 @@ static int get_attr_fd(rsbac_list_ta_number_t ta_number,
 						union rsbac_target_id_t parent_tid;
 
 						/* inheritance possible? */
-						if (!rsbac_get_parent
-						    (target, *tid_p,
-						     &parent_target,
-						     &parent_tid)) {
+						if (   likely(device_p)
+						    && !rsbac_get_parent(target,
+									*tid_p,
+									&parent_target,
+									&parent_tid)
+						   ) {
 #ifdef CONFIG_RSBAC_FD_CACHE
 							if (RSBAC_IS_ZERO_DEV(firstdev_major, firstdev_minor)) {
 								firstdev_major = device_p->major;
@@ -8594,16 +8477,16 @@ static int get_attr_fd(rsbac_list_ta_number_t ta_number,
 				struct rsbac_rc_fd_aci_t aci =
 				    DEFAULT_RC_FD_ACI;
 
-				rsbac_ta_list_get_data_ttl(ta_number,
-							   device_p->handles.rc,
-							   NULL,
-							   device_p->persist ? (void *)&inode_nr : &tid_p->file.inode,
-							   &aci);
+				if (likely(device_p))
+					rsbac_ta_list_get_data_ttl(ta_number,
+								device_p->handles.rc,
+								NULL,
+								device_p->persist ? (void *)&inode_nr : &tid_p->file.inode,
+								&aci);
 				switch (attr) {
 				case A_rc_type_fd:
 					value_p->rc_type_fd = aci.rc_type_fd;
-					if (value_p->rc_type_fd ==
-					    RC_type_inherit_parent
+					if (   value_p->rc_type_fd == RC_type_inherit_parent
 					    && inherit) {
 						enum rsbac_target_t
 						    parent_target;
@@ -8611,10 +8494,12 @@ static int get_attr_fd(rsbac_list_ta_number_t ta_number,
 						    parent_tid;
 
 						/* inheritance possible? */
-						if (!rsbac_get_parent
-						    (target, *tid_p,
-						     &parent_target,
-						     &parent_tid)) {
+						if (   likely(device_p)
+						    && !rsbac_get_parent(target,
+									*tid_p,
+									&parent_target,
+									&parent_tid)
+						   ) {
 #ifdef CONFIG_RSBAC_FD_CACHE
 							if (RSBAC_IS_ZERO_DEV(firstdev_major, firstdev_minor)) {
 								firstdev_major = device_p->major;
@@ -8635,21 +8520,22 @@ static int get_attr_fd(rsbac_list_ta_number_t ta_number,
 					}
 					break;
 				case A_rc_force_role:
-					value_p->rc_force_role =
-					    aci.rc_force_role;
-					if (value_p->rc_force_role ==
-					    RC_role_inherit_parent
-					    && inherit) {
+					value_p->rc_force_role = aci.rc_force_role;
+					if (   value_p->rc_force_role == RC_role_inherit_parent
+					    && inherit
+					   ) {
 						enum rsbac_target_t
 						    parent_target;
 						union rsbac_target_id_t
 						    parent_tid;
 
 						/* inheritance possible? */
-						if (!rsbac_get_parent
-						    (target, *tid_p,
-						     &parent_target,
-						     &parent_tid)) {
+						if (   likely(device_p)
+						    && !rsbac_get_parent(target,
+									*tid_p,
+									&parent_target,
+									&parent_tid)
+						   ) {
 #ifdef CONFIG_RSBAC_FD_CACHE
 							if (RSBAC_IS_ZERO_DEV(firstdev_major, firstdev_minor)) {
 								firstdev_major = device_p->major;
@@ -8670,21 +8556,22 @@ static int get_attr_fd(rsbac_list_ta_number_t ta_number,
 					}
 					break;
 				case A_rc_initial_role:
-					value_p->rc_initial_role =
-					    aci.rc_initial_role;
-					if (value_p->rc_initial_role ==
-					    RC_role_inherit_parent
-					    && inherit) {
+					value_p->rc_initial_role = aci.rc_initial_role;
+					if (   value_p->rc_initial_role == RC_role_inherit_parent
+					    && inherit
+					   ) {
 						enum rsbac_target_t
 						    parent_target;
 						union rsbac_target_id_t
 						    parent_tid;
 
 						/* inheritance possible? */
-						if (!rsbac_get_parent
-						    (target, *tid_p,
-						     &parent_target,
-						     &parent_tid)) {
+						if (   likely(device_p)
+						    && !rsbac_get_parent(target,
+									*tid_p,
+									&parent_target,
+									&parent_tid)
+						   ) {
 #ifdef CONFIG_RSBAC_FD_CACHE
 							if (RSBAC_IS_ZERO_DEV(firstdev_major, firstdev_minor)) {
 								firstdev_major = device_p->major;
@@ -8718,11 +8605,12 @@ static int get_attr_fd(rsbac_list_ta_number_t ta_number,
 				struct rsbac_auth_fd_aci_t aci =
 				    DEFAULT_AUTH_FD_ACI;
 
-				rsbac_ta_list_get_data_ttl(ta_number,
-							   device_p->handles.auth,
-							   NULL,
-							   device_p->persist ? (void *)&inode_nr : &tid_p->file.inode,
-							   &aci);
+				if (likely(device_p))
+					rsbac_ta_list_get_data_ttl(ta_number,
+								   device_p->handles.auth,
+								   NULL,
+								   device_p->persist ? (void *)&inode_nr : &tid_p->file.inode,
+								   &aci);
 				switch (attr) {
 				case A_auth_may_setuid:
 					value_p->auth_may_setuid =
@@ -8748,11 +8636,12 @@ static int get_attr_fd(rsbac_list_ta_number_t ta_number,
 				struct rsbac_cap_fd_aci_t aci =
 				    DEFAULT_CAP_FD_ACI;
 
-				rsbac_ta_list_get_data_ttl(ta_number,
-							   device_p->handles.cap,
-							   NULL,
-							   device_p->persist ? (void *)&inode_nr : &tid_p->file.inode,
-							   &aci);
+				if (likely(device_p))
+					rsbac_ta_list_get_data_ttl(ta_number,
+								   device_p->handles.cap,
+								   NULL,
+								   device_p->persist ? (void *)&inode_nr : &tid_p->file.inode,
+								   &aci);
 				switch (attr) {
 				case A_min_caps:
 					value_p->min_caps = aci.min_caps;
@@ -8765,10 +8654,12 @@ static int get_attr_fd(rsbac_list_ta_number_t ta_number,
 					if ((value_p->cap_ld_env == LD_inherit) && inherit) {
 						enum rsbac_target_t parent_target;
 						union rsbac_target_id_t parent_tid;
-						if (!rsbac_get_parent(target,
+						if (   likely(device_p)
+						    && !rsbac_get_parent(target,
 									*tid_p,
 									&parent_target,
-									&parent_tid)) {
+									&parent_tid)
+						   ) {
 #ifdef CONFIG_RSBAC_FD_CACHE
 							if (RSBAC_IS_ZERO_DEV(firstdev_major, firstdev_minor)) {
 								firstdev_major = device_p->major;
@@ -8808,6 +8699,8 @@ static int get_attr_fd(rsbac_list_ta_number_t ta_number,
 
 				switch (attr) {
 					case A_res_min:
+						if(unlikely(!device_p))
+							break;
 						item_count = rsbac_list_lol_get_all_subitems_ttl(device_p->handles.res_min, &tid_p->file.inode, (void **) &array_p, NULL);
 						if (item_count > 0) {
 							tmp = array_p;
@@ -8824,6 +8717,8 @@ static int get_attr_fd(rsbac_list_ta_number_t ta_number,
 						}
 						break;
 					case A_res_max:
+						if(unlikely(!device_p))
+							break;
 						item_count = rsbac_list_lol_get_all_subitems_ttl(device_p->handles.res_max, &tid_p->file.inode, (void **) &array_p, NULL);
 						if (item_count > 0) {
 							tmp = array_p;
@@ -8851,27 +8746,32 @@ static int get_attr_fd(rsbac_list_ta_number_t ta_number,
 			{
 #if defined(CONFIG_RSBAC_UDF_CACHE)
 				if (attr == A_udf_checked) {
-					err = rsbac_ta_list_get_data_ttl
-					    (ta_number,
-					     device_p->handles.udfc,
-					     NULL,
+					if (likely(device_p)) {
+						err = rsbac_ta_list_get_data_ttl(ta_number,
+							device_p->handles.udfc,
+							NULL,
 #ifdef CONFIG_RSBAC_UDF_PERSIST
-					     device_p->persist ? (void *)&inode_nr : &tid_p->file.inode,
+							device_p->persist ? (void *)&inode_nr : &tid_p->file.inode,
 #else
-					     &tid_p->file.inode,
+							&tid_p->file.inode,
 #endif
-					     &value_p->udf_checked);
+							&value_p->udf_checked);
+					} else {
+						value_p->udf_checked = UDF_unchecked;
+						err = 0;
+					}
 				} else
 #endif
 				{
 					struct rsbac_udf_fd_aci_t aci =
 					    DEFAULT_UDF_FD_ACI;
 
-					rsbac_ta_list_get_data_ttl
-					    (ta_number,
-					     device_p->handles.udf,
-					     NULL, device_p->persist ? (void *)&inode_nr : &tid_p->file.inode,
-					     &aci);
+					if (likely(device_p))
+						rsbac_ta_list_get_data_ttl(ta_number,
+									device_p->handles.udf,
+									NULL,
+									device_p->persist ? (void *)&inode_nr : &tid_p->file.inode,
+									&aci);
 					switch (attr) {
 					case A_udf_checker:
 						value_p->udf_checker =
@@ -8879,12 +8779,18 @@ static int get_attr_fd(rsbac_list_ta_number_t ta_number,
 						break;
 					case A_udf_do_check:
 						value_p->udf_do_check = aci.udf_do_check;
-						if(   (value_p->udf_do_check == UDF_inherit)
-							&& inherit) {
+						if(   value_p->udf_do_check == UDF_inherit
+						   && inherit
+						  ) {
 							enum rsbac_target_t       parent_target;
 							union rsbac_target_id_t   parent_tid;
 
-							if(!rsbac_get_parent(target, *tid_p, &parent_target, &parent_tid)) {
+							if (   likely(device_p)
+							    && !rsbac_get_parent(target,
+										*tid_p,
+										&parent_target,
+										&parent_tid)
+							   ) {
 #ifdef CONFIG_RSBAC_FD_CACHE
 								if (RSBAC_IS_ZERO_DEV(firstdev_major, firstdev_minor)) {
 									firstdev_major = device_p->major;
@@ -8916,7 +8822,7 @@ static int get_attr_fd(rsbac_list_ta_number_t ta_number,
 			err = -RSBAC_EINVALIDMODULE;
 		}
 #ifdef CONFIG_RSBAC_FD_CACHE
-		if (!err && inherit && !ta_number) {
+		if (!err && inherit && !ta_number && likely(device_p) ) {
 			rsbac_enum_t cache_attr = attr;
 #ifdef CONFIG_RSBAC_DEBUG
 			char * attr_name = NULL;
@@ -8978,7 +8884,8 @@ static int get_attr_fd(rsbac_list_ta_number_t ta_number,
 #endif /* CONFIG_RSBAC_FD_CACHE */
 
 		/* free access to device_list_head */
-		srcu_read_unlock(&device_list_srcu[hash], srcu_idx);
+		if (likely(device_p))
+			srcu_read_unlock(&device_list_srcu[hash], srcu_idx);
 		/* and return */
 		return err;
 	}			/* end of for(;;) loop for inheritance */
@@ -10912,39 +10819,22 @@ static int set_attr_fd_ttl(rsbac_list_ta_number_t ta_number,
 	hash = device_hash(minor);
 	srcu_idx = srcu_read_lock(&device_list_srcu[hash]);
 	device_p = lookup_device(major, minor, hash);
-	if (!device_p) {
+	if (unlikely(!device_p)) {
 		srcu_read_unlock(&device_list_srcu[hash], srcu_idx);
-		if (!major || (tid_p->file.dentry_p && tid_p->file.dentry_p->d_sb && !rsbac_type_writable(tid_p->file.dentry_p->d_sb) ) ) {
-			if (   tid_p->file.dentry_p->d_sb->s_type
-			    && tid_p->file.dentry_p->d_sb->s_type->name)
-				rsbac_printk(KERN_WARNING "rsbac_set_attr(): unknown device %02u:%02u (type %s), auto mounting!\n",
-					major, minor, tid_p->file.dentry_p->d_sb->s_type->name);
-			else
-				rsbac_printk(KERN_WARNING "rsbac_set_attr(): unknown device %02u:%02u, auto mounting!\n",
-					major, minor);
-			err = rsbac_automount(major, minor);
-			if (err)
-				return err;
-		} else {
-			if (   tid_p->file.dentry_p
-			    && tid_p->file.dentry_p->d_sb
-			    && tid_p->file.dentry_p->d_sb->s_type
-			    && tid_p->file.dentry_p->d_sb->s_type->name)
-				rsbac_printk(KERN_WARNING "rsbac_set_attr(): unknown device %02u:%02u (type %s), cannot auto mount!\n",
-					major, minor, tid_p->file.dentry_p->d_sb->s_type->name);
-			else
-				rsbac_printk(KERN_WARNING "rsbac_set_attr(): unknown device %02u:%02u, cannot auto mount!\n",
-					major, minor);
-			return -RSBAC_EINVALIDDEV;
-		}
-		srcu_idx = srcu_read_lock(&device_list_srcu[hash]);
-		device_p = lookup_device(major, minor, hash);
-		if (!device_p) {
-			srcu_read_unlock(&device_list_srcu[hash], srcu_idx);
-			rsbac_printk(KERN_WARNING "rsbac_set_attr(): unknown device %02u:%02u!\n",
-				     major, minor);
-			return -RSBAC_EINVALIDDEV;
-		}
+		if (   tid_p->file.dentry_p
+		    && tid_p->file.dentry_p->d_sb
+		    && tid_p->file.dentry_p->d_sb->s_type
+		    && tid_p->file.dentry_p->d_sb->s_type->name)
+			WARN_ONCE(1, "rsbac_set_attr_fd(): unknown device %02u:%02u (type %s), cannot set attribute!\n",
+				major, minor, tid_p->file.dentry_p->d_sb->s_type->name);
+		else
+			WARN_ONCE(1, "rsbac_set_attr_fd(): unknown device %02u:%02u, cannot set attribute!\n",
+				major, minor);
+		/* Normally, we would return -RSBAC_EINVALIDDEV here.
+		 * To avoid cascades of further error messages, we just return 0
+		 * to let the calling function assume the value has been set.
+		 */
+		return 0;
 	}
 	switch (module) {
 	case SW_GEN:
@@ -12857,39 +12747,22 @@ int rsbac_ta_remove_target(rsbac_list_ta_number_t ta_number,
 		hash = device_hash(minor);
 		srcu_idx = srcu_read_lock(&device_list_srcu[hash]);
 		device_p = lookup_device(major, minor, hash);
-		if (!device_p) {
+		if (unlikely(!device_p)) {
 			srcu_read_unlock(&device_list_srcu[hash], srcu_idx);
-			if (!major || (tid_p->file.dentry_p && tid_p->file.dentry_p->d_sb && !rsbac_type_writable(tid_p->file.dentry_p->d_sb) ) ) {
-				if (   tid_p->file.dentry_p->d_sb->s_type
-				    && tid_p->file.dentry_p->d_sb->s_type->name)
-					rsbac_printk(KERN_WARNING "rsbac_ta_remove_target(): unknown device %02u:%02u (type %s), auto mounting!\n",
-						major, minor, tid_p->file.dentry_p->d_sb->s_type->name);
-				else
-					rsbac_printk(KERN_WARNING "rsbac_ta_remove_target(): unknown device %02u:%02u, auto mounting!\n",
-						major, minor);
-				error = rsbac_automount(major, minor);
-				if (error)
-					return error;
-			} else {
-				if (   tid_p->file.dentry_p
-				    && tid_p->file.dentry_p->d_sb
-				    && tid_p->file.dentry_p->d_sb->s_type
-				    && tid_p->file.dentry_p->d_sb->s_type->name)
-					rsbac_printk(KERN_WARNING "rsbac_ta_remove_target(): unknown device %02u:%02u (type %s), cannot auto mount!\n",
-						major, minor, tid_p->file.dentry_p->d_sb->s_type->name);
-				else
-					rsbac_printk(KERN_WARNING "rsbac_ta_remove_target(): unknown device %02u:%02u, cannot auto mount!\n",
-						major, minor);
-				return -RSBAC_EINVALIDDEV;
-			}
-			srcu_idx = srcu_read_lock(&device_list_srcu[hash]);
-			device_p = lookup_device(major, minor, hash);
-			if (!device_p) {
-				srcu_read_unlock(&device_list_srcu[hash], srcu_idx);
-				rsbac_printk(KERN_WARNING "rsbac_ta_remove_target(): unknown device %02u:%02u!\n",
-					     major, minor);
-				return -RSBAC_EINVALIDDEV;
-			}
+			if (   tid_p->file.dentry_p
+			    && tid_p->file.dentry_p->d_sb
+			    && tid_p->file.dentry_p->d_sb->s_type
+			    && tid_p->file.dentry_p->d_sb->s_type->name)
+				WARN_ONCE(1, "rsbac_ta_remove_target(): unknown device %02u:%02u (type %s), cannot remove attributes!\n",
+					major, minor, tid_p->file.dentry_p->d_sb->s_type->name);
+			else
+				WARN_ONCE(1, "rsbac_ta_remove_target(): unknown device %02u:%02u, cannot remove attributes!\n",
+					major, minor);
+			/* Normally, we would return -RSBAC_EINVALIDDEV here.
+			 * To avoid cascades of further error messages, we just return 0
+			 * to let the calling function assume that all is fine.
+			 */
+			return 0;
 		}
 		rsbac_ta_list_remove(ta_number,
 				     device_p->handles.gen,
