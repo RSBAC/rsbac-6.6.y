@@ -3,7 +3,7 @@
 /* Implementation of AUTH data structures            */
 /* Author and (c) 1999-2025: Amon Ott <ao@rsbac.org> */
 /*                                                   */
-/* Last modified: 08/Jul/2025                        */
+/* Last modified: 14/Oct/2025                        */
 /*************************************************** */
 
 #include <linux/types.h>
@@ -2525,11 +2525,15 @@ int rsbac_auth_add_to_f_capset(rsbac_list_ta_number_t ta_number,
 	srcu_idx = srcu_read_lock(&device_list_srcu);
 	device_p = lookup_device(RSBAC_MAJOR(file.device), RSBAC_MINOR(file.device));
 	if (!device_p) {
-		rsbac_printk(KERN_WARNING "rsbac_auth_add_to_f_capset(): invalid device %02u:%02u!\n",
+		WARN_ONCE(1, "rsbac_auth_add_to_f_capset(): invalid device %02u:%02u!\n",
 			     RSBAC_MAJOR(file.device),
 			     RSBAC_MINOR(file.device));
 		srcu_read_unlock(&device_list_srcu, srcu_idx);
-		return -RSBAC_EINVALIDDEV;
+		/* Normally, we would return -RSBAC_EINVALIDDEV here.
+		 * To avoid cascades of further error messages, we just return 0
+		 * to let the calling function assume that all is fine.
+		 */
+		return 0;
 	}
 
 	switch (cap_type) {
@@ -2666,11 +2670,15 @@ int rsbac_auth_remove_from_f_capset(rsbac_list_ta_number_t ta_number,
 	srcu_idx = srcu_read_lock(&device_list_srcu);
 	device_p = lookup_device(RSBAC_MAJOR(file.device), RSBAC_MINOR(file.device));
 	if (!device_p) {
-		rsbac_printk(KERN_WARNING "rsbac_auth_remove_from_f_capset(): invalid device %02u:%02u!\n",
+		WARN_ONCE(1, "rsbac_auth_remove_from_f_capset(): invalid device %02u:%02u!\n",
 			     RSBAC_MAJOR(file.device),
 			     RSBAC_MINOR(file.device));
 		srcu_read_unlock(&device_list_srcu, srcu_idx);
-		return -RSBAC_EINVALIDDEV;
+		/* Normally, we would return -RSBAC_EINVALIDDEV here.
+		 * To avoid cascades of further error messages, we just return 0
+		 * to let the calling function assume that all is fine.
+		 */
+		return 0;
 	}
 	switch (cap_type) {
 	case ACT_real:
@@ -2785,11 +2793,15 @@ int rsbac_auth_clear_f_capset(rsbac_list_ta_number_t ta_number,
 	srcu_idx = srcu_read_lock(&device_list_srcu);
 	device_p = lookup_device(RSBAC_MAJOR(file.device), RSBAC_MINOR(file.device));
 	if (!device_p) {
-		rsbac_printk(KERN_WARNING "rsbac_auth_clear_f_capset(): invalid device %02u:%02u!\n",
+		WARN_ONCE(1, "rsbac_auth_clear_f_capset(): invalid device %02u:%02u!\n",
 			     RSBAC_MAJOR(file.device),
 			     RSBAC_MINOR(file.device));
 		srcu_read_unlock(&device_list_srcu, srcu_idx);
-		return -RSBAC_EINVALIDDEV;
+		/* Normally, we would return -RSBAC_EINVALIDDEV here.
+		 * To avoid cascades of further error messages, we just return 0
+		 * to let the calling function assume that all is fine.
+		 */
+		return 0;
 	}
 	switch (cap_type) {
 	case ACT_real:
@@ -3820,11 +3832,15 @@ int rsbac_auth_copy_fp_capset(rsbac_auth_file_t file,
 	srcu_idx = srcu_read_lock(&device_list_srcu);
 	device_p = lookup_device(RSBAC_MAJOR(file.device), RSBAC_MINOR(file.device));
 	if (!device_p) {
-		rsbac_printk(KERN_WARNING "rsbac_auth_copy_fp_capset(): invalid device %02u:%02u!\n",
+		WARN_ONCE(1, "rsbac_auth_copy_fp_capset(): invalid device %02u:%02u!\n",
 			     RSBAC_MAJOR(file.device),
 			     RSBAC_MINOR(file.device));
 		srcu_read_unlock(&device_list_srcu, srcu_idx);
-		return -RSBAC_EINVALIDDEV;
+		/* Normally, we would return -RSBAC_EINVALIDDEV here.
+		 * To avoid cascades of further error messages, we just return 0
+		 * to let the calling function assume that all is fine.
+		 */
+		return 0;
 	}
 	/* call the copy function */
 	err = copy_fp_cap_set_item(device_p, file, p_cap_set_id);
@@ -3873,11 +3889,15 @@ int rsbac_auth_get_f_caplist(rsbac_list_ta_number_t ta_number,
 	srcu_idx = srcu_read_lock(&device_list_srcu);
 	device_p = lookup_device(RSBAC_MAJOR(file.device), RSBAC_MINOR(file.device));
 	if (!device_p) {
-		rsbac_printk(KERN_WARNING "rsbac_auth_get_f_caplist(): invalid device %02u:%02u!\n",
+		WARN_ONCE(1, "rsbac_auth_get_f_caplist(): invalid device %02u:%02u!\n",
 			     RSBAC_MAJOR(file.device),
 			     RSBAC_MINOR(file.device));
 		srcu_read_unlock(&device_list_srcu, srcu_idx);
-		return -RSBAC_EINVALIDDEV;
+		/* Normally, we would return -RSBAC_EINVALIDDEV here.
+		 * To avoid cascades of further error messages, we just return 0
+		 * to let the calling function assume that all is fine.
+		 */
+		return 0;
 	}
 	switch (cap_type) {
 	case ACT_real:

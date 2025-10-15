@@ -1,8 +1,8 @@
 /**************************************/
 /* Rule Set Based Access Control      */
-/* Author and (c) 1999-2024: Amon Ott */
+/* Author and (c) 1999-2025: Amon Ott */
 /* Data structures                    */
-/* Last modified: 29/Jul/2024         */
+/* Last modified: 14/Oct/2025         */
 /**************************************/
 
 #ifndef __RSBAC_DATA_STRUC_H
@@ -479,7 +479,6 @@ struct rsbac_device_list_item_t {
 #endif
 #endif
 	rsbac_boolean_t persist;
-	rsbac_boolean_t automounted;
 };
 
 /* To provide consistency we use spinlocks for all list accesses. The     */
