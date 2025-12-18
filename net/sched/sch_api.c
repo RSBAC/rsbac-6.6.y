@@ -2448,6 +2448,7 @@ static int tc_dump_tclass(struct sk_buff *skb, struct netlink_callback *cb)
 				A_none,
 				rsbac_attribute_value)) {
 		cb->args[0] = 0;
+		dev_put(dev);
 		return -EPERM;
 	}
 #endif
