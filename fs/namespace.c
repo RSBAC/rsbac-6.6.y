@@ -3546,31 +3546,35 @@ static int do_add_mount(struct mount *newmnt, struct mountpoint *mp,
 		return -EINVAL;
 
 #ifdef CONFIG_RSBAC
-	rsbac_pr_debug(aef, "[do_add_mount() [sys_mount()]]: calling ADF for DIR\n");
-	rsbac_target_id.dir.device = path->dentry->d_sb->s_dev;
-	rsbac_target_id.dir.inode  = path->dentry->d_inode->i_ino;
-	rsbac_target_id.dir.dentry_p = path->dentry;
-	rsbac_attribute_value.dummy = 0;
-	if (!rsbac_adf_request(R_MOUNT,
-				task_pid(current),
-				T_DIR,
-				rsbac_target_id,
-				A_none,
-				rsbac_attribute_value)) {
-		return -EPERM;
+	if (likely(path->dentry && path->dentry->d_sb && path->dentry->d_inode)) {
+		rsbac_pr_debug(aef, "[do_add_mount() [sys_mount()]]: calling ADF for DIR\n");
+		rsbac_target_id.dir.device = path->dentry->d_sb->s_dev;
+		rsbac_target_id.dir.inode  = path->dentry->d_inode->i_ino;
+		rsbac_target_id.dir.dentry_p = path->dentry;
+		rsbac_attribute_value.dummy = 0;
+		if (!rsbac_adf_request(R_MOUNT,
+					task_pid(current),
+					T_DIR,
+					rsbac_target_id,
+					A_none,
+					rsbac_attribute_value)) {
+			return -EPERM;
+		}
 	}
-	rsbac_pr_debug(aef, "[do_mount() [sys_mount()]]: calling ADF for DEV\n");
-	rsbac_target_id.dev.type = D_block;
-	rsbac_target_id.dev.major = RSBAC_MAJOR(newmnt->mnt.mnt_sb->s_dev);
-	rsbac_target_id.dev.minor = RSBAC_MINOR(newmnt->mnt.mnt_sb->s_dev);
-	rsbac_attribute_value.mode = mnt_flags;
-	if (!rsbac_adf_request(R_MOUNT,
-				task_pid(current),
-				T_DEV,
-				rsbac_target_id,
-				A_mode,
-				rsbac_attribute_value)) {
-		return -EPERM;
+	if (likely(newmnt->mnt.mnt_sb)) {
+		rsbac_pr_debug(aef, "[do_mount() [sys_mount()]]: calling ADF for DEV\n");
+		rsbac_target_id.dev.type = D_block;
+		rsbac_target_id.dev.major = RSBAC_MAJOR(newmnt->mnt.mnt_sb->s_dev);
+		rsbac_target_id.dev.minor = RSBAC_MINOR(newmnt->mnt.mnt_sb->s_dev);
+		rsbac_attribute_value.mode = mnt_flags;
+		if (!rsbac_adf_request(R_MOUNT,
+					task_pid(current),
+					T_DEV,
+					rsbac_target_id,
+					A_mode,
+					rsbac_attribute_value)) {
+			return -EPERM;
+		}
 	}
 #endif
 
