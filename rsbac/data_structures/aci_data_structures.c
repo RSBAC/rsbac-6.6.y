@@ -5,7 +5,7 @@
 /* (some smaller parts copied from fs/namei.c        */
 /*  and others)                                      */
 /*                                                   */
-/* Last modified: 12/Jun/2026                        */
+/* Last modified: 18/Jun/2026                        */
 /*************************************************** */
 
 #include <linux/types.h>
@@ -6541,58 +6541,49 @@ static int __init rsbac_do_init(void)
 		u_int hash;
 		int srcu_idx;
 		struct rsbac_mount_list_t * mount_p = rsbac_mount_list;
+		struct rsbac_mount_list_t * next_mount_p;
 		__u32 major;
 		__u32 minor;
 
 		while (mount_p) {
-			if (RSBAC_IS_INVALID_PTR(mount_p->vfsmount_p->mnt_sb))
-				continue;
-			major = RSBAC_MAJOR(mount_p->vfsmount_p->mnt_sb->s_dev);
-			minor = RSBAC_MINOR(mount_p->vfsmount_p->mnt_sb->s_dev);
-			if (!RSBAC_IS_INVALID_PTR(mount_p->vfsmount_parent_p)) {
-				__u32 pmajor;
-				__u32 pminor;
-
-				pmajor = RSBAC_MAJOR(mount_p->vfsmount_parent_p->mnt_sb->s_dev);
-				pminor = RSBAC_MINOR(mount_p->vfsmount_parent_p->mnt_sb->s_dev);
-				hash = device_hash(pminor);
+			next_mount_p = mount_p->next;
+			if (!RSBAC_IS_INVALID_PTR(mount_p->vfsmount_p->mnt_sb)) {
+				major = RSBAC_MAJOR(mount_p->vfsmount_p->mnt_sb->s_dev);
+				minor = RSBAC_MINOR(mount_p->vfsmount_p->mnt_sb->s_dev);
+				hash = device_hash(minor);
 				srcu_idx = srcu_read_lock(&device_list_srcu[hash]);
-				device_p = lookup_device(pmajor, pminor, hash);
+				device_p = lookup_device(major, minor, hash);
 				srcu_read_unlock(&device_list_srcu[hash], srcu_idx);
-				if(!device_p) {
-					rsbac_printk(KERN_WARNING "rsbac_do_init(): while mounting delayed device %02u:%02u, fs-type %s, its parent device %02u:%02u, fs-type %s, is not mounted, forcing parent mount!\n",
-						major,
-						minor,
-						mount_p->vfsmount_p->mnt_sb->s_type->name,
-						pmajor, pminor,
-						mount_p->vfsmount_parent_p->mnt_sb->s_type->name);
-					rsbac_mount(mount_p->vfsmount_parent_p, NULL);
-					mntput(mount_p->vfsmount_parent_p);
+				if (mount_p->vfsmount_parent_p) {
+					if(!RSBAC_IS_INVALID_PTR(mount_p->vfsmount_parent_p->mnt_sb)) {
+						if(!device_p)
+							rsbac_printk(KERN_INFO "rsbac_do_init(): mounting delayed device %02u:%02u, fs-type %s, with parent %02u:%02u, fs-type %s\n",
+								major, minor,
+								mount_p->vfsmount_p->mnt_sb->s_type->name,
+								RSBAC_MAJOR(mount_p->vfsmount_parent_p->mnt_sb->s_dev),
+								RSBAC_MINOR(mount_p->vfsmount_parent_p->mnt_sb->s_dev),
+								mount_p->vfsmount_parent_p->mnt_sb->s_type->name);
+						rsbac_mount(mount_p->vfsmount_p, mount_p->vfsmount_parent_p);
+					} else {
+						if(!device_p)
+							rsbac_printk(KERN_INFO "rsbac_do_init(): mounting delayed device %02u:%02u, fs-type %s, without valid parent\n",
+								major, minor,
+								mount_p->vfsmount_p->mnt_sb->s_type->name);
+						rsbac_mount(mount_p->vfsmount_p, NULL);
+					}
 				} else {
-					/* skip existing dev */
-					mntput(mount_p->vfsmount_parent_p);
+					if(!device_p)
+						rsbac_printk(KERN_INFO "rsbac_do_init(): mounting delayed device %02u:%02u, fs-type %s, without parent\n",
+							major, minor,
+							mount_p->vfsmount_p->mnt_sb->s_type->name);
+					rsbac_mount(mount_p->vfsmount_p, NULL);
 				}
 			}
-			hash = device_hash(minor);
-			srcu_idx = srcu_read_lock(&device_list_srcu[hash]);
-			device_p = lookup_device(major, minor, hash);
-			srcu_read_unlock(&device_list_srcu[hash], srcu_idx);
-			if(!device_p) {
-				rsbac_printk(KERN_INFO "rsbac_do_init(): mounting delayed device %02u:%02u, fs-type %s\n",
-					major, minor,
-					mount_p->vfsmount_p->mnt_sb->s_type->name);
-				rsbac_mount(mount_p->vfsmount_p, NULL);
-				if(mount_p->vfsmount_parent_p)
-					mntput(mount_p->vfsmount_parent_p);
-			} else {
-				/* skip existing dev */
-				mntput(mount_p->vfsmount_p);
-				if(mount_p->vfsmount_parent_p)
-					mntput(mount_p->vfsmount_parent_p);
-			}
-			rsbac_mount_list = mount_p;
-			mount_p = mount_p->next;
-			kfree(rsbac_mount_list);
+			mntput(mount_p->vfsmount_p);
+			if(mount_p->vfsmount_parent_p)
+				mntput(mount_p->vfsmount_parent_p);
+			kfree(mount_p);
+			mount_p = next_mount_p;
 		}
 		rsbac_mount_list = NULL;
 	}
