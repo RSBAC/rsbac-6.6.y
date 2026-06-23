@@ -1949,42 +1949,22 @@ static int filp_flush(struct file *filp, fl_owner_t id)
 		else
 #endif
 		if (S_ISSOCK(filp->f_path.dentry->d_inode->i_mode)) {
-			if (filp->f_path.dentry->d_sb->s_magic == SOCKFS_MAGIC) {
 #if defined(CONFIG_RSBAC_ENFORCE_CLOSE)
+			if (filp->f_path.dentry->d_sb->s_magic == SOCKFS_MAGIC) {
 				rsbac_target = T_IPC;
 				rsbac_target_id.ipc.type = I_anonunix;
 				rsbac_target_id.ipc.id.id_nr = filp->f_path.dentry->d_inode->i_ino;
 				rsbac_attribute = A_nlink;
 				rsbac_attribute_value.nlink = filp->f_path.dentry->d_inode->i_nlink;
-#endif
 			} else {
-				if (SOCKET_I(filp->f_path.dentry->d_inode)) {
-//					printk(KERN_DEBUG "filp_close: SOCKET_I(filp->f_path.dentry->d_inode)->ops is %px\n", SOCKET_I(filp->f_path.dentry->d_inode)->ops);
-					if(   SOCKET_I(filp->f_path.dentry->d_inode)->ops
-					   && !IS_ERR(SOCKET_I(filp->f_path.dentry->d_inode)->ops)
-					  ) {
-						if (SOCKET_I(filp->f_path.dentry->d_inode)->ops->family == AF_UNIX) {
-#if defined(CONFIG_RSBAC_ENFORCE_CLOSE)
-							rsbac_target = T_UNIXSOCK;
-							rsbac_target_id.unixsock.device = filp->f_path.dentry->d_sb->s_dev;
-							rsbac_target_id.unixsock.inode  = filp->f_path.dentry->d_inode->i_ino;
-							rsbac_target_id.unixsock.dentry_p = filp->f_path.dentry;
-#endif
-						} else {
-#if defined(CONFIG_RSBAC_NET_OBJ) || defined(CONFIG_RSBAC_ENFORCE_CLOSE)
-							rsbac_target = T_NETOBJ;
-							rsbac_target_id.netobj.sock_p = SOCKET_I(filp->f_path.dentry->d_inode);
-							rsbac_target_id.netobj.local_addr = NULL;
-							rsbac_target_id.netobj.local_len = 0;
-							rsbac_target_id.netobj.remote_addr = NULL;
-							rsbac_target_id.netobj.remote_len = 0;
-#endif
-						}
-						rsbac_attribute = A_none;
-						rsbac_attribute_value.dummy = 0;
-					}
-				}
+				rsbac_target = T_UNIXSOCK;
+				rsbac_target_id.unixsock.device = filp->f_path.dentry->d_sb->s_dev;
+				rsbac_target_id.unixsock.inode  = filp->f_path.dentry->d_inode->i_ino;
+				rsbac_target_id.unixsock.dentry_p = filp->f_path.dentry;
+				rsbac_attribute = A_none;
+				rsbac_attribute_value.dummy = 0;
 			}
+#endif
 		} else { /* probably file, fifo or dir */
 #if defined(CONFIG_RSBAC_UDF) || defined(CONFIG_RSBAC_ENFORCE_CLOSE)
 			if (S_ISDIR(filp->f_path.dentry->d_inode->i_mode))
