@@ -83,6 +83,7 @@ long vfs_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 					rsbac_target = T_IPC;
 					rsbac_target_id.ipc.type = I_anonunix;
 					rsbac_target_id.ipc.id.id_nr = filp->f_path.dentry->d_inode->i_ino;
+#if defined(CONFIG_RSBAC_NET_OBJ)
 				} else {
 					rsbac_target = T_NETOBJ;
 					rsbac_target_id.netobj.sock_p = sock;
@@ -90,6 +91,7 @@ long vfs_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 					rsbac_target_id.netobj.local_len = 0;
 					rsbac_target_id.netobj.remote_addr = NULL;
 					rsbac_target_id.netobj.remote_len = 0;
+#endif
 				}
 			}
 		} else {
