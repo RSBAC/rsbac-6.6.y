@@ -3,7 +3,7 @@
 /* Implementation of RSBAC general system calls      */
 /* Author and (C) 1999-2026: Amon Ott <ao@rsbac.org> */
 /*                                                   */
-/* Last modified: 12/Jun/2026                        */
+/* Last modified: 22/Jun/2026                        */
 /*************************************************** */
 
 #include <rsbac/types.h>
@@ -262,7 +262,6 @@ int sys_rsbac_get_attr(
              || !k_tid.netobj.sock_p->file
              || !k_tid.netobj.sock_p->file->f_path.dentry
              || !k_tid.netobj.sock_p->file->f_path.dentry->d_inode
-             || (SOCKET_I(k_tid.netobj.sock_p->file->f_path.dentry->d_inode) != k_tid.netobj.sock_p)
             )
         )
         return -RSBAC_EINVALIDTARGET;
@@ -626,7 +625,6 @@ int sys_rsbac_set_attr(
                || !k_tid.netobj.sock_p->file
                || !k_tid.netobj.sock_p->file->f_path.dentry
                || !k_tid.netobj.sock_p->file->f_path.dentry->d_inode
-               || (SOCKET_I(k_tid.netobj.sock_p->file->f_path.dentry->d_inode) != k_tid.netobj.sock_p)
               )
               return -RSBAC_EINVALIDTARGET;
 #endif

@@ -1,9 +1,9 @@
 /************************************* */
 /* Rule Set Based Access Control       */
-/* Author and (c) 1999-2025:           */
+/* Author and (c) 1999-2026:           */
 /*   Amon Ott <ao@rsbac.org>           */
 /* Helper functions for all parts      */
-/* Last modified: 10/Jul/2025          */
+/* Last modified: 22/Jun/2026          */
 /************************************* */
 
 #include <rsbac/types.h>
@@ -574,17 +574,16 @@ int rsbac_handle_rw_req(const struct file *file, struct rsbac_rw_req *rsbac_rw_r
 		 || !file->f_path.dentry->d_inode->i_ino)
 		goto out;
 
-        if (in_interrupt())
-          {
-            printk(KERN_WARNING "rsbac_handle_rw_req(): called from interrupt: pid %u(%s)!\n",
-                         current->pid, current->comm);
-            goto out;
-          }
+	if (in_interrupt()) {
+		printk(KERN_WARNING "rsbac_handle_rw_req(): called from interrupt: pid %u(%s)!\n",
+			current->pid, current->comm);
+		goto out;
+	}
 
 	rsbac_pr_debug(aef, "rsbac_handle_rw_req(): calling ADF\n");
 
 	rsbac_rw_req_obj->rsbac_attribute = A_none;
-        rsbac_rw_req_obj->rsbac_attribute_value.dummy = 0;
+	rsbac_rw_req_obj->rsbac_attribute_value.dummy = 0;
 
 	if (S_ISFIFO(file->f_path.dentry->d_inode->i_mode)) {
 		if(file->f_path.dentry->d_sb->s_magic != PIPEFS_MAGIC) {
@@ -606,57 +605,71 @@ int rsbac_handle_rw_req(const struct file *file, struct rsbac_rw_req *rsbac_rw_r
 		rsbac_rw_req_obj->rsbac_target_id.file.dentry_p = file->f_path.dentry;
 	} else
 	if (S_ISSOCK(file->f_path.dentry->d_inode->i_mode)) {
-		struct socket * sock = SOCKET_I(file->f_path.dentry->d_inode);
-		if (sock->ops && (sock->ops->family == AF_UNIX)) {
-			if (sock->sk) {
-				if (unix_sk(unix_sk(sock->sk)->peer)) {
-					if (unix_sk(unix_sk(sock->sk)->peer)->path.dentry && unix_sk(unix_sk(sock->sk)->peer)->path.dentry->d_inode) {
-						rsbac_rw_req_obj->rsbac_target = T_UNIXSOCK;
-						rsbac_rw_req_obj->rsbac_target_id.unixsock.device = unix_sk(unix_sk(sock->sk)->peer)->path.dentry->d_sb->s_dev;
-						rsbac_rw_req_obj->rsbac_target_id.unixsock.inode  = unix_sk(unix_sk(sock->sk)->peer)->path.dentry->d_inode->i_ino;
-						rsbac_rw_req_obj->rsbac_target_id.unixsock.dentry_p = unix_sk(unix_sk(sock->sk)->peer)->path.dentry;
+		if (file->f_path.dentry->d_sb->s_magic == SOCKFS_MAGIC) {
+			struct socket * sock = SOCKET_I(file->f_path.dentry->d_inode);
+
+			if (sock->ops && (sock->ops->family == AF_UNIX)) {
+				if (sock->sk) {
+					if (unix_sk(unix_sk(sock->sk)->peer)) {
+						if (unix_sk(unix_sk(sock->sk)->peer)->path.dentry && unix_sk(unix_sk(sock->sk)->peer)->path.dentry->d_inode) {
+							rsbac_rw_req_obj->rsbac_target = T_UNIXSOCK;
+							rsbac_rw_req_obj->rsbac_target_id.unixsock.device = unix_sk(unix_sk(sock->sk)->peer)->path.dentry->d_sb->s_dev;
+							rsbac_rw_req_obj->rsbac_target_id.unixsock.inode  = unix_sk(unix_sk(sock->sk)->peer)->path.dentry->d_inode->i_ino;
+							rsbac_rw_req_obj->rsbac_target_id.unixsock.dentry_p = unix_sk(unix_sk(sock->sk)->peer)->path.dentry;
+						} else {
+							rsbac_rw_req_obj->rsbac_target = T_IPC;
+							rsbac_rw_req_obj->rsbac_target_id.ipc.type = I_anonunix;
+							if (unix_sk(unix_sk(sock->sk)->peer)->path.dentry
+									&& unix_sk(unix_sk(sock->sk)->peer)->path.dentry->d_inode
+									&& SOCKET_I(unix_sk(unix_sk(sock->sk)->peer)->path.dentry->d_inode)->file
+									&& SOCKET_I(unix_sk(unix_sk(sock->sk)->peer)->path.dentry->d_inode)->file->f_path.dentry
+									&& SOCKET_I(unix_sk(unix_sk(sock->sk)->peer)->path.dentry->d_inode)->file->f_path.dentry->d_inode)
+								rsbac_rw_req_obj->rsbac_target_id.ipc.id.id_nr = SOCKET_I(unix_sk(unix_sk(sock->sk)->peer)->path.dentry->d_inode)->file->f_path.dentry->d_inode->i_ino;
+							else if (sock->file && sock->file->f_path.dentry && sock->file->f_path.dentry->d_inode)
+								rsbac_rw_req_obj->rsbac_target_id.ipc.id.id_nr = sock->file->f_path.dentry->d_inode->i_ino;
+							else
+								rsbac_rw_req_obj->rsbac_target_id.ipc.id.id_nr = 0;
+						}
 					} else {
-						rsbac_rw_req_obj->rsbac_target = T_IPC;
-						rsbac_rw_req_obj->rsbac_target_id.ipc.type = I_anonunix;
-						if (unix_sk(unix_sk(sock->sk)->peer)->path.dentry
-								&& unix_sk(unix_sk(sock->sk)->peer)->path.dentry->d_inode
-								&& SOCKET_I(unix_sk(unix_sk(sock->sk)->peer)->path.dentry->d_inode)->file
-                                                        	&& SOCKET_I(unix_sk(unix_sk(sock->sk)->peer)->path.dentry->d_inode)->file->f_path.dentry
-                                                        	&& SOCKET_I(unix_sk(unix_sk(sock->sk)->peer)->path.dentry->d_inode)->file->f_path.dentry->d_inode)
-							rsbac_rw_req_obj->rsbac_target_id.ipc.id.id_nr = SOCKET_I(unix_sk(unix_sk(sock->sk)->peer)->path.dentry->d_inode)->file->f_path.dentry->d_inode->i_ino;
-						else
+						if (unix_sk(sock->sk)->path.dentry && unix_sk(sock->sk)->path.dentry->d_inode) {
+							rsbac_rw_req_obj->rsbac_target = T_UNIXSOCK;
+							rsbac_rw_req_obj->rsbac_target_id.unixsock.device = unix_sk(sock->sk)->path.dentry->d_sb->s_dev;
+							rsbac_rw_req_obj->rsbac_target_id.unixsock.inode  = unix_sk(sock->sk)->path.dentry->d_inode->i_ino;
+							rsbac_rw_req_obj->rsbac_target_id.unixsock.dentry_p = unix_sk(sock->sk)->path.dentry;
+						} else {
+							rsbac_rw_req_obj->rsbac_target = T_IPC;
+							rsbac_rw_req_obj->rsbac_target_id.ipc.type = I_anonunix;
 							if (sock->file && sock->file->f_path.dentry && sock->file->f_path.dentry->d_inode)
 								rsbac_rw_req_obj->rsbac_target_id.ipc.id.id_nr = sock->file->f_path.dentry->d_inode->i_ino;
-						else
-							rsbac_rw_req_obj->rsbac_target_id.ipc.id.id_nr = 0;
+							else
+								rsbac_rw_req_obj->rsbac_target_id.ipc.id.id_nr = 0;
+						}
 					}
-				} else {
-					if (unix_sk(sock->sk)->path.dentry && unix_sk(sock->sk)->path.dentry->d_inode) {
-						rsbac_rw_req_obj->rsbac_target = T_UNIXSOCK;
-						rsbac_rw_req_obj->rsbac_target_id.unixsock.device = unix_sk(sock->sk)->path.dentry->d_sb->s_dev;
-						rsbac_rw_req_obj->rsbac_target_id.unixsock.inode  = unix_sk(sock->sk)->path.dentry->d_inode->i_ino;
-						rsbac_rw_req_obj->rsbac_target_id.unixsock.dentry_p = unix_sk(sock->sk)->path.dentry;
+					if (sock->sk->sk_peer_pid) {
+						rsbac_rw_req_obj->rsbac_attribute = A_process;
+						rsbac_rw_req_obj->rsbac_attribute_value.process = sock->sk->sk_peer_pid;
+					}
+					else if (unix_sk(sock->sk)->peer && unix_sk(sock->sk)->peer->sk_peer_pid) {
+						rsbac_rw_req_obj->rsbac_attribute = A_process;
+						rsbac_rw_req_obj->rsbac_attribute_value.process = unix_sk(sock->sk)->peer->sk_peer_pid;
 					} else {
-						rsbac_rw_req_obj->rsbac_target = T_IPC;
-						rsbac_rw_req_obj->rsbac_target_id.ipc.type = I_anonunix;
-						if (sock->file && sock->file->f_path.dentry && sock->file->f_path.dentry->d_inode)
-							rsbac_rw_req_obj->rsbac_target_id.ipc.id.id_nr = sock->file->f_path.dentry->d_inode->i_ino;
-						else
-							rsbac_rw_req_obj->rsbac_target_id.ipc.id.id_nr = 0;
+						rsbac_rw_req_obj->rsbac_attribute = A_sock_type;
+						rsbac_rw_req_obj->rsbac_attribute_value.sock_type = sock->type;
 					}
 				}
-				if (sock->sk->sk_peer_pid) {
-					rsbac_rw_req_obj->rsbac_attribute = A_process;
-					rsbac_rw_req_obj->rsbac_attribute_value.process = sock->sk->sk_peer_pid;
-				}
-				else if (unix_sk(sock->sk)->peer && unix_sk(sock->sk)->peer->sk_peer_pid) {
-					rsbac_rw_req_obj->rsbac_attribute = A_process;
-					rsbac_rw_req_obj->rsbac_attribute_value.process = unix_sk(sock->sk)->peer->sk_peer_pid;
-				} else {
-					rsbac_rw_req_obj->rsbac_attribute = A_sock_type;
-					rsbac_rw_req_obj->rsbac_attribute_value.sock_type = sock->type;
-				}
+			} else {
+				rsbac_rw_req_obj->rsbac_target = T_NETOBJ;
+				rsbac_rw_req_obj->rsbac_target_id.netobj.sock_p = sock;
+				rsbac_rw_req_obj->rsbac_target_id.netobj.local_addr = NULL;
+				rsbac_rw_req_obj->rsbac_target_id.netobj.local_len = 0;
+				rsbac_rw_req_obj->rsbac_target_id.netobj.remote_addr = NULL;
+				rsbac_rw_req_obj->rsbac_target_id.netobj.remote_len = 0;
 			}
+		} else {
+			rsbac_rw_req_obj->rsbac_target = T_UNIXSOCK;
+			rsbac_rw_req_obj->rsbac_target_id.unixsock.device = file->f_path.dentry->d_inode->i_sb->s_dev;
+			rsbac_rw_req_obj->rsbac_target_id.unixsock.inode  = file->f_path.dentry->d_inode->i_ino;
+			rsbac_rw_req_obj->rsbac_target_id.unixsock.dentry_p = file->f_path.dentry;
 		}
 	} else
 	if (S_ISBLK(file->f_path.dentry->d_inode->i_mode)) {
@@ -668,8 +681,8 @@ int rsbac_handle_rw_req(const struct file *file, struct rsbac_rw_req *rsbac_rw_r
 	if (S_ISCHR(file->f_path.dentry->d_inode->i_mode)) {
 		rsbac_rw_req_obj->rsbac_target = T_DEV;
 		rsbac_rw_req_obj->rsbac_target_id.dev.type = D_char;
-                rsbac_rw_req_obj->rsbac_target_id.dev.major = RSBAC_MAJOR(file->f_path.dentry->d_inode->i_rdev);
-                rsbac_rw_req_obj->rsbac_target_id.dev.minor = RSBAC_MINOR(file->f_path.dentry->d_inode->i_rdev);
+		rsbac_rw_req_obj->rsbac_target_id.dev.major = RSBAC_MAJOR(file->f_path.dentry->d_inode->i_rdev);
+		rsbac_rw_req_obj->rsbac_target_id.dev.minor = RSBAC_MINOR(file->f_path.dentry->d_inode->i_rdev);
 	}
 	if (rsbac_rw_req_obj->rsbac_target != T_NONE)
 		if (!rsbac_adf_request(rsbac_rw_req_obj->rsbac_request,

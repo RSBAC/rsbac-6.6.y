@@ -1244,10 +1244,9 @@ static long __ext4_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 #ifdef CONFIG_RSBAC
 	enum  rsbac_adf_request_t rsbac_request;
-	enum  rsbac_target_t rsbac_target = T_NONE;
-	union rsbac_target_id_t rsbac_target_id;
-	union rsbac_attribute_value_t rsbac_attribute_value;
+#endif
 
+#ifdef CONFIG_RSBAC
 	rsbac_pr_debug(aef, "calling ADF\n");
 	switch (cmd) {
 		case FS_IOC_GETFLAGS:
@@ -1292,41 +1291,32 @@ static long __ext4_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		default:
 			rsbac_request = R_NONE;
 	}
-	if(S_ISSOCK(inode->i_mode)) {
-		if(SOCKET_I(inode)->ops
-				&& (SOCKET_I(inode)->ops->family == AF_UNIX)) {
+	if (rsbac_request != R_NONE) {
+		enum  rsbac_target_t rsbac_target = T_NONE;
+		union rsbac_target_id_t rsbac_target_id;
+		union rsbac_attribute_value_t rsbac_attribute_value;
+
+		if (S_ISSOCK(inode->i_mode)) {
 			rsbac_target = T_UNIXSOCK;
-			rsbac_target_id.unixsock.device = filp->f_path.dentry->d_sb->s_dev;
+			rsbac_target_id.unixsock.device = sb->s_dev;
 			rsbac_target_id.unixsock.inode  = inode->i_ino;
 			rsbac_target_id.unixsock.dentry_p = filp->f_path.dentry;
+		} else {
+			rsbac_target = T_DEV;
+			rsbac_target_id.dev.type = D_block;
+			rsbac_target_id.dev.major = RSBAC_MAJOR(sb->s_dev);
+			rsbac_target_id.dev.minor = RSBAC_MINOR(sb->s_dev);
 		}
-#ifdef CONFIG_RSBAC_NET_OBJ
-		else {
-			rsbac_target = T_NETOBJ;
-			rsbac_target_id.netobj.sock_p
-				= SOCKET_I(inode);
-			rsbac_target_id.netobj.local_addr = NULL;
-			rsbac_target_id.netobj.local_len = 0;
-			rsbac_target_id.netobj.remote_addr = NULL;
-			rsbac_target_id.netobj.remote_len = 0;
-		}
-#endif
-		}
-	else {
-		rsbac_target = T_DEV;
-		rsbac_target_id.dev.type = D_block;
-		rsbac_target_id.dev.major = RSBAC_MAJOR(filp->f_path.dentry->d_sb->s_dev);
-		rsbac_target_id.dev.minor = RSBAC_MINOR(filp->f_path.dentry->d_sb->s_dev);
-	}
-	rsbac_attribute_value.ioctl_cmd = cmd;
-	if(   (rsbac_request != R_NONE)
-		&& !rsbac_adf_request(rsbac_request,
-				task_pid(current),
-				rsbac_target,
-				rsbac_target_id,
-				A_ioctl_cmd,
-				rsbac_attribute_value)) {
-		return -EPERM;
+		rsbac_attribute_value.ioctl_cmd = cmd;
+		if (   rsbac_target != T_NONE
+		    && !rsbac_adf_request(rsbac_request,
+					task_pid(current),
+					rsbac_target,
+					rsbac_target_id,
+					A_ioctl_cmd,
+					rsbac_attribute_value)
+		   )
+			return -EPERM;
 	}
 #endif
 
