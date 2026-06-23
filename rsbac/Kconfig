@@ -2198,10 +2198,12 @@ config RSBAC_NO_DECISION_ON_NETMOUNT
 config RSBAC_ENFORCE_CLOSE 
 	bool 'Enforce denied close access'
 	help
-	  By default, RSBAC only logs denied CLOSE access on filesystem
-	  objects and still performs the close, because many broken
-	  programs rely on close to always succeed. With this switch on,
-	  RSBAC really returns -EPERM and keeps the object opened.
+	  By default, RSBAC only makes CLOSE requests, if the request data
+	  is needed for CLOSE notifications later, i.e. for UDF on FILE
+	  and for NETOBJ, if CONFIG_RSBAC_NET_OBJ is enabled.
+	  Many broken programs rely on close() to always succeed.
+	  With this switch on, RSBAC really decides and enforces, so it
+	  keeps the object open and returns -EPERM, if access is denied.
 
 config RSBAC_MOVETO
 	bool 'Use MOVETO requests when writing to DIR'
