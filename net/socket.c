@@ -2358,23 +2358,26 @@ struct file *do_accept(struct file *file, unsigned file_flags,
 				} else {
 					rsbac_target = T_IPC;
 					rsbac_target_id.ipc.type = I_anonunix;
-					if (unix_sk(unix_sk(sock->sk)->peer)->path.dentry
-							&& unix_sk(unix_sk(sock->sk)->peer)->path.dentry->d_inode
-							&& SOCKET_I(unix_sk(unix_sk(sock->sk)->peer)->path.dentry->d_inode)->file
-							&& SOCKET_I(unix_sk(unix_sk(sock->sk)->peer)->path.dentry->d_inode)->file->f_path.dentry
-							&& SOCKET_I(unix_sk(unix_sk(sock->sk)->peer)->path.dentry->d_inode)->file->f_path.dentry->d_inode)
+					if (   unix_sk(unix_sk(sock->sk)->peer)->path.dentry
+					    && unix_sk(unix_sk(sock->sk)->peer)->path.dentry->d_inode
+					    && SOCKET_I(unix_sk(unix_sk(sock->sk)->peer)->path.dentry->d_inode)->file
+					    && SOCKET_I(unix_sk(unix_sk(sock->sk)->peer)->path.dentry->d_inode)->file->f_path.dentry
+					    && SOCKET_I(unix_sk(unix_sk(sock->sk)->peer)->path.dentry->d_inode)->file->f_path.dentry->d_inode
+					   )
 						rsbac_target_id.ipc.id.id_nr = SOCKET_I(unix_sk(unix_sk(sock->sk)->peer)->path.dentry->d_inode)->file->f_path.dentry->d_inode->i_ino;
 					else
-						if (sock->file
-								&& sock->file->f_path.dentry
-								&& sock->file->f_path.dentry->d_inode)
+						if (   sock->file
+						    && sock->file->f_path.dentry
+						    && sock->file->f_path.dentry->d_inode
+						   )
 							rsbac_target_id.ipc.id.id_nr = sock->file->f_path.dentry->d_inode->i_ino;
 						else
 							rsbac_target_id.ipc.id.id_nr = 0;
 				}
 			} else {
-				if(   unix_sk(sock->sk)->path.dentry
-						&& unix_sk(sock->sk)->path.dentry->d_inode) {
+				if (   unix_sk(sock->sk)->path.dentry
+				    && unix_sk(sock->sk)->path.dentry->d_inode
+				   ) {
 					rsbac_target = T_UNIXSOCK;
 					rsbac_target_id.unixsock.device = unix_sk(sock->sk)->path.dentry->d_sb->s_dev;
 					rsbac_target_id.unixsock.inode  = unix_sk(sock->sk)->path.dentry->d_inode->i_ino;
@@ -2382,9 +2385,10 @@ struct file *do_accept(struct file *file, unsigned file_flags,
 				} else {
 					rsbac_target = T_IPC;
 					rsbac_target_id.ipc.type = I_anonunix;
-					if (sock->file
-							&& sock->file->f_path.dentry
-							&& sock->file->f_path.dentry->d_inode)
+					if (   sock->file
+					    && sock->file->f_path.dentry
+					    && sock->file->f_path.dentry->d_inode
+					   )
 						rsbac_target_id.ipc.id.id_nr = sock->file->f_path.dentry->d_inode->i_ino;
 					else
 						rsbac_target_id.ipc.id.id_nr = 0;
