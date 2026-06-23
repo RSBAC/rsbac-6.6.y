@@ -7263,12 +7263,11 @@ int rsbac_mount(struct vfsmount * vfsmount_p, struct vfsmount * vfsmount_parent_
 			rsbac_pr_debug(ds, "found parent %02u:%02u\n",
 					pmajor, pminor);
 		} else {
-			rsbac_printk(KERN_WARNING "rsbac_mount(): while mounting device %02u:%02u, fs-type %s, its parent device %02u:%02u, fs-type %s, is not mounted, forcing parent mount!\n",
+			rsbac_printk(KERN_WARNING "rsbac_mount(): while mounting device %02u:%02u, fs-type %s, its parent device %02u:%02u, fs-type %s, is not mounted!\n",
 				major, minor,
 				vfsmount_p->mnt_sb->s_type->name,
 				pmajor, pminor,
 				vfsmount_parent_p->mnt_sb->s_type->name);
-			rsbac_mount(vfsmount_parent_p, NULL);
 		}
 	} else {
 		rsbac_pr_debug(ds, "mounting device %02u:%02u, no parent given\n",
