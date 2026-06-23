@@ -1923,9 +1923,11 @@ static int filp_flush(struct file *filp, fl_owner_t id)
 		return 0;
 	}
 
-#ifdef CONFIG_RSBAC
-	if (current->files && !IS_ERR(current->files) && filp && !IS_ERR(filp) && filp->f_path.dentry && !IS_ERR(filp->f_path.dentry) && filp->f_path.dentry->d_sb && filp->f_path.dentry->d_inode && !IS_ERR(filp->f_path.dentry->d_inode)) {
-		rsbac_pr_debug(aef, "[sys_close]: calling ADF\n");
+	/* only call ADF request, if we need the state for notification later */
+	/* or if we really enforce the decision. */
+#if defined(CONFIG_RSBAC_NET_OBJ) || defined(CONFIG_RSBAC_UDF) || defined(CONFIG_RSBAC_ENFORCE_CLOSE)
+	if (likely(current->files && !IS_ERR(current->files) && filp && !IS_ERR(filp) && filp->f_path.dentry && !IS_ERR(filp->f_path.dentry) && filp->f_path.dentry->d_sb && filp->f_path.dentry->d_inode && !IS_ERR(filp->f_path.dentry->d_inode)) ) {
+#if defined(CONFIG_RSBAC_ENFORCE_CLOSE)
 		if (   S_ISBLK(filp->f_path.dentry->d_inode->i_mode)
 		    || S_ISCHR(filp->f_path.dentry->d_inode->i_mode) ) {
 			rsbac_target = T_DEV;
@@ -1944,13 +1946,17 @@ static int filp_flush(struct file *filp, fl_owner_t id)
 			rsbac_target_id.ipc.type = I_memfd;
 			rsbac_target_id.ipc.id.id_nr = (u_long) filp->f_path.dentry->d_inode;
 		}
-		else if (S_ISSOCK(filp->f_path.dentry->d_inode->i_mode)) {
+		else
+#endif
+		if (S_ISSOCK(filp->f_path.dentry->d_inode->i_mode)) {
 			if (filp->f_path.dentry->d_sb->s_magic == SOCKFS_MAGIC) {
+#if defined(CONFIG_RSBAC_ENFORCE_CLOSE)
 				rsbac_target = T_IPC;
 				rsbac_target_id.ipc.type = I_anonunix;
 				rsbac_target_id.ipc.id.id_nr = filp->f_path.dentry->d_inode->i_ino;
 				rsbac_attribute = A_nlink;
 				rsbac_attribute_value.nlink = filp->f_path.dentry->d_inode->i_nlink;
+#endif
 			} else {
 				if (SOCKET_I(filp->f_path.dentry->d_inode)) {
 //					printk(KERN_DEBUG "filp_close: SOCKET_I(filp->f_path.dentry->d_inode)->ops is %px\n", SOCKET_I(filp->f_path.dentry->d_inode)->ops);
@@ -1958,45 +1964,56 @@ static int filp_flush(struct file *filp, fl_owner_t id)
 					   && !IS_ERR(SOCKET_I(filp->f_path.dentry->d_inode)->ops)
 					  ) {
 						if (SOCKET_I(filp->f_path.dentry->d_inode)->ops->family == AF_UNIX) {
+#if defined(CONFIG_RSBAC_ENFORCE_CLOSE)
 							rsbac_target = T_UNIXSOCK;
 							rsbac_target_id.unixsock.device = filp->f_path.dentry->d_sb->s_dev;
 							rsbac_target_id.unixsock.inode  = filp->f_path.dentry->d_inode->i_ino;
 							rsbac_target_id.unixsock.dentry_p = filp->f_path.dentry;
+#endif
 						} else {
+#if defined(CONFIG_RSBAC_NET_OBJ) || defined(CONFIG_RSBAC_ENFORCE_CLOSE)
 							rsbac_target = T_NETOBJ;
 							rsbac_target_id.netobj.sock_p = SOCKET_I(filp->f_path.dentry->d_inode);
 							rsbac_target_id.netobj.local_addr = NULL;
 							rsbac_target_id.netobj.local_len = 0;
 							rsbac_target_id.netobj.remote_addr = NULL;
 							rsbac_target_id.netobj.remote_len = 0;
+#endif
 						}
 						rsbac_attribute = A_none;
 						rsbac_attribute_value.dummy = 0;
 					}
 				}
 			}
-		} else { /* must be file, fifo or dir */
+		} else { /* probably file, fifo or dir */
+#if defined(CONFIG_RSBAC_UDF) || defined(CONFIG_RSBAC_ENFORCE_CLOSE)
 			if (S_ISDIR(filp->f_path.dentry->d_inode->i_mode))
 				rsbac_target = T_DIR;
 			else if (S_ISFIFO(filp->f_path.dentry->d_inode->i_mode))
 				rsbac_target = T_FIFO;
-			else
+			else if (S_ISREG(filp->f_path.dentry->d_inode->i_mode))
 				rsbac_target = T_FILE;
-			rsbac_target_id.file.device = filp->f_path.dentry->d_sb->s_dev;
-			rsbac_target_id.file.inode  = filp->f_path.dentry->d_inode->i_ino;
-			rsbac_target_id.file.dentry_p = filp->f_path.dentry;
-			rsbac_attribute = A_f_mode;
-			rsbac_attribute_value.f_mode = filp->f_mode;
+			if (rsbac_target != T_NONE) {
+				rsbac_target_id.file.device = filp->f_path.dentry->d_sb->s_dev;
+				rsbac_target_id.file.inode  = filp->f_path.dentry->d_inode->i_ino;
+				rsbac_target_id.file.dentry_p = filp->f_path.dentry;
+				rsbac_attribute = A_f_mode;
+				rsbac_attribute_value.f_mode = filp->f_mode;
+			}
+#endif
 		}
-		if ((rsbac_target != T_NONE) && !rsbac_adf_request(R_CLOSE,
+		if (rsbac_target != T_NONE) {
+			rsbac_pr_debug(aef, "[sys_close]: calling ADF\n");
+			if(!rsbac_adf_request(R_CLOSE,
 					task_pid(current),
 					rsbac_target,
 					rsbac_target_id,
 					rsbac_attribute,
 					rsbac_attribute_value)) {
 #ifdef CONFIG_RSBAC_ENFORCE_CLOSE
-			return -EPERM;
+				return -EPERM;
 #endif
+			}
 		}
 	}
 #endif
@@ -2010,10 +2027,17 @@ static int filp_flush(struct file *filp, fl_owner_t id)
 	}
 
 #if defined(CONFIG_RSBAC_NET_OBJ) || defined(CONFIG_RSBAC_UDF)
-	/* Only UDF uses CLOSE here, and it only uses T_FILE. */
+	/* Only UDF uses CLOSE here, but it only uses T_FILE, */
+	/* and adf_main cleans up NETOBJ attributes, if CONFIG_RSBAC_NET_OBJ. */
 	/* We might run into use after free here for other targets. */
 	/* REG might have a module interested, but we ignore that for now. */
+#if defined(CONFIG_RSBAC_NET_OBJ) && defined(CONFIG_RSBAC_UDF)
 	if (rsbac_target == T_FILE || rsbac_target == T_NETOBJ) {
+#elif defined(CONFIG_RSBAC_NET_OBJ)
+	if (rsbac_target == T_NETOBJ) {
+#else
+	if (rsbac_target == T_FILE) {
+#endif
 		rsbac_pr_debug(aef, "[sys_close]: notifying ADF\n");
 		rsbac_new_target_id.dummy = 0;
 		if (unlikely(rsbac_adf_set_attr(R_CLOSE,
