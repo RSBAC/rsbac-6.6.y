@@ -6,7 +6,7 @@
 /*                                                   */
 /* Author and (c) 1999-2026: Amon Ott <ao@rsbac.org> */
 /*                                                   */
-/* Last modified: 12/Jun/2026                        */
+/* Last modified: 22/Jun/2026                        */
 /*************************************************** */
 
 #include <linux/string.h>
@@ -251,7 +251,6 @@ int rsbac_acl_sys_set_acl_entry(
              || !tid.netobj.sock_p->file
              || !tid.netobj.sock_p->file->f_path.dentry
              || !tid.netobj.sock_p->file->f_path.dentry->d_inode
-             || (SOCKET_I(tid.netobj.sock_p->file->f_path.dentry->d_inode) != tid.netobj.sock_p)
             )
         )
         return -RSBAC_EINVALIDTARGET;
@@ -391,7 +390,6 @@ int rsbac_acl_sys_remove_acl_entry(
              || !tid.netobj.sock_p->file
              || !tid.netobj.sock_p->file->f_path.dentry
              || !tid.netobj.sock_p->file->f_path.dentry->d_inode
-             || (SOCKET_I(tid.netobj.sock_p->file->f_path.dentry->d_inode) != tid.netobj.sock_p)
             )
         )
         return -RSBAC_EINVALIDTARGET;
@@ -603,7 +601,6 @@ int rsbac_acl_sys_add_to_acl_entry(
              || !tid.netobj.sock_p->file
              || !tid.netobj.sock_p->file->f_path.dentry
              || !tid.netobj.sock_p->file->f_path.dentry->d_inode
-             || (SOCKET_I(tid.netobj.sock_p->file->f_path.dentry->d_inode) != tid.netobj.sock_p)
             )
         )
         return -RSBAC_EINVALIDTARGET;
@@ -743,7 +740,6 @@ int rsbac_acl_sys_remove_from_acl_entry(
              || !tid.netobj.sock_p->file
              || !tid.netobj.sock_p->file->f_path.dentry
              || !tid.netobj.sock_p->file->f_path.dentry->d_inode
-             || (SOCKET_I(tid.netobj.sock_p->file->f_path.dentry->d_inode) != tid.netobj.sock_p)
             )
         )
         return -RSBAC_EINVALIDTARGET;
@@ -878,7 +874,6 @@ int rsbac_acl_sys_set_mask(
              || !tid.netobj.sock_p->file
              || !tid.netobj.sock_p->file->f_path.dentry
              || !tid.netobj.sock_p->file->f_path.dentry->d_inode
-             || (SOCKET_I(tid.netobj.sock_p->file->f_path.dentry->d_inode) != tid.netobj.sock_p)
             )
         )
         return -RSBAC_EINVALIDTARGET;
