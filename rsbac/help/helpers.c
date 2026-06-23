@@ -658,12 +658,18 @@ int rsbac_handle_rw_req(const struct file *file, struct rsbac_rw_req *rsbac_rw_r
 					}
 				}
 			} else {
-				rsbac_rw_req_obj->rsbac_target = T_NETOBJ;
-				rsbac_rw_req_obj->rsbac_target_id.netobj.sock_p = sock;
-				rsbac_rw_req_obj->rsbac_target_id.netobj.local_addr = NULL;
-				rsbac_rw_req_obj->rsbac_target_id.netobj.local_len = 0;
-				rsbac_rw_req_obj->rsbac_target_id.netobj.remote_addr = NULL;
-				rsbac_rw_req_obj->rsbac_target_id.netobj.remote_len = 0;
+#if !defined(CONFIG_RSBAC_NET_OBJ_RW)
+		                if(sock->type != SOCK_STREAM) {
+#endif
+					rsbac_rw_req_obj->rsbac_target = T_NETOBJ;
+					rsbac_rw_req_obj->rsbac_target_id.netobj.sock_p = sock;
+					rsbac_rw_req_obj->rsbac_target_id.netobj.local_addr = NULL;
+					rsbac_rw_req_obj->rsbac_target_id.netobj.local_len = 0;
+					rsbac_rw_req_obj->rsbac_target_id.netobj.remote_addr = NULL;
+					rsbac_rw_req_obj->rsbac_target_id.netobj.remote_len = 0;
+#if !defined(CONFIG_RSBAC_NET_OBJ_RW)
+				}
+#endif
 			}
 		} else {
 			rsbac_rw_req_obj->rsbac_target = T_UNIXSOCK;
