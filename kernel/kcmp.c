@@ -19,6 +19,8 @@
 
 #include <asm/unistd.h>
 
+#include <rsbac/hooks.h>
+
 /*
  * We don't expose the real in-memory order of objects for security reasons.
  * But still the comparison results should be suitable for sorting. So we
@@ -138,6 +140,11 @@ SYSCALL_DEFINE5(kcmp, pid_t, pid1, pid_t, pid2, int, type,
 	struct task_struct *task1, *task2;
 	int ret;
 
+#ifdef CONFIG_RSBAC
+	union rsbac_target_id_t rsbac_target_id;
+	union rsbac_attribute_value_t rsbac_attribute_value;
+#endif
+
 	rcu_read_lock();
 
 	/*
@@ -152,6 +159,33 @@ SYSCALL_DEFINE5(kcmp, pid_t, pid1, pid_t, pid2, int, type,
 	get_task_struct(task2);
 
 	rcu_read_unlock();
+
+#ifdef CONFIG_RSBAC
+	rsbac_pr_debug(aef, "sys_kcmp(): calling ADF for task1\n");
+	rsbac_target_id.process = task_pid(task1);
+	rsbac_attribute_value.dummy = 0;
+	if (!rsbac_adf_request(R_TRACE,
+			rsbac_target_id.process,
+			T_PROCESS,
+			rsbac_target_id,
+			A_none,
+			rsbac_attribute_value)) {
+		ret = -EPERM;
+		goto err;
+	}
+	rsbac_pr_debug(aef, "sys_kcmp(): calling ADF for task2\n");
+	rsbac_target_id.process = task_pid(task2);
+	rsbac_attribute_value.dummy = 0;
+	if (!rsbac_adf_request(R_TRACE,
+			rsbac_target_id.process,
+			T_PROCESS,
+			rsbac_target_id,
+			A_none,
+			rsbac_attribute_value)) {
+		ret = -EPERM;
+		goto err;
+	}
+#endif
 
 	/*
 	 * One should have enough rights to inspect task details.
