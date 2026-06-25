@@ -4,9 +4,9 @@
 /* Facility (ADF) - Access Control Lists (ACL)        */
 /* File: rsbac/adf/acl/acl_main.c                     */
 /*                                                    */
-/* Author and (c) 1999-2023: Amon Ott <ao@rsbac.org>  */
+/* Author and (c) 1999-2026: Amon Ott <ao@rsbac.org>  */
 /*                                                    */
-/* Last modified: 18/Dec/2023                         */
+/* Last modified: 24/Jun/2026                         */
 /**************************************************** */
 
 #include <linux/string.h>
@@ -188,7 +188,7 @@ rsbac_boolean_t rsbac_acl_check_right(enum  rsbac_target_t target,
                    get_error_name(tmp,err));
             rsbac_kfree(tmp);
           }
-        return err;
+        return FALSE;
       }
     for(i=0; i<err; i++)
       {
