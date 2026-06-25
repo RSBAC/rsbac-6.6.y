@@ -15,6 +15,8 @@
 #include <linux/slab.h>
 #include <linux/syscalls.h>
 
+#include <rsbac/hooks.h>
+
 /**
  * process_vm_rw_pages - read/write pages from task specified
  * @pages: array of pointers to pages we want to copy
@@ -163,6 +165,11 @@ static ssize_t process_vm_rw_core(pid_t pid, struct iov_iter *iter,
 	ssize_t iov_len;
 	size_t total_len = iov_iter_count(iter);
 
+#ifdef CONFIG_RSBAC
+	union rsbac_target_id_t rsbac_target_id;
+	union rsbac_attribute_value_t rsbac_attribute_value;
+#endif
+
 	/*
 	 * Work out how many pages of struct pages we're going to need
 	 * when eventually calling get_user_pages
@@ -198,6 +205,21 @@ static ssize_t process_vm_rw_core(pid_t pid, struct iov_iter *iter,
 		rc = -ESRCH;
 		goto free_proc_pages;
 	}
+
+#ifdef CONFIG_RSBAC
+	rsbac_pr_debug(aef, "process_vm_rw_core(): calling ADF\n");
+	rsbac_target_id.process = task_pid(current);
+	rsbac_attribute_value.dummy = 0;
+	if (!rsbac_adf_request(R_TRACE,
+			rsbac_target_id.process,
+			T_PROCESS,
+			rsbac_target_id,
+			A_none,
+			rsbac_attribute_value)) {
+		rc = -EPERM;
+		goto put_task_struct;
+	}
+#endif
 
 	mm = mm_access(task, PTRACE_MODE_ATTACH_REALCREDS);
 	if (!mm || IS_ERR(mm)) {

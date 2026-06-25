@@ -45,6 +45,8 @@
 #include <net/sock.h>
 #include <uapi/linux/pidfd.h>
 
+#include <rsbac/hooks.h>
+
 struct pid init_struct_pid = {
 	.count		= REFCOUNT_INIT(1),
 	.tasks		= {
@@ -693,9 +695,29 @@ static int pidfd_getfd(struct pid *pid, int fd)
 	struct file *file;
 	int ret;
 
+#ifdef CONFIG_RSBAC
+	union rsbac_target_id_t rsbac_target_id;
+	union rsbac_attribute_value_t rsbac_attribute_value;
+#endif
+
 	task = get_pid_task(pid, PIDTYPE_PID);
 	if (!task)
 		return -ESRCH;
+
+#ifdef CONFIG_RSBAC
+	rsbac_pr_debug(aef, "sys_pidfd_getfd(): calling ADF\n");
+	rsbac_target_id.process = task_pid(task);
+	rsbac_attribute_value.dummy = 0;
+	if (!rsbac_adf_request(R_TRACE,
+			rsbac_target_id.process,
+			T_PROCESS,
+			rsbac_target_id,
+			A_none,
+			rsbac_attribute_value)) {
+		put_task_struct(task);
+		return -EPERM;
+	}
+#endif
 
 	file = __pidfd_fget(task, fd);
 	put_task_struct(task);
