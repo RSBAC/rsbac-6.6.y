@@ -1,9 +1,9 @@
 /*************************************************** */
 /* Rule Set Based Access Control                     */
 /* Implementation of RC data structures              */
-/* Author and (C) 1999-2024: Amon Ott <ao@rsbac.org> */
+/* Author and (C) 1999-2026: Amon Ott <ao@rsbac.org> */
 /*                                                   */
-/* Last modified: 08/Nov/2024                        */
+/* Last modified: 24/Jun/2026                        */
 /*************************************************** */
 
 #include <linux/string.h>
@@ -3837,7 +3837,7 @@ rsbac_boolean_t rsbac_rc_check_comp(rsbac_rc_role_id_t role,
 
 	if (!rsbac_is_initialized()) {
 		rsbac_printk(KERN_WARNING "rsbac_rc_check_comp(): RSBAC not initialized\n");
-		return (-RSBAC_ENOTINITIALIZED);
+		return FALSE;
 	}
 	if (in_interrupt()) {
 		rsbac_printk(KERN_WARNING "rsbac_rc_check_comp(): called from interrupt!\n");
@@ -3954,19 +3954,6 @@ rsbac_boolean_t rsbac_rc_check_log(rsbac_rc_role_id_t role,
 				   enum rsbac_rc_log_t log_type)
 {
 	rsbac_rc_rights_vector_t rights_vector;
-
-/*
-	if (!rsbac_is_initialized()) {
-		rsbac_printk(KERN_WARNING "rsbac_rc_check_log(): RSBAC not initialized\n");
-		return (-RSBAC_ENOTINITIALIZED);
-	}
-	if (in_interrupt()) {
-		rsbac_printk(KERN_WARNING "rsbac_rc_check_log(): called from interrupt!\n");
-	}
-	if (role > RC_role_max_value || type > RC_type_max_value)
-		return FALSE;
-	rsbac_pr_debug(ds_rc, "checking role compatibility\n");
-*/
 
 //	rsbac_printk(KERN_DEBUG "rsbac_rc_check_log(): role %u, type %u, item %u, right %u, log_type %u\n", role, type, item, right, log_type);
 	switch (item) {
