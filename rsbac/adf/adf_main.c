@@ -5,7 +5,7 @@
 /*                                                   */
 /* Author and (c) 1999-2026: Amon Ott <ao@rsbac.org> */
 /*                                                   */
-/* Last modified: 12/Jun/2026                        */
+/* Last modified: 24/Jun/2026                        */
 /*************************************************** */
 
 #include <linux/string.h>
@@ -748,6 +748,19 @@ if(ignore_module != SW_REG)
                                             attr,
                                             *attr_val_p,
                                             owner);
+    switch(mod_result[SW_REG])
+      {
+        case GRANTED_ALWAYS_LOG:
+        case GRANTED_NEVER_LOG:
+          mod_result[SW_REG] = GRANTED;
+          break;
+        case NOT_GRANTED_ALWAYS_LOG:
+        case NOT_GRANTED_NEVER_LOG:
+          mod_result[SW_REG] = NOT_GRANTED;
+          break;
+        default:
+          break;
+      }
     result = adf_and_plus(result, mod_result[SW_REG]);
 #ifdef CONFIG_RSBAC_SOFTMODE_IND
     if(!rsbac_ind_softmode[SW_REG])
@@ -1420,6 +1433,10 @@ out_log:
 /* UNDEFINED must never be returned -> change result */
     if(result == UNDEFINED)
       result = NOT_GRANTED;
+#ifdef CONFIG_RSBAC_SOFTMODE_IND
+    if(ret_result == UNDEFINED)
+      ret_result = NOT_GRANTED;
+#endif
 
 /* count */
     data_race(rsbac_adf_request_count[target]++);
