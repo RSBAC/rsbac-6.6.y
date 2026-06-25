@@ -5,7 +5,7 @@
 /* API: Data structures          */
 /* and functions for Access      */
 /* Control Information           */
-/* Last modified: 12/Jun/2026    */
+/* Last modified: 24/Jun/2026    */
 /******************************* */
 
 #ifndef __RSBAC_ACI_H
@@ -80,6 +80,9 @@ int rsbac_mount(struct vfsmount * vfsmount_p, struct vfsmount * vfsmount_parent_
 
 /* When umounting a device, its ACI must be removed from the ACI lists. */
 int rsbac_umount(struct vfsmount * vfsmount_p);
+
+/* When a mount has been moved, we must update its parent pointer */
+int rsbac_update_parent(struct vfsmount * vfsmount_p, struct vfsmount * vfsmount_parent_p);
 
 /* Some information about the current status is also available */
 int rsbac_stats(void);
