@@ -5,7 +5,7 @@
 /* (some smaller parts copied from fs/namei.c        */
 /*  and others)                                      */
 /*                                                   */
-/* Last modified: 18/Jun/2026                        */
+/* Last modified: 25/Jun/2026                        */
 /*************************************************** */
 
 #include <linux/types.h>
@@ -6554,7 +6554,11 @@ static int __init rsbac_do_init(void)
 				srcu_idx = srcu_read_lock(&device_list_srcu[hash]);
 				device_p = lookup_device(major, minor, hash);
 				srcu_read_unlock(&device_list_srcu[hash], srcu_idx);
-				if (mount_p->vfsmount_parent_p) {
+				if (device_p && major == rsbac_root_dev_major && minor == rsbac_root_dev_minor) {
+					rsbac_printk(KERN_INFO "rsbac_do_init(): skip mounting delayed root device %02u:%02u, fs-type %s\n",
+						major, minor,
+						mount_p->vfsmount_p->mnt_sb->s_type->name);
+				} else if (mount_p->vfsmount_parent_p) {
 					if(!RSBAC_IS_INVALID_PTR(mount_p->vfsmount_parent_p->mnt_sb)) {
 						if(!device_p)
 							rsbac_printk(KERN_INFO "rsbac_do_init(): mounting delayed device %02u:%02u, fs-type %s, with parent %02u:%02u, fs-type %s\n",
@@ -7217,8 +7221,18 @@ int rsbac_mount(struct vfsmount * vfsmount_p, struct vfsmount * vfsmount_parent_
 		}
 #endif
 
-		rsbac_printk(KERN_WARNING "rsbac_mount(): RSBAC not initialized while mounting DEV %02u:%02u, fs-type %s, delaying\n",
-				MAJOR(vfsmount_p->mnt_sb->s_dev), MINOR(vfsmount_p->mnt_sb->s_dev),
+		if (vfsmount_parent_p && vfsmount_parent_p->mnt_sb)
+			rsbac_printk(KERN_INFO "rsbac_mount(): RSBAC not initialized while mounting DEV %02u:%02u, fs-type %s, with parent %02u:%02, fs-type %s, delaying\n",
+				RSBAC_MAJOR(vfsmount_p->mnt_sb->s_dev),
+				RSBAC_MINOR(vfsmount_p->mnt_sb->s_dev),
+				vfsmount_p->mnt_sb->s_type->name,
+				RSBAC_MAJOR(vfsmount_parent_p->mnt_sb->s_dev),
+				RSBAC_MINOR(vfsmount_parent_p->mnt_sb->s_dev),
+				vfsmount_parent_p->mnt_sb->s_type->name);
+		else
+			rsbac_printk(KERN_INFO "rsbac_mount(): RSBAC not initialized while mounting DEV %02u:%02u, fs-type %s, delaying\n",
+				MAJOR(vfsmount_p->mnt_sb->s_dev),
+				MINOR(vfsmount_p->mnt_sb->s_dev),
 				vfsmount_p->mnt_sb->s_type->name);
 		mount_p = kmalloc(sizeof(*mount_p), GFP_KERNEL);
 		if (mount_p) {
@@ -7546,7 +7560,19 @@ int rsbac_update_parent(struct vfsmount * vfsmount_p, struct vfsmount * vfsmount
 		return -RSBAC_EINVALIDPOINTER;
 	}
 	if (!rsbac_initialized) {
-		rsbac_printk(KERN_WARNING "rsbac_update_parent(): RSBAC not initialized\n");
+		if (vfsmount_parent_p && vfsmount_parent_p->mnt_sb)
+			rsbac_printk(KERN_INFO "rsbac_update_parent(): RSBAC not initialized, not updating DEV %02u:%02u, fs-type %s, parent to %02u:%02u, fs-type %s\n",
+				RSBAC_MAJOR(vfsmount_p->mnt_sb->s_dev),
+				RSBAC_MINOR(vfsmount_p->mnt_sb->s_dev),
+				vfsmount_p->mnt_sb->s_type->name,
+				RSBAC_MAJOR(vfsmount_parent_p->mnt_sb->s_dev),
+				RSBAC_MINOR(vfsmount_parent_p->mnt_sb->s_dev),
+				vfsmount_parent_p->mnt_sb->s_type->name);
+		else
+			rsbac_printk(KERN_INFO "rsbac_update_parent(): RSBAC not initialized, not removing DEV %02u:%02u, fs-type %s, parent\n",
+				RSBAC_MAJOR(vfsmount_p->mnt_sb->s_dev),
+				RSBAC_MINOR(vfsmount_p->mnt_sb->s_dev),
+				vfsmount_p->mnt_sb->s_type->name);
 		return -RSBAC_ENOTINITIALIZED;
 	}
 	major = RSBAC_MAJOR(vfsmount_p->mnt_sb->s_dev);
