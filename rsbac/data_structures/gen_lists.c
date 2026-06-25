@@ -3,7 +3,7 @@
 /* Author and (c) 1999-2026:           */
 /*   Amon Ott <ao@rsbac.org>           */
 /* Generic lists for all parts         */
-/* Last modified: 12/Jun/2026          */
+/* Last modified: 24/Jun/2026          */
 /************************************* */
 
 #include <linux/sched.h>
@@ -4644,7 +4644,8 @@ static int do_read_list(struct rsbac_list_reg_item_t *list,
 	}
 
 	/* alloc mem for old and converted item */
-	old_buf = rsbac_kmalloc_unlocked(list_info_p->desc_size + list_info_p->data_size);
+	old_buf = rsbac_kmalloc_clear_unlocked(max(list_info_p->desc_size + list_info_p->data_size,
+						   list->info.desc_size + list->info.data_size));
 	if (!old_buf) {
 		rsbac_printk(KERN_WARNING "do_read_list(): cannot allocate memory!\n");
 		err = -RSBAC_ENOMEM;
@@ -4998,7 +4999,8 @@ static int do_read_lol_list(struct rsbac_list_lol_reg_item_t *list,
 	}
 
 	/* alloc mem for old and converted items */
-	old_buf = rsbac_kmalloc_unlocked(list_info_p->desc_size + list_info_p->data_size);
+	old_buf = rsbac_kmalloc_clear_unlocked(max(list_info_p->desc_size + list_info_p->data_size,
+						   list->info.desc_size + list->info.data_size));
 	if (!old_buf) {
 		rsbac_printk(KERN_WARNING "do_read_lol_list(): cannot allocate memory!\n");
 		err = -RSBAC_ENOMEM;
@@ -5010,8 +5012,8 @@ static int do_read_lol_list(struct rsbac_list_lol_reg_item_t *list,
 		err = -RSBAC_ENOMEM;
 		goto end_read;
 	}
-	old_subbuf = rsbac_kmalloc_unlocked(list_info_p->subdesc_size +
-			  list_info_p->subdata_size);
+	old_subbuf = rsbac_kmalloc_clear_unlocked(max(list_info_p->subdesc_size + list_info_p->subdata_size,
+						      list->info.subdesc_size + list->info.subdata_size));
 	if (!old_subbuf) {
 		rsbac_printk(KERN_WARNING "do_read_lol_list(): cannot allocate memory!\n");
 		err = -RSBAC_ENOMEM;
