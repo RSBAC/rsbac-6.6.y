@@ -5442,7 +5442,7 @@ static int __sys_bpf(int cmd, bpfptr_t uattr, unsigned int size)
 	union bpf_attr attr;
 	int err;
 
-#ifdef CONFIG_RSBAC_NET
+#ifdef CONFIG_RSBAC
 	enum  rsbac_adf_request_t     rsbac_adf_req;
 	union rsbac_target_id_t       rsbac_target_id;
 	union rsbac_attribute_value_t rsbac_attribute_value;
@@ -5462,7 +5462,7 @@ static int __sys_bpf(int cmd, bpfptr_t uattr, unsigned int size)
 	if (err < 0)
 		return err;
 
-#ifdef CONFIG_RSBAC_NET
+#ifdef CONFIG_RSBAC
 	switch (cmd) {
 		case BPF_MAP_LOOKUP_ELEM:
 		case BPF_MAP_GET_NEXT_KEY:
