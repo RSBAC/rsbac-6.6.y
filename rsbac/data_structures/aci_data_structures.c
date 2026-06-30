@@ -7546,8 +7546,8 @@ int rsbac_umount(struct vfsmount *vfsmount_p)
 	return 0;
 }
 
-EXPORT_SYMBOL(rsbac_update_parent);
-int rsbac_update_parent(struct vfsmount * vfsmount_p, struct vfsmount * vfsmount_parent_p)
+EXPORT_SYMBOL(rsbac_update_vfsmount);
+int rsbac_update_vfsmount(struct vfsmount * vfsmount_p, struct vfsmount * vfsmount_parent_p)
 {
 	struct rsbac_device_list_item_t *device_p;
 	__u32 major;
@@ -7555,17 +7555,19 @@ int rsbac_update_parent(struct vfsmount * vfsmount_p, struct vfsmount * vfsmount
 	u_int hash;
 
 	if (in_interrupt()) {
-		rsbac_printk(KERN_WARNING "rsbac_update_parent(): called from interrupt, process %u(%s)!\n",
+		rsbac_printk(KERN_WARNING "rsbac_update_vfsmount(): called from interrupt, process %u(%s)!\n",
 				current->pid, current->comm);
 		return -RSBAC_EFROMINTERRUPT;
 	}
 	if (!vfsmount_p || !vfsmount_p->mnt_sb) {
-		WARN(1, "rsbac_update_parent(): called with NULL vfsmount pointer\n");
+		WARN(1, "rsbac_update_vfsmount(): called with NULL vfsmount pointer\n");
 		return -RSBAC_EINVALIDPOINTER;
 	}
+	if (vfsmount_parent_p == vfsmount_p)
+		vfsmount_parent_p = NULL;
 	if (!rsbac_initialized) {
 		if (vfsmount_parent_p && vfsmount_parent_p->mnt_sb)
-			rsbac_printk(KERN_INFO "rsbac_update_parent(): RSBAC not initialized, not updating DEV %02u:%02u, fs-type %s, parent to %02u:%02u, fs-type %s\n",
+			rsbac_printk(KERN_INFO "rsbac_update_vfsmount(): RSBAC not initialized, not updating vfsmount of DEV %02u:%02u, fs-type %s, parent is %02u:%02u, fs-type %s\n",
 				RSBAC_MAJOR(vfsmount_p->mnt_sb->s_dev),
 				RSBAC_MINOR(vfsmount_p->mnt_sb->s_dev),
 				vfsmount_p->mnt_sb->s_type->name,
@@ -7573,7 +7575,7 @@ int rsbac_update_parent(struct vfsmount * vfsmount_p, struct vfsmount * vfsmount
 				RSBAC_MINOR(vfsmount_parent_p->mnt_sb->s_dev),
 				vfsmount_parent_p->mnt_sb->s_type->name);
 		else
-			rsbac_printk(KERN_INFO "rsbac_update_parent(): RSBAC not initialized, not removing DEV %02u:%02u, fs-type %s, parent\n",
+			rsbac_printk(KERN_INFO "rsbac_update_vfsmount(): RSBAC not initialized, not updating vfsmount of DEV %02u:%02u, fs-type %s\n",
 				RSBAC_MAJOR(vfsmount_p->mnt_sb->s_dev),
 				RSBAC_MINOR(vfsmount_p->mnt_sb->s_dev),
 				vfsmount_p->mnt_sb->s_type->name);
@@ -7588,37 +7590,31 @@ int rsbac_update_parent(struct vfsmount * vfsmount_p, struct vfsmount * vfsmount
 
 	device_p = lookup_device_locked(major, minor, hash);
 	if (device_p) {
-		if (vfsmount_parent_p)
-			mntget(vfsmount_parent_p);
 		if (device_p->vfsmount_p && vfsmount_parent_p)
-			rsbac_printk(KERN_INFO "rsbac_update_parent(): updating fs-type %s device %02u:%02u parent from %02u:%02u to %02u:%02u\n",
+			rsbac_printk(KERN_INFO "rsbac_update_vfsmount(): updating vfsmount of fs-type %s device %02u:%02u, new parent is %02u:%02u\n",
 				vfsmount_p->mnt_sb->s_type->name,
 				major, minor,
-				RSBAC_MAJOR(device_p->vfsmount_p->mnt_sb->s_dev),
-				RSBAC_MINOR(device_p->vfsmount_p->mnt_sb->s_dev),
 				RSBAC_MAJOR(vfsmount_parent_p->mnt_sb->s_dev),
 				RSBAC_MINOR(vfsmount_parent_p->mnt_sb->s_dev));
 		else if (device_p->vfsmount_p)
-			rsbac_printk(KERN_INFO "rsbac_update_parent(): removing fs-type %s device %02u:%02u parent %02u:%02u\n",
+			rsbac_printk(KERN_INFO "rsbac_update_vfsmount(): updating vfsmount of fs-type %s device %02u:%02u, new parent not provided\n",
 				vfsmount_p->mnt_sb->s_type->name,
-				major, minor,
-				RSBAC_MAJOR(device_p->vfsmount_p->mnt_sb->s_dev),
-				RSBAC_MINOR(device_p->vfsmount_p->mnt_sb->s_dev));
+				major, minor);
 		else if (vfsmount_parent_p)
-			rsbac_printk(KERN_INFO "rsbac_update_parent(): adding fs-type %s device %02u:%02u parent %02u:%02u\n",
+			rsbac_printk(KERN_INFO "rsbac_update_vfsmount(): adding vfsmount to fs-type %s device %02u:%02u, new parent is %02u:%02u\n",
 				vfsmount_p->mnt_sb->s_type->name,
 				major, minor,
 				RSBAC_MAJOR(vfsmount_parent_p->mnt_sb->s_dev),
 				RSBAC_MINOR(vfsmount_parent_p->mnt_sb->s_dev));
 		else
-			rsbac_printk(KERN_INFO "rsbac_update_parent(): keeping device %02u:%02u without parent\n",
+			rsbac_printk(KERN_INFO "rsbac_update_vfsmount(): adding vfsmount to fs-type %s device %02u:%02u, new parent not provided\n",
 				vfsmount_p->mnt_sb->s_type->name,
 				major, minor);
 		if (device_p->vfsmount_p)
 			mntput(device_p->vfsmount_p);
-		device_p->vfsmount_p = vfsmount_parent_p;
+		device_p->vfsmount_p = vfsmount_p;
 	} else {
-		rsbac_printk(KERN_WARNING "rsbac_update_parent(): device %02u:%02u not found!\n",
+		rsbac_printk(KERN_WARNING "rsbac_update_vfsmount(): device %02u:%02u not found!\n",
 			major, minor);
 	}
 	spin_unlock(&device_list_locks[hash]);
