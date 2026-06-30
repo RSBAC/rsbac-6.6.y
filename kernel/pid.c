@@ -709,7 +709,7 @@ static int pidfd_getfd(struct pid *pid, int fd)
 	rsbac_target_id.process = task_pid(task);
 	rsbac_attribute_value.dummy = 0;
 	if (!rsbac_adf_request(R_TRACE,
-			rsbac_target_id.process,
+			task_pid(current),
 			T_PROCESS,
 			rsbac_target_id,
 			A_none,
