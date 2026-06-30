@@ -5,7 +5,7 @@
 /* (some smaller parts copied from fs/namei.c        */
 /*  and others)                                      */
 /*                                                   */
-/* Last modified: 29/Jun/2026                        */
+/* Last modified: 30/Jun/2026                        */
 /*************************************************** */
 
 #include <linux/types.h>
@@ -7304,7 +7304,8 @@ int rsbac_mount(struct vfsmount * vfsmount_p, struct vfsmount * vfsmount_parent_
 		if (!device_p->vfsmount_p)
 			device_p->vfsmount_p = mntget(vfsmount_p);
 		else
-			if (   real_mount(device_p->vfsmount_p)->mnt_mountpoint
+			if (   !RSBAC_IS_INVALID_PTR(real_mount(device_p->vfsmount_p)->mnt_mountpoint)
+			    && !RSBAC_IS_INVALID_PTR(real_mount(device_p->vfsmount_p)->mnt_mountpoint->d_sb)
 			    && (real_mount(device_p->vfsmount_p)->mnt_mountpoint->d_sb->s_dev == device_p->vfsmount_p->mnt_sb->s_dev)
 		    	   ) {
 #if defined(CONFIG_RSBAC_AUTO_WRITE)
