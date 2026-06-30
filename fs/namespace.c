@@ -3483,11 +3483,11 @@ static int do_move_mount(struct path *old_path, struct path *new_path,
 
 #ifdef CONFIG_RSBAC
 /*
- * We need to update the RSBAC parent pointer in the ACI device item,
+ * We need to update the RSBAC vfsmount pointer in the ACI device item,
  * but only when in init_user_ns to provide consistent inheritance
  */
 	if (current->nsproxy->mnt_ns->user_ns == &init_user_ns)
-		rsbac_update_parent(&old->mnt, mnt_has_parent(old) ? &old->mnt_parent->mnt : NULL);
+		rsbac_update_vfsmount(&real_mount(new_path->mnt)->mnt, mnt_has_parent(real_mount(new_path->mnt)) ? &real_mount(new_path->mnt)->mnt_parent->mnt : NULL);
 #endif
 
 	/* if the mount is moved, it should no longer be expire
@@ -4663,11 +4663,11 @@ SYSCALL_DEFINE2(pivot_root, const char __user *, new_root,
 
 #ifdef CONFIG_RSBAC
 /*
- * We need to update the RSBAC parent pointers in the ACI device items
+ * We need to update the RSBAC vfsmount pointers in the ACI device items
  * for both old and new root, since both have been moved
  */
-	rsbac_update_parent(&root_mnt->mnt, mnt_has_parent(root_mnt) ? &root_mnt->mnt_parent->mnt : NULL);
-	rsbac_update_parent(&new_mnt->mnt, mnt_has_parent(new_mnt) ? &new_mnt->mnt_parent->mnt : NULL);
+	rsbac_update_vfsmount(&root_mnt->mnt, mnt_has_parent(root_mnt) ? &root_mnt->mnt_parent->mnt : NULL);
+	rsbac_update_vfsmount(&new_mnt->mnt, mnt_has_parent(new_mnt) ? &new_mnt->mnt_parent->mnt : NULL);
 #endif
 
 	error = 0;
