@@ -208,10 +208,10 @@ static ssize_t process_vm_rw_core(pid_t pid, struct iov_iter *iter,
 
 #ifdef CONFIG_RSBAC
 	rsbac_pr_debug(aef, "process_vm_rw_core(): calling ADF\n");
-	rsbac_target_id.process = task_pid(current);
+	rsbac_target_id.process = task_pid(task);
 	rsbac_attribute_value.dummy = 0;
 	if (!rsbac_adf_request(R_TRACE,
-			rsbac_target_id.process,
+			task_pid(current),
 			T_PROCESS,
 			rsbac_target_id,
 			A_none,
