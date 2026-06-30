@@ -5,7 +5,7 @@
 /* (some smaller parts copied from fs/namei.c        */
 /*  and others)                                      */
 /*                                                   */
-/* Last modified: 25/Jun/2026                        */
+/* Last modified: 29/Jun/2026                        */
 /*************************************************** */
 
 #include <linux/types.h>
@@ -6411,8 +6411,7 @@ static int __init rsbac_do_init(void)
 	if (rsbac_auth_enable_login) {
 		struct dentry *t_dentry;
 		struct dentry *dir_dentry = NULL;
-		struct rsbac_auth_fd_aci_t auth_fd_aci =
-		    DEFAULT_AUTH_FD_ACI;
+		struct rsbac_auth_fd_aci_t auth_fd_aci = DEFAULT_AUTH_FD_ACI;
 		rsbac_old_inode_nr_t inode_nr;
 		void * inode_nr_p;
 
@@ -6420,24 +6419,29 @@ static int __init rsbac_do_init(void)
 			     RSBAC_AUTH_LOGIN_PATH);
 
 		/* lookup filename */
-		if (vfsmount_p) {
+		if (vfsmount_p && !RSBAC_IS_INVALID_PTR(vfsmount_p->mnt_sb) && !RSBAC_IS_INVALID_PTR(vfsmount_p->mnt_sb->s_root) && !RSBAC_IS_INVALID_PTR(vfsmount_p->mnt_sb->s_root->d_inode) && !RSBAC_IS_INVALID_PTR(vfsmount_p->mnt_sb->s_root->d_inode->i_sb)) {
 			inode_lock(vfsmount_p->mnt_sb->s_root->d_inode);
 			dir_dentry = lookup_one_len(RSBAC_AUTH_LOGIN_PATH_DIR,
 						 vfsmount_p->mnt_sb->s_root,
 						 strlen
 						 (RSBAC_AUTH_LOGIN_PATH_DIR));
 			inode_unlock(vfsmount_p->mnt_sb->s_root->d_inode);
-		}
-		if (!dir_dentry) {
+			if (!dir_dentry) {
+				err = -RSBAC_ENOTFOUND;
+				rsbac_printk(KERN_WARNING "rsbac_do_init(): call to lookup_one_len for /%s failed\n",
+					     RSBAC_AUTH_LOGIN_PATH_DIR);
+				goto auth_out;
+			}
+			if (IS_ERR(dir_dentry)) {
+				err = PTR_ERR(dir_dentry);
+				rsbac_printk(KERN_WARNING "rsbac_do_init(): call to lookup_one_len for /%s returned %i\n",
+					     RSBAC_AUTH_LOGIN_PATH_DIR, err);
+				goto auth_out;
+			}
+		} else {
 			err = -RSBAC_ENOTFOUND;
-			rsbac_printk(KERN_WARNING "rsbac_do_init(): call to lookup_one_len for /%s failed\n",
+			rsbac_printk(KERN_WARNING "rsbac_do_init(): cannot lookup /%s because of invalid root dir inode pointer\n",
 				     RSBAC_AUTH_LOGIN_PATH_DIR);
-			goto auth_out;
-		}
-		if (IS_ERR(dir_dentry)) {
-			err = PTR_ERR(dir_dentry);
-			rsbac_printk(KERN_WARNING "rsbac_do_init(): call to lookup_one_len for /%s returned %i\n",
-				     RSBAC_AUTH_LOGIN_PATH_DIR, err);
 			goto auth_out;
 		}
 		if (!dir_dentry->d_inode) {
