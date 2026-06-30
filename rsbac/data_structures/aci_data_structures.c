@@ -7591,29 +7591,38 @@ int rsbac_update_vfsmount(struct vfsmount * vfsmount_p, struct vfsmount * vfsmou
 
 	device_p = lookup_device_locked(major, minor, hash);
 	if (device_p) {
-		if (device_p->vfsmount_p && vfsmount_parent_p)
-			rsbac_printk(KERN_INFO "rsbac_update_vfsmount(): updating vfsmount of fs-type %s device %02u:%02u, new parent is %02u:%02u\n",
-				vfsmount_p->mnt_sb->s_type->name,
-				major, minor,
-				RSBAC_MAJOR(vfsmount_parent_p->mnt_sb->s_dev),
-				RSBAC_MINOR(vfsmount_parent_p->mnt_sb->s_dev));
-		else if (device_p->vfsmount_p)
-			rsbac_printk(KERN_INFO "rsbac_update_vfsmount(): updating vfsmount of fs-type %s device %02u:%02u, new parent not provided\n",
-				vfsmount_p->mnt_sb->s_type->name,
-				major, minor);
-		else if (vfsmount_parent_p)
-			rsbac_printk(KERN_INFO "rsbac_update_vfsmount(): adding vfsmount to fs-type %s device %02u:%02u, new parent is %02u:%02u\n",
-				vfsmount_p->mnt_sb->s_type->name,
-				major, minor,
-				RSBAC_MAJOR(vfsmount_parent_p->mnt_sb->s_dev),
-				RSBAC_MINOR(vfsmount_parent_p->mnt_sb->s_dev));
-		else
-			rsbac_printk(KERN_INFO "rsbac_update_vfsmount(): adding vfsmount to fs-type %s device %02u:%02u, new parent not provided\n",
-				vfsmount_p->mnt_sb->s_type->name,
-				major, minor);
-		if (device_p->vfsmount_p)
-			mntput(device_p->vfsmount_p);
-		device_p->vfsmount_p = vfsmount_p;
+		if (device_p->vfsmount_p) {
+			if (device_p->vfsmount_p != vfsmount_p) {
+				if (vfsmount_parent_p)
+					rsbac_printk(KERN_INFO "rsbac_update_vfsmount(): updating vfsmount of fs-type %s device %02u:%02u, new parent is %02u:%02u\n",
+						vfsmount_p->mnt_sb->s_type->name,
+						major, minor,
+						RSBAC_MAJOR(vfsmount_parent_p->mnt_sb->s_dev),
+						RSBAC_MINOR(vfsmount_parent_p->mnt_sb->s_dev));
+				else
+					rsbac_printk(KERN_INFO "rsbac_update_vfsmount(): updating vfsmount of fs-type %s device %02u:%02u, new parent not provided\n",
+						vfsmount_p->mnt_sb->s_type->name,
+						major, minor);
+				mntput(device_p->vfsmount_p);
+				device_p->vfsmount_p = mntget(vfsmount_p);
+			} else {
+				rsbac_printk(KERN_INFO "rsbac_update_vfsmount(): vfsmount of fs-type %s device %02u:%02u is unchanged\n",
+					vfsmount_p->mnt_sb->s_type->name,
+					major, minor);
+			}
+		} else {
+			if (vfsmount_parent_p)
+				rsbac_printk(KERN_INFO "rsbac_update_vfsmount(): adding vfsmount to fs-type %s device %02u:%02u, new parent is %02u:%02u\n",
+					vfsmount_p->mnt_sb->s_type->name,
+					major, minor,
+					RSBAC_MAJOR(vfsmount_parent_p->mnt_sb->s_dev),
+					RSBAC_MINOR(vfsmount_parent_p->mnt_sb->s_dev));
+			else
+				rsbac_printk(KERN_INFO "rsbac_update_vfsmount(): adding vfsmount to fs-type %s device %02u:%02u, new parent not provided\n",
+					vfsmount_p->mnt_sb->s_type->name,
+					major, minor);
+			device_p->vfsmount_p = mntget(vfsmount_p);
+		}
 	} else {
 		rsbac_printk(KERN_WARNING "rsbac_update_vfsmount(): device %02u:%02u not found!\n",
 			major, minor);
