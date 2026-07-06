@@ -6,7 +6,7 @@
 /*                                           */
 /* Debug and logging functions for all parts */
 /*                                           */
-/* Last modified: 12/Jun/2026                */
+/* Last modified: 02/Jul/2026                */
 /******************************************* */
  
 #include <linux/uaccess.h>
@@ -212,6 +212,9 @@ int  rsbac_acl_learn_fd = 0;
 /* Suppress default list creation for complete restore */
 int  rsbac_no_defaults = 0;
 
+/* Allow parallel mount and umount */
+int  rsbac_parallel_mounts = 0;
+
 static rsbac_list_handle_t log_levels_handle = NULL;
 
 #ifdef CONFIG_RSBAC_SOFTMODE
@@ -342,6 +345,14 @@ __setup("rsbac_flags=", rsbac_flags_setup);
       return 1;
     }
 __setup("rsbac_no_defaults", no_defaults_setup);
+
+//  module_param(rsbac_parallel_mounts, bool, S_IRUGO);
+  static int R_INIT parallel_mounts_setup(char *line)
+    {
+      rsbac_parallel_mounts = 1;
+      return 1;
+    }
+__setup("rsbac_parallel_mounts", parallel_mounts_setup);
 
   static int R_INIT memfd_keep_setup(char *line)
     {
@@ -1963,6 +1974,8 @@ debug_proc_show(struct seq_file *m, void *v)
 
   seq_printf(m, "rsbac_no_defaults is %i\n",
                  rsbac_no_defaults);
+  seq_printf(m, "rsbac_parallel_mounts is %i\n",
+                 rsbac_parallel_mounts);
 #ifdef CONFIG_RSBAC_DEBUG
   seq_printf(m, "rsbac_debug_write is %i\n",
                  rsbac_debug_write);
@@ -3048,6 +3061,35 @@ static ssize_t debug_proc_write(struct file * file, const char __user * buf, siz
           }
       }
 #endif
+
+    /*
+     * Usage: echo "debug parallel_mounts #N" > /proc/rsbac_info/debug
+     *   to set rsbac_parallel_mounts to given value
+     */
+    if(!strncmp("parallel_mounts", k_buf + 6, 15))
+      {
+	p += 16;
+
+        if( *p == '\0' )
+            goto out;
+
+        debug_level = simple_strtoul(p, NULL, 0);
+        /* only accept 0 or 1 */
+        if(!debug_level || (debug_level == 1))
+          {
+            if (rsbac_parallel_mounts != debug_level)
+              rsbac_printk(KERN_INFO
+                   "debug_proc_write(): changing rsbac_parallel_mounts to %u\n",
+                   debug_level);
+            rsbac_parallel_mounts = debug_level;
+            err = count;
+            goto out;
+          }
+        else
+          {
+            goto out_inv;
+          }
+      }
 
 #ifdef CONFIG_RSBAC_RMSG
 /* Set rsbac log messages limit */
@@ -5182,6 +5224,8 @@ inline void __init rsbac_init_debug(void)
     #endif
     if(rsbac_no_defaults)
       rsbac_printk(KERN_DEBUG "rsbac_no_defaults is set\n");
+    if(rsbac_parallel_mounts)
+      rsbac_printk(KERN_DEBUG "rsbac_parallel_mounts is set\n");
 
 #if defined(CONFIG_RSBAC_DEBUG)
     if(rsbac_debug_ds)
