@@ -7595,6 +7595,7 @@ int rsbac_update_vfsmount(struct vfsmount * vfsmount_p, struct vfsmount * vfsmou
 	__u32 major;
 	__u32 minor;
 	u_int hash;
+	struct vfsmount * mnttoput = NULL;
 
 	if (in_interrupt()) {
 		rsbac_printk(KERN_WARNING "rsbac_update_vfsmount(): called from interrupt, process %u(%s)!\n",
@@ -7644,7 +7645,7 @@ int rsbac_update_vfsmount(struct vfsmount * vfsmount_p, struct vfsmount * vfsmou
 					rsbac_printk(KERN_INFO "rsbac_update_vfsmount(): updating vfsmount of fs-type %s device %02u:%02u, new parent not provided\n",
 						vfsmount_p->mnt_sb->s_type->name,
 						major, minor);
-				mntput(device_p->vfsmount_p);
+				mnttoput = device_p->vfsmount_p;
 				device_p->vfsmount_p = mntget(vfsmount_p);
 			} else {
 				rsbac_printk(KERN_INFO "rsbac_update_vfsmount(): vfsmount of fs-type %s device %02u:%02u is unchanged\n",
@@ -7669,6 +7670,9 @@ int rsbac_update_vfsmount(struct vfsmount * vfsmount_p, struct vfsmount * vfsmou
 			major, minor);
 	}
 	spin_unlock(&device_list_locks[hash]);
+
+	if (mnttoput)
+		mntput(mnttoput);
 
 	return 0;
 }
