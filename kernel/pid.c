@@ -189,6 +189,10 @@ struct pid *alloc_pid(struct pid_namespace *ns, pid_t *set_tid,
 	tmp = ns;
 	pid->level = ns->level;
 
+#ifdef CONFIG_RSBAC
+	pid->rsbac_mount_process = false;
+#endif
+
 	for (i = ns->level; i >= 0; i--) {
 		int tid = 0;
 
