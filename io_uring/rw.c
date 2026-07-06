@@ -12,6 +12,8 @@
 #include <linux/compat.h>
 #include <linux/io_uring.h>
 
+#include <rsbac/hooks.h>
+
 #include <uapi/linux/io_uring.h>
 
 #include "io_uring.h"
@@ -655,13 +657,32 @@ static bool io_rw_should_retry(struct io_kiocb *req)
 static inline int io_iter_do_read(struct io_rw *rw, struct iov_iter *iter)
 {
 	struct file *file = rw->kiocb.ki_filp;
+	int err;
+
+#ifdef CONFIG_RSBAC_RW
+	struct rsbac_rw_req rsbac_rw_req_obj;
+#endif
+
+#ifdef CONFIG_RSBAC_RW
+	rsbac_rw_req_obj.rsbac_target = T_NONE;
+	rsbac_rw_req_obj.rsbac_request = R_READ;
+	if (!rsbac_handle_rw_req(file, &rsbac_rw_req_obj))
+		return -EPERM;
+#endif
 
 	if (likely(file->f_op->read_iter))
-		return call_read_iter(file, &rw->kiocb, iter);
+		err = call_read_iter(file, &rw->kiocb, iter);
 	else if (file->f_op->read)
-		return loop_rw_iter(READ, rw, iter);
+		err = loop_rw_iter(READ, rw, iter);
 	else
-		return -EINVAL;
+		err = -EINVAL;
+
+#ifdef CONFIG_RSBAC_RW
+	if (err > 0)
+		rsbac_handle_rw_up(&rsbac_rw_req_obj);
+#endif
+
+	return err;
 }
 
 static bool need_complete_io(struct io_kiocb *req)
@@ -917,6 +938,10 @@ int io_write(struct io_kiocb *req, unsigned int issue_flags)
 	ssize_t ret, ret2;
 	loff_t *ppos;
 
+#ifdef CONFIG_RSBAC_RW
+	struct rsbac_rw_req rsbac_rw_req_obj;
+#endif
+
 	if (!req_has_async_data(req)) {
 		ret = io_import_iovec(ITER_SOURCE, req, &iovec, s, issue_flags);
 		if (unlikely(ret < 0))
@@ -960,6 +985,13 @@ int io_write(struct io_kiocb *req, unsigned int issue_flags)
 		return ret;
 	}
 
+#ifdef CONFIG_RSBAC_RW
+	rsbac_rw_req_obj.rsbac_target = T_NONE;
+	rsbac_rw_req_obj.rsbac_request = R_WRITE;
+	if (!rsbac_handle_rw_req(req->file, &rsbac_rw_req_obj))
+		return -EPERM;
+#endif
+
 	if (unlikely(!io_kiocb_start_write(req, kiocb)))
 		return -EAGAIN;
 	kiocb->ki_flags |= IOCB_WRITE;
@@ -980,6 +1012,11 @@ int io_write(struct io_kiocb *req, unsigned int issue_flags)
 		req->flags &= ~REQ_F_REISSUE;
 		ret2 = -EAGAIN;
 	}
+
+#ifdef CONFIG_RSBAC_RW
+	if (ret2 > 0)
+		rsbac_handle_rw_up(&rsbac_rw_req_obj);
+#endif
 
 	/*
 	 * Raw bdev writes will return -EOPNOTSUPP for IOCB_NOWAIT. Just
