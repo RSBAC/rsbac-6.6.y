@@ -4306,6 +4306,11 @@ SYSCALL_DEFINE3(fsmount, int, fs_fd, unsigned int, flags,
 	unsigned int mnt_flags = 0;
 	long ret;
 
+#ifdef CONFIG_RSBAC
+	union rsbac_target_id_t rsbac_target_id;
+	union rsbac_attribute_value_t rsbac_attribute_value;
+#endif
+
 	if (!may_mount())
 		return -EPERM;
 
@@ -4367,6 +4372,23 @@ SYSCALL_DEFINE3(fsmount, int, fs_fd, unsigned int, flags,
 		ret = PTR_ERR(newmount.mnt);
 		goto err_unlock;
 	}
+
+#ifdef CONFIG_RSBAC
+	rsbac_pr_debug(aef, "sys_fsmount: calling ADF for DEV\n");
+	rsbac_target_id.dev.type = D_block;
+	rsbac_target_id.dev.major = RSBAC_MAJOR((&real_mount(newmount.mnt)->mnt)->mnt_sb->s_dev);
+	rsbac_target_id.dev.minor = RSBAC_MINOR((&real_mount(newmount.mnt)->mnt)->mnt_sb->s_dev);
+	rsbac_attribute_value.open_flag = attr_flags;
+	if (!rsbac_adf_request(R_MOUNT,
+				task_pid(current),
+				T_DEV,
+				rsbac_target_id,
+				A_open_flag,
+				rsbac_attribute_value)) {
+		ret = -EPERM;
+		goto err_path;
+	}
+#endif
 
 #ifdef CONFIG_RSBAC
 	rsbac_pr_debug(ds, "calling rsbac_mount() for device %02u:%02u\n",
