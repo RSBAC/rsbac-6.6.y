@@ -5,7 +5,7 @@
 /*                                                   */
 /* Author and (c) 1999-2026: Amon Ott <ao@rsbac.org> */
 /*                                                   */
-/* Last modified: 24/Jun/2026                        */
+/* Last modified: 02/Jul/2026                        */
 /*************************************************** */
 
 #include <linux/string.h>
@@ -219,7 +219,7 @@ enum rsbac_adf_req_ret_t
 /* Always granted for kernel (pid 0) and logging daemon */
     if (   !pid_nr(caller_pid)
         || (caller_pid == rsbac_get_rsbacd_pid())
-        || (caller_pid == rsbac_get_rsbac_mount_pid())
+        || (!rsbac_parallel_mounts && caller_pid == rsbac_get_rsbac_mount_pid())
         #if defined(CONFIG_RSBAC_LOG_REMOTE)
         || (pid_nr(caller_pid) == pid_nr(rsbaclogd_pid))
         #endif
@@ -1506,7 +1506,7 @@ int  rsbac_adf_set_attr(
 /* kernel (pid 0) is ignored */
     if (   !pid_nr(caller_pid)
         || (caller_pid == rsbac_get_rsbacd_pid())
-        || (caller_pid == rsbac_get_rsbac_mount_pid())
+        || (!rsbac_parallel_mounts && caller_pid == rsbac_get_rsbac_mount_pid())
         #if defined(CONFIG_RSBAC_LOG_REMOTE)
         || (caller_pid == rsbaclogd_pid)
         #endif
