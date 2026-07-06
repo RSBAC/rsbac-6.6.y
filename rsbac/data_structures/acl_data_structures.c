@@ -1526,115 +1526,82 @@ acl_acllist_proc_show(struct seq_file *m, void *v)
 		/* reset counters */
 		count = 0;
 		member_count = 0;
-		    seq_printf(m,
-			    "\nDevice %02u:%02u\n inode  count   mask+members",
-			    device_p->major, device_p->minor);
+		seq_printf(m,
+			"\nDevice %02u:%02u\n inode  count   mask+members",
+			device_p->major, device_p->minor);
 		tmp_count = rsbac_list_lol_get_all_desc(device_p->handle,
 							(void **) &fd_desc_p);
 		if (tmp_count > 0) {
 			for (j = 0; j < tmp_count; j++) {
-				    seq_printf(m,
-					    "\n%6u\t  %li\t",
-					    fd_desc_p[j],
-					    rsbac_list_lol_subcount
-					    (device_p->handle,
-					     &fd_desc_p[j]));
-				}
-				if (!rsbac_list_lol_get_data
-				    (device_p->handle,
-				     &fd_desc_p[j], &rights)) {
-					    seq_printf(m,
-						    "%s\n\t\t",
-						    u64tostracl
-						    (tmp1,
-						     rights));
-				}
-					tmp_sub_count =
-				    rsbac_list_lol_get_all_subdesc
-				    (device_p->handle,
-				     &fd_desc_p[j],
-				     (void **) &sub_desc_p);
+				seq_printf(m,
+					"\n%6u\t  %li\t",
+					fd_desc_p[j],
+					rsbac_list_lol_subcount(device_p->handle, &fd_desc_p[j]));
+				if (!rsbac_list_lol_get_data(device_p->handle, &fd_desc_p[j], &rights))
+					seq_printf(m,
+						"%s\n\t\t",
+						u64tostracl(tmp1, rights));
+				tmp_sub_count = rsbac_list_lol_get_all_subdesc(device_p->handle, &fd_desc_p[j], (void **) &sub_desc_p);
 				if (tmp_sub_count > 0) {
-					for (k = 0;
-					     k < tmp_sub_count;
-					     k++) {
-			if (RSBAC_UID_SET(sub_desc_p[k].subj_id))
-				seq_printf(m, " %s %u/%u,",
-				       get_acl_subject_type_name(tmp1,
-								 sub_desc_p
-								 [k].
-								 subj_type),
-				       RSBAC_UID_SET(sub_desc_p[k].subj_id),
-				       RSBAC_UID_NUM(sub_desc_p[k].subj_id));
-			else
-						    seq_printf(m,
-							    "%s %u, ",
-							    get_acl_subject_type_name
-							    (tmp1,
-							     sub_desc_p
-							     [k].
-							     subj_type),
-							    RSBAC_UID_NUM(sub_desc_p
-							    [k].
-							    subj_id));
+					for (k = 0; k < tmp_sub_count; k++) {
+						if (RSBAC_UID_SET(sub_desc_p[k].subj_id))
+							seq_printf(m,
+								" %s %u/%u,",
+								get_acl_subject_type_name(tmp1, sub_desc_p[k].subj_type),
+								RSBAC_UID_SET(sub_desc_p[k].subj_id),
+								RSBAC_UID_NUM(sub_desc_p[k].subj_id));
+						else
+							seq_printf(m,
+								"%s %u, ",
+								get_acl_subject_type_name(tmp1, sub_desc_p[k].subj_type),
+								RSBAC_UID_NUM(sub_desc_p[k].subj_id));
 					}
 					rsbac_kfree(sub_desc_p);
-					member_count +=
-					    tmp_sub_count;
+					member_count += tmp_sub_count;
 				}
+			}
 			count += tmp_count;
 			rsbac_kfree(fd_desc_p);
 		}
 		seq_printf(m,
-			    "\n%u file ACLs, sum of %u members\n", count,
-			    member_count);
+			"\n%u file ACLs, sum of %u members\n", count,
+			member_count);
 		device_p = srcu_dereference(device_p->next, &device_list_srcu);
 	}
 	/* unprotect device list */
 	srcu_read_unlock(&device_list_srcu, srcu_idx);
 
 	/* dev list */
-	seq_printf(m,
-		    "\nDevice ACLs:\ntype+id  count  mask+members");
+	seq_printf(m, "\nDevice ACLs:\ntype+id  count  mask+members");
 
 	member_count = 0;
-	tmp_count =
-	    rsbac_list_lol_get_all_desc(dev_handle, (void **) &dev_desc_p);
+	tmp_count = rsbac_list_lol_get_all_desc(dev_handle, (void **) &dev_desc_p);
 	if (tmp_count > 0) {
 		for (i = 0; i < tmp_count; i++) {
-			if (!rsbac_list_lol_get_data
-			    (dev_handle, &dev_desc_p[i], &rights)) {
-				    seq_printf(m,
-					    "\n%c%02u:%02u\t  %3li\t%s\n\t\t",
-					    'B' + dev_desc_p[i].type,
-					    dev_desc_p[i].major,
-					    dev_desc_p[i].minor,
-					    rsbac_list_lol_subcount
-					    (dev_handle, &dev_desc_p[i]),
-					    u64tostracl(tmp1, rights));
+			if (!rsbac_list_lol_get_data(dev_handle, &dev_desc_p[i], &rights)) {
+				seq_printf(m,
+					"\n%c%02u:%02u\t  %3li\t%s\n\t\t",
+					'B' + dev_desc_p[i].type,
+					dev_desc_p[i].major,
+					dev_desc_p[i].minor,
+					rsbac_list_lol_subcount(dev_handle, &dev_desc_p[i]),
+					u64tostracl(tmp1, rights));
 			}
-			tmp_sub_count =
-			    rsbac_list_lol_get_all_subdesc(dev_handle,
-							   &dev_desc_p[i],
-							   (void **)
-							   &sub_desc_p);
+			tmp_sub_count = rsbac_list_lol_get_all_subdesc(dev_handle,
+									&dev_desc_p[i],
+									(void **) &sub_desc_p);
 			if (tmp_sub_count > 0) {
 				for (j = 0; j < tmp_sub_count; j++) {
 					if (RSBAC_UID_SET(sub_desc_p[j].subj_id))
 						seq_printf(m, " %s %u/%u,",
 						       get_acl_subject_type_name(tmp1,
-									 sub_desc_p
-									 [j].
-									 subj_type),
+									 sub_desc_p[j].subj_type),
 						       RSBAC_UID_SET(sub_desc_p[j].subj_id),
 						       RSBAC_UID_NUM(sub_desc_p[j].subj_id));
 					else
 					    seq_printf(m,
 						    "%s %u, ",
-						    get_acl_subject_type_name
-						    (tmp1,
-						     sub_desc_p[j].
-						     subj_type),
+						    get_acl_subject_type_name(tmp1, sub_desc_p[j].subj_type),
 						    RSBAC_UID_NUM(sub_desc_p[j].subj_id));
 				}
 				rsbac_kfree(sub_desc_p);
