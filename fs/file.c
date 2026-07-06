@@ -23,6 +23,10 @@
 #include <net/sock.h>
 #include <linux/init_task.h>
 
+#ifdef CONFIG_RSBAC
+#include <rsbac/hooks.h>
+#endif
+
 #include "internal.h"
 
 unsigned int sysctl_nr_open __read_mostly = 1024*1024;
@@ -1168,9 +1172,98 @@ int __receive_fd(struct file *file, int __user *ufd, unsigned int o_flags)
 	int new_fd;
 	int error;
 
+#ifdef CONFIG_RSBAC
+	enum  rsbac_adf_request_t rsbac_adf_req = R_NONE;
+	enum  rsbac_target_t rsbac_target = T_NONE;
+	union rsbac_target_id_t rsbac_target_id;
+	union rsbac_target_id_t rsbac_new_target_id;
+	union rsbac_attribute_value_t rsbac_attribute_value;
+#endif
+
 	error = security_file_receive(file);
 	if (error)
 		return error;
+
+#if defined(CONFIG_RSBAC_CAP_FD_HIDE)
+	if (   file->f_inode
+	    && !S_ISBLK(file->f_inode->i_mode)
+	    && !S_ISCHR(file->f_inode->i_mode)
+	    && rsbac_cap_hide_fd(file->f_inode))
+		return -ENOENT;
+#endif
+
+#ifdef CONFIG_RSBAC
+	rsbac_pr_debug(aef, "receive_fd(): calling ADF\n");
+	/* get target type and id clear */
+	if (S_ISBLK(file->f_inode->i_mode) || S_ISCHR(file->f_inode->i_mode)){
+		rsbac_target = T_DEV;
+		if (S_ISBLK(file->f_inode->i_mode))
+			rsbac_target_id.dev.type = D_block;
+		else
+			rsbac_target_id.dev.type = D_char;
+		rsbac_target_id.dev.major = RSBAC_MAJOR(file->f_inode->i_rdev);
+		rsbac_target_id.dev.minor = RSBAC_MINOR(file->f_inode->i_rdev);
+	}
+	else { /* must be file, dir, fifo or memfd */
+		rsbac_target_id.file.device = file->f_inode->i_sb->s_dev;
+		rsbac_target_id.file.inode  = file->f_inode->i_ino;
+		rsbac_target_id.file.dentry_p = file->f_path.dentry;
+		if (S_ISDIR(file->f_inode->i_mode))
+			rsbac_target = T_DIR;
+		else if (S_ISSOCK(file->f_inode->i_mode))
+			rsbac_target = T_UNIXSOCK;
+		else if (S_ISFIFO(file->f_inode->i_mode)) {
+			if (file->f_inode->i_sb->s_magic != PIPEFS_MAGIC)
+				rsbac_target = T_FIFO;
+			else
+				rsbac_target = T_NONE;
+		}
+		else if (file->f_inode->i_rsbac_memfd) {
+			rsbac_target = T_IPC;
+			rsbac_target_id.ipc.type = I_memfd;
+			rsbac_target_id.ipc.id.id_nr = (u_long) file->f_inode;
+		}
+		else if (S_ISREG(file->f_inode->i_mode))
+			rsbac_target = T_FILE;
+	}
+	/* determine request type */
+	rsbac_adf_req = R_NONE;
+	if (file->f_flags & O_APPEND)
+		rsbac_adf_req = R_APPEND_OPEN;
+	else
+		if ((file->f_flags & O_RDWR) || ((file->f_flags & O_WRONLY) && (file->f_flags & O_RDONLY)))
+			rsbac_adf_req = R_READ_WRITE_OPEN;
+		else
+			if (file->f_flags & O_WRONLY)
+				rsbac_adf_req = R_WRITE_OPEN;
+			else
+				if (rsbac_target == T_DIR)
+					rsbac_adf_req = R_READ;
+				else
+					rsbac_adf_req = R_READ_OPEN;
+	if ((rsbac_adf_req != R_NONE) && (rsbac_target != T_NONE)) {
+		rsbac_attribute_value.open_flag = file->f_flags;
+#ifdef CONFIG_RSBAC_FSOBJ_HIDE
+		if (   rsbac_target != T_DEV && rsbac_target != T_IPC
+		    && !rsbac_adf_request(R_SEARCH,
+					task_pid(current),
+					rsbac_target,
+					rsbac_target_id,
+					A_open_flag,
+					rsbac_attribute_value)) {
+			return -ENOENT;
+		} else
+#endif
+		if (!rsbac_adf_request(rsbac_adf_req,
+					task_pid(current),
+					rsbac_target,
+					rsbac_target_id,
+					A_open_flag,
+					rsbac_attribute_value)) {
+			return -EPERM;
+		}
+	}
+#endif
 
 	new_fd = get_unused_fd_flags(o_flags);
 	if (new_fd < 0)
@@ -1183,6 +1276,23 @@ int __receive_fd(struct file *file, int __user *ufd, unsigned int o_flags)
 			return error;
 		}
 	}
+
+#ifdef CONFIG_RSBAC
+	if (rsbac_adf_req != R_NONE && rsbac_target != T_NONE) {
+		rsbac_new_target_id.dummy = 0;
+		if (unlikely(rsbac_adf_set_attr(rsbac_adf_req,
+					task_pid(current),
+					rsbac_target,
+					rsbac_target_id,
+					T_NONE,
+					rsbac_new_target_id,
+					A_open_flag,
+					rsbac_attribute_value))) {
+			rsbac_printk(KERN_WARNING
+					"receive_fd(): rsbac_adf_set_attr() returned error\n");
+		}
+	}
+#endif
 
 	fd_install(new_fd, get_file(file));
 	__receive_sock(file);
