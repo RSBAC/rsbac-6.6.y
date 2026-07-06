@@ -6,6 +6,11 @@
 #include <linux/security.h>
 #include <linux/nospec.h>
 
+#ifdef CONFIG_RSBAC_IOCTL
+#include <net/sock.h>
+#include <rsbac/hooks.h>
+#endif
+
 #include <uapi/linux/io_uring.h>
 #include <asm/ioctls.h>
 
@@ -117,6 +122,12 @@ int io_uring_cmd(struct io_kiocb *req, unsigned int issue_flags)
 	struct file *file = req->file;
 	int ret;
 
+#ifdef CONFIG_RSBAC_IOCTL
+	enum  rsbac_target_t rsbac_target = T_NONE;
+	union rsbac_target_id_t rsbac_target_id;
+	union rsbac_attribute_value_t rsbac_attribute_value;
+#endif
+
 	if (!file->f_op->uring_cmd)
 		return -EOPNOTSUPP;
 
@@ -135,6 +146,62 @@ int io_uring_cmd(struct io_kiocb *req, unsigned int issue_flags)
 		req->iopoll_completed = 0;
 		WRITE_ONCE(ioucmd->cookie, NULL);
 	}
+
+#ifdef CONFIG_RSBAC_IOCTL
+	if (file->f_path.dentry->d_inode->i_rsbac_memfd) {
+		rsbac_target = T_IPC;
+		rsbac_target_id.ipc.type = I_memfd;
+		rsbac_target_id.ipc.id.id_nr = (u_long) file->f_path.dentry->d_inode;
+	} else if (S_ISBLK(file->f_path.dentry->d_inode->i_mode)) {
+		rsbac_target = T_DEV;
+		rsbac_target_id.dev.type = D_block;
+		rsbac_target_id.dev.major = RSBAC_MAJOR(file->f_path.dentry->d_inode->i_rdev);
+		rsbac_target_id.dev.minor = RSBAC_MINOR(file->f_path.dentry->d_inode->i_rdev);
+	} else if (S_ISCHR(file->f_path.dentry->d_inode->i_mode)) {
+		rsbac_target = T_DEV;
+		rsbac_target_id.dev.type = D_char;
+		rsbac_target_id.dev.major = RSBAC_MAJOR(file->f_path.dentry->d_inode->i_rdev);
+		rsbac_target_id.dev.minor = RSBAC_MINOR(file->f_path.dentry->d_inode->i_rdev);
+	} else if (S_ISSOCK(file->f_path.dentry->d_inode->i_mode)) {
+		if (file->f_path.dentry->d_inode->i_sb->s_magic == SOCKFS_MAGIC) {
+			struct socket * sock = SOCKET_I(file->f_path.dentry->d_inode);
+
+			if (sock->ops) {
+				if (sock->ops->family == AF_UNIX) {
+					rsbac_target = T_IPC;
+					rsbac_target_id.ipc.type = I_anonunix;
+					rsbac_target_id.ipc.id.id_nr = file->f_path.dentry->d_inode->i_ino;
+#if defined(CONFIG_RSBAC_NET_OBJ)
+				} else {
+					rsbac_target = T_NETOBJ;
+					rsbac_target_id.netobj.sock_p = sock;
+					rsbac_target_id.netobj.local_addr = NULL;
+					rsbac_target_id.netobj.local_len = 0;
+					rsbac_target_id.netobj.remote_addr = NULL;
+					rsbac_target_id.netobj.remote_len = 0;
+#endif
+				}
+			}
+		} else {
+			rsbac_target = T_UNIXSOCK;
+			rsbac_target_id.unixsock.device = file->f_path.dentry->d_inode->i_sb->s_dev;
+			rsbac_target_id.unixsock.inode  = file->f_path.dentry->d_inode->i_ino;
+			rsbac_target_id.unixsock.dentry_p = file->f_path.dentry;
+		}
+	}
+	if (rsbac_target != T_NONE) {
+		rsbac_pr_debug(aef, "[sys_ioctl()]: calling ADF\n");
+		rsbac_attribute_value.dummy = 0;
+		if (!rsbac_adf_request(R_IOCTL,
+					task_pid(current),
+					rsbac_target,
+					rsbac_target_id,
+					A_none,
+					rsbac_attribute_value)) {
+			return -EPERM;
+		}
+	}
+#endif
 
 	ret = file->f_op->uring_cmd(ioucmd, issue_flags);
 	if (ret == -EAGAIN) {
