@@ -1,9 +1,9 @@
 /******************************* */
 /* Rule Set Based Access Control */
-/* Author and (c) 1999-2025:     */
+/* Author and (c) 1999-2026:     */
 /*   Amon Ott <ao@rsbac.org>     */
 /* debug definitions             */
-/* Last modified: 10/Jul/2025    */
+/* Last modified: 02/Jul/2026    */
 /******************************* */
 
 #ifndef __RSBAC_DEBUG_H
@@ -41,6 +41,7 @@ extern rsbac_log_entry_t  rsbac_log_levels[R_NONE+1];
 
 
 extern int rsbac_no_defaults;
+extern int rsbac_parallel_mounts;
 
 #ifdef CONFIG_RSBAC_INIT_DELAY
 extern void rsbac_init_debug(void);
