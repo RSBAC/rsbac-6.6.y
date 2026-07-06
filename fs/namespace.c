@@ -2754,7 +2754,7 @@ static int do_loopback(struct path *path, const char *old_name,
 
 	parent = real_mount(path->mnt);
 #ifdef CONFIG_RSBAC
-	rsbac_pr_debug(aef, "[do_loopback() [sys_mount()]]: calling ADF for DIR\n");
+	rsbac_pr_debug(aef, "do_loopback() [sys_mount()]: calling ADF for DIR\n");
 	rsbac_target_id.dir.device = old_path.dentry->d_sb->s_dev;
 	rsbac_target_id.dir.inode  = old_path.dentry->d_inode->i_ino;
 	rsbac_target_id.dir.dentry_p = old_path.dentry;
@@ -2769,7 +2769,7 @@ static int do_loopback(struct path *path, const char *old_name,
 		err = -EPERM;
 		goto out2;
 	}
-	rsbac_pr_debug(aef, "[do_mount() [sys_mount()]]: calling ADF for DEV\n");
+	rsbac_pr_debug(aef, "do_loopback() [sys_mount()]: calling ADF for DEV\n");
 	if(S_ISBLK(old_path.dentry->d_inode->i_mode))
 	{
 		rsbac_target = T_DEV;
@@ -4867,6 +4867,11 @@ static int do_mount_setattr(struct path *path, struct mount_kattr *kattr)
 	struct mount *mnt = real_mount(path->mnt);
 	int err = 0;
 
+#ifdef CONFIG_RSBAC
+	union rsbac_target_id_t rsbac_target_id;
+	union rsbac_attribute_value_t rsbac_attribute_value;
+#endif
+
 	if (!path_mounted(path))
 		return -EINVAL;
 
@@ -4914,6 +4919,23 @@ static int do_mount_setattr(struct path *path, struct mount_kattr *kattr)
 	 */
 	if ((mnt_has_parent(mnt) || !is_anon_ns(mnt->mnt_ns)) && !check_mnt(mnt))
 		goto out;
+
+#ifdef CONFIG_RSBAC
+	rsbac_pr_debug(aef, "do_mount_setattr() [sys_mount_setattr, sys_open_tree_attr]: calling ADF for DEV\n");
+	rsbac_target_id.dev.type = D_block;
+	rsbac_target_id.dev.major = RSBAC_MAJOR((&mnt->mnt)->mnt_sb->s_dev);
+	rsbac_target_id.dev.minor = RSBAC_MINOR((&mnt->mnt)->mnt_sb->s_dev);
+	rsbac_attribute_value.mode = kattr->attr_set;
+	if (!rsbac_adf_request(R_MOUNT,
+				task_pid(current),
+				T_DEV,
+				rsbac_target_id,
+				A_mode,
+				rsbac_attribute_value)) {
+		err = -EPERM;
+		goto out;
+	}
+#endif
 
 	/*
 	 * First, we get the mount tree in a shape where we can change mount
