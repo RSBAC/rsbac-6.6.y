@@ -5,7 +5,7 @@
 /* (some smaller parts copied from fs/namei.c        */
 /*  and others)                                      */
 /*                                                   */
-/* Last modified: 03/Jul/2026                        */
+/* Last modified: 06/Jul/2026                        */
 /*************************************************** */
 
 #include <linux/types.h>
@@ -6454,6 +6454,12 @@ static int __init rsbac_do_init(void)
 		if (RSBAC_IS_INVALID_PTR(dir_dentry->d_inode)) {
 			err = -RSBAC_ENOTFOUND;
 			rsbac_printk(KERN_WARNING "rsbac_do_init(): call to lookup_one_len for /%s failed\n",
+				     RSBAC_AUTH_LOGIN_PATH_DIR);
+			goto auth_out_dput_dir;
+		}
+		if (!S_ISDIR(dir_dentry->d_inode->i_mode)) {
+			err = -RSBAC_ENOTFOUND;
+			rsbac_printk(KERN_WARNING "rsbac_do_init(): /%s is no directory\n",
 				     RSBAC_AUTH_LOGIN_PATH_DIR);
 			goto auth_out_dput_dir;
 		}
